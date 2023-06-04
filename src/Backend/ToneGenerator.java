@@ -33,9 +33,7 @@ public class ToneGenerator {
     
     public ToneGenerator(Boolean sound) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
         is = getClass().getResourceAsStream("tone.wav");
-        
-        //buf = is.readAllBytes();
-        //bais = new ByteArrayInputStream(buf);
+
         audioStream = AudioSystem.getAudioInputStream(is);
         audioFormat = audioStream.getFormat();
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);

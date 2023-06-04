@@ -71,7 +71,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         logicQuirks = true;
         loadStoreQuirks = false;
         clipQuirks = false;
-        vBlankQuirks = false;
+        vBlankQuirks = true;
         IOverflowQuirks = false;
         cycles = 20;
     }
@@ -82,7 +82,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         tg = new ToneGenerator(sound);
         v = new int[16];
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
-        //graphics = new int[64*32];
         mem = new int[4096];
         for(int i = 0;i<charSet.length;i++){
             mem[0x50+i] = (short) charSet[i];
@@ -232,11 +231,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                     case 0x0004: //0x8XY4 add Vy to Vx. VF is set to 1 if there's a carry, 0 otherwise.
                         int sum = (v[X] + v[Y]);
                         v[X] = sum & 0xFF;
-//                        if (sum >= 0xFF) {
-//                            v[0xF] = 1;
-//                        } else {
-//                            v[0xF] = 0;
-//                        }
                         writeCarry(X, sum, (sum > 0xFF));
                         pc += 2;
                         return;
@@ -245,11 +239,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                         
                         int diff1 = (v[X] - v[Y]);  
                         v[X] = diff1 & 0xFF; 
-//                        if (v[X] >= v[Y]) {
-//                            v[0xF] = 1;
-//                        } else {
-//                            v[0xF] = 0;
-//                        }
                         writeCarry(X, diff1, (diff1 >= 0x0));
                         pc += 2;
                         return;
@@ -257,11 +246,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                     case 0x0007: //0x8XY7 subtract Vx from Vy. VF is 0 if subtrahend is smaller than minuend.
                         int diff2 = (v[Y] - v[X]);
                         v[X] = diff2 & 0xFF;
-//                        if (v[Y] >= v[X]) {
-//                            v[0xF] = 1;
-//                        } else {
-//                            v[0xF] = 0;
-//                        }
                         writeCarry(X, diff2, (diff2 >= 0x0));
                         pc += 2;
                         return;
@@ -272,13 +256,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                         }
                         
                         int set = v[Y] >> 1;
-//                        if(set){
-//                            v[0xF] = 0x1;
-//                        }
-//                        else{
-//                            v[0xF] = 0x0;
-//                        }
-//                        v[X] = (v[Y] >> 1) & 0xFF;
                         writeCarry(X, set, (v[Y] & 0x1) == 0x1);
                         pc += 2;
                         return;
@@ -309,13 +286,13 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
             /*
             * DXYN derived from Octo and https://github.com/Klairm/chip8
             */
-             /*
-              * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
-             */
+            /*
+            * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
+            */
             case 0xD000:
-//                if (WaitForInterrupt()) {
-//                    return;
-//                }
+                if (WaitForInterrupt()) {
+                    return;
+                }
                 int x = v[X];
                 int y = v[Y];
                 int n = (int) (opcode & 0x000F);
@@ -324,7 +301,6 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                 int currPixel = 0;
                 int targetPixel = 0;
                 for (byte yLine = 0; yLine < n; yLine++) {
-                    //currPixel = mem[I + yLine];
                    
                     for (byte xLine = 0; xLine < 8; xLine++) {
                         currPixel = ((mem[I+yLine] >> (7-xLine)) & 0x1);
@@ -342,8 +318,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                             }
                             else{
                                 graphics[targetPixel] ^= 1;
-                            }
-                           
+                            }                      
                         }
                     }
                 }
@@ -469,10 +444,10 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
     public void updateTimers(){
         if(playSound){
             if (sT > 0) {
-                System.out.println(sT);
+                //System.out.println(sT);
                 tg.startSound();
             } else {
-                System.out.println(sT);
+                //System.out.println(sT);
                 tg.stopSound();
             }
         }
@@ -613,19 +588,29 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
             }
         }
         
+        public void stop() {
+            tg.stopSound();
+            isRunning = false;
+            cpuCycleThread = null;
+        }
+        
        public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         while (isRunning) {
+            
             for (int i = 0; i < cycles; i++) {
                 cpuExec();
             }
             
             updateTimers();
             try {
-                //cpuCycleThread.sleep(msToWait, nsToWait);
                 cpuCycleThread.sleep(16);
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
+            }
+            
+            if (m_WaitForInterrupt == 1) {
+                m_WaitForInterrupt = 2;
             }
             screen.repaint();
         }   

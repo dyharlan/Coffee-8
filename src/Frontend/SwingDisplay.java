@@ -22,11 +22,17 @@ public class SwingDisplay implements Runnable {
 
     private Thread cpuCycleThread;
     private Boolean isRunning;
+    private Boolean initStatus;
     private Graphics2D g2d;
     private JFrame f;
+    private JMenuBar mb;
+        private JMenu fileMenu;
+        
+        private JMenu emulationMenu;
+            private JCheckBoxMenuItem pauseToggle;
+            private JCheckBoxMenuItem soundToggle;
     private JPanel gamePanel;
-    //private final int DISPLAY_WIDTH = 64;
-    //private final int DISPLAY_HEIGHT = 32;
+    
     private final int SCALE_FACTOR = 20;
     private int sizeX = 0;
     private int sizeY = 0;
@@ -36,12 +42,46 @@ public class SwingDisplay implements Runnable {
     Dimension size;
 
     public SwingDisplay(String verNo) throws FileNotFoundException, IOException, LineUnavailableException, UnsupportedAudioFileException {
+        chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
-        rom = new File("D:\\Others\\src\\Coffee-8\\software\\Pong [Paul Vervalin, 1990].ch8");
-        chip8CPU = new Chip8SOC(rom, true, MachineType.COSMAC_VIP);
+        mb = new JMenuBar();    
+            fileMenu = new JMenu("File");
+            mb.add(fileMenu);
+            
+            emulationMenu = new JMenu("Emulation");
+            mb.add(emulationMenu);
+            pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
+                pauseToggle.addActionListener((e)->{
+                        if(isRunning &&  pauseToggle.isSelected()){
+                            stop();
+                        }else{
+                            start();
+                        }
+                });
+            soundToggle = new JCheckBoxMenuItem("Enable Sound");
+            if(chip8CPU.isSoundEnabled())
+                soundToggle.setSelected(true);
+            else
+                soundToggle.setSelected(false);
+            soundToggle.addActionListener((e)->{
+                        if(!soundToggle.isSelected()){
+                            chip8CPU.disableSound();
+                        }else{
+                            try{
+                                chip8CPU.enableSound();
+                            }catch(LineUnavailableException | UnsupportedAudioFileException se){
+                                JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);  
+                            }catch(IOException ioe){
+                                JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                });
+            emulationMenu.add(pauseToggle);
+            emulationMenu.add(soundToggle);
+       
         sizeX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
         sizeY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
-
+        
         gamePanel = new JPanel() {
             public void paint(Graphics g) {
 
@@ -64,20 +104,26 @@ public class SwingDisplay implements Runnable {
             }
         };
         gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
-        f.add(gamePanel);
-
+        f.add(mb, BorderLayout.NORTH);
+        f.add(gamePanel,BorderLayout.CENTER);
+        initStatus = false;
     }
 
     public void start() {
         if (cpuCycleThread == null) {
             isRunning = true;
             cpuCycleThread = new Thread(this);
-            cpuCycleThread.start();
+            
+            SwingUtilities.invokeLater(new Runnable() {
+                public void run() {
+                   cpuCycleThread.start();
+                }
+            });
         }
     }
 
     public void stop() {
-        chip8CPU.stopSound();
+        chip8CPU.pauseSound();
         isRunning = false;
         cpuCycleThread = null;
     }
@@ -104,8 +150,7 @@ public class SwingDisplay implements Runnable {
         }
     }
 
-    public void startApp() {
-        //f.setSize(sizeX, sizeY);
+    public void startApp() throws FileNotFoundException, IOException{
         f.setResizable(false);
         f.pack();
         f.setLocationRelativeTo(null);
@@ -115,27 +160,31 @@ public class SwingDisplay implements Runnable {
                 System.exit(0);
             }
         });
-
+        rom = new File("D:\\Others\\src\\Coffee-8\\software\\Pong [Paul Vervalin, 1990].ch8");
+        initStatus = chip8CPU.loadRom(rom);
         f.setVisible(true);
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                start();
-            }
-        });
+        if(initStatus){
+            start();
+        }else{
+            JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE); 
+        }
 
     }
 
     public static void main(String[] args) {
-         SwingDisplay d = null;
+        SwingDisplay d = null;
         try{
             d = new SwingDisplay("Coffee-8 0.5");
             d.startApp();
         }catch(FileNotFoundException fnfe){
             JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
         }catch(IOException ioe){
             JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-        }catch( LineUnavailableException|UnsupportedAudioFileException se){
-            JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system: " + se, "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
+        }catch(LineUnavailableException|UnsupportedAudioFileException se){
+           JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+           System.exit(0);
         }
         
     }

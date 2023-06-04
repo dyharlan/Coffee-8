@@ -16,18 +16,18 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 
-public class Chip8SOC extends KeyAdapter implements Runnable{
-    JPanel screen;
-    Thread cpuCycleThread;
-    Boolean isRunning;
-    Boolean vfOrderQuirks;
-    Boolean shiftQuirks;
-    Boolean logicQuirks;
-    Boolean loadStoreQuirks;
-    Boolean clipQuirks;
-    Boolean vBlankQuirks;
-    Boolean IOverflowQuirks;
-    int cycles;
+public class Chip8SOC extends KeyAdapter{
+    private int DISPLAY_WIDTH;
+    private int DISPLAY_HEIGHT;
+    
+    private Boolean vfOrderQuirks;
+    private Boolean shiftQuirks;
+    private Boolean logicQuirks;
+    private Boolean loadStoreQuirks;
+    private Boolean clipQuirks;
+    private Boolean vBlankQuirks;
+    private Boolean IOverflowQuirks;
+    private int cycles;
     private int pc; //16-bit Program Counter
     private int I; //12-bit Index register
     private int opcode;
@@ -35,7 +35,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
     private int sT; //sound timer
     private int[] v; //cpu registers
     public int[] graphics; //screen grid??
-    public boolean[] keyPad = new boolean[16]; 
+    private boolean[] keyPad = new boolean[16]; 
     private int m_WaitForInterrupt;
     private int[] mem; //4kb of ram
     private final int[] charSet = {
@@ -61,25 +61,32 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
     private pStack cst; //16-bit stack
     private Boolean playSound;
     ToneGenerator tg;
-    //COSMAC VIP
-    public Chip8SOC(File rom, JPanel screen, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException {
-        this(rom, sound);
-        graphics = new int[64*32];
-        this.screen = screen;
-        vfOrderQuirks = false;
-        shiftQuirks = false;
-        logicQuirks = true;
-        loadStoreQuirks = false;
-        clipQuirks = false;
-        vBlankQuirks = true;
-        IOverflowQuirks = false;
-        cycles = 20;
-    }
+    
+//    public Chip8SOC(File rom, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException {
+//        this(rom, sound);
+//        
+//    }
+    //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
-    private Chip8SOC(File rom, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
-        isRunning = true;
+    public Chip8SOC(File rom, Boolean sound, MachineType m) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
+        DISPLAY_WIDTH = m.getDisplayWidth();
+        DISPLAY_HEIGHT = m.getDisplayHeight();       
+        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+        vfOrderQuirks = m.getQuirks(0);
+        shiftQuirks = m.getQuirks(1);
+        logicQuirks = m.getQuirks(2);
+        loadStoreQuirks = m.getQuirks(3);
+        clipQuirks = m.getQuirks(4);
+        vBlankQuirks = m.getQuirks(5);
+        IOverflowQuirks = m.getQuirks(6);
+        cycles = 20;
         playSound = sound;
-        tg = new ToneGenerator(sound);
+        try{
+            tg = new ToneGenerator(sound);
+        }catch(LineUnavailableException | UnsupportedAudioFileException ex){
+            playSound = false;
+            throw ex;
+        }
         v = new int[16];
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
         mem = new int[4096];
@@ -110,6 +117,27 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         Y = 0;
         m_WaitForInterrupt = 0;
     }
+    
+    public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
+        if(playSound)
+            return;
+        if(tg == null){
+            playSound = true;
+            try {
+                tg = new ToneGenerator(playSound);
+            } catch (LineUnavailableException | UnsupportedAudioFileException ex) {
+                tg = null;
+                playSound = false;
+                throw ex;
+            }
+        }else{
+            playSound = true;
+        }
+    }
+    public void disableSound(){
+        playSound = false;
+    }
+    
     //carry operations for 8xxx series opcodes. Derived from OCTO
     public void writeCarry(int dest, int value, boolean flag){
         v[dest] = (value & 0xFF);
@@ -304,9 +332,9 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                    
                     for (byte xLine = 0; xLine < 8; xLine++) {
                         currPixel = ((mem[I+yLine] >> (7-xLine)) & 0x1);
-                        targetPixel = ((x+xLine) % 64) + ((y+yLine) % 32)*64;
+                        targetPixel = ((x+xLine) % DISPLAY_WIDTH) + ((y+yLine) % DISPLAY_HEIGHT)*DISPLAY_WIDTH;
                         if (clipQuirks) {
-                            if ((x % 64) + xLine >= 64 || (y % 32) + yLine >= 32) {
+                            if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                                 currPixel = 0;
                             }
                         }
@@ -580,41 +608,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
 //            System.out.println("");
         }
         
-        public void start(){
-            if (cpuCycleThread == null) {
-                isRunning = true;
-                cpuCycleThread = new Thread(this);
-                cpuCycleThread.start();
-            }
-        }
         
-        public void stop() {
-            tg.stopSound();
-            isRunning = false;
-            cpuCycleThread = null;
-        }
-        
-       public void run() {
-        cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
-        while (isRunning) {
-            
-            for (int i = 0; i < cycles; i++) {
-                cpuExec();
-            }
-            
-            updateTimers();
-            try {
-                cpuCycleThread.sleep(16);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            
-            if (m_WaitForInterrupt == 1) {
-                m_WaitForInterrupt = 2;
-            }
-            screen.repaint();
-        }   
-      }
     
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
@@ -636,5 +630,31 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                 return false;
         }
     }
+    public int getMachineWidth(){
+        return DISPLAY_WIDTH;
+    }
+    public int getMachineHeight(){
+        return DISPLAY_HEIGHT;
+    }
     
+    public int getCycles(){
+        return cycles;
+    }
+    
+    public void setVBLankInterrupt(int status){
+        m_WaitForInterrupt = status;
+    }
+    
+    public int getVBLankInterrupt(){
+        return m_WaitForInterrupt;
+    }
+    
+    public void startSound(){
+        tg.startSound();
+    }
+    
+    
+    public void stopSound(){
+        tg.stopSound();
+    }
 }

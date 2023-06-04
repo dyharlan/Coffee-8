@@ -14,12 +14,11 @@ import java.awt.event.*;
 import java.io.*;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-import javax.swing.*;
 
 public class Chip8SOC extends KeyAdapter{
+    File rom;
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
-    
     private Boolean vfOrderQuirks;
     private Boolean shiftQuirks;
     private Boolean logicQuirks;
@@ -68,7 +67,7 @@ public class Chip8SOC extends KeyAdapter{
 //    }
     //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
-    public Chip8SOC(File rom, Boolean sound, MachineType m) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
+    public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
@@ -81,25 +80,22 @@ public class Chip8SOC extends KeyAdapter{
         IOverflowQuirks = m.getQuirks(6);
         cycles = 20;
         playSound = sound;
-        try{
-            tg = new ToneGenerator(sound);
-        }catch(LineUnavailableException | UnsupportedAudioFileException ex){
-            playSound = false;
-            throw ex;
-        }
+        enableSound();
+//        try{
+//            tg = new ToneGenerator(sound);
+//        }catch(LineUnavailableException | UnsupportedAudioFileException ex){
+//            playSound = false;
+//            throw ex;
+//        }
+    }
+    
+    private void chip8Init(){
         v = new int[16];
-        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
         mem = new int[4096];
         for(int i = 0;i<charSet.length;i++){
             mem[0x50+i] = (short) charSet[i];
         }
-        int offset = 0x0;
-        int currByte = 0;
-        while(currByte != -1){
-            currByte = in.read();
-            mem[0x200 + offset] = currByte & 0xFF;
-            offset+=0x1;
-        }
+        
         for(int i = 0;i < 0x900;i++){
             if(i % 10 == 0 && i != 0){
                 System.out.println(Integer.toHexString(0x195+i).toUpperCase());
@@ -112,32 +108,34 @@ public class Chip8SOC extends KeyAdapter{
         pc = 0x200;
         opcode = 0;
         I = 0;
-        cst = new pStack(64);
+        cst = new pStack(12);
         X = 0;
         Y = 0;
         m_WaitForInterrupt = 0;
     }
-    
-    public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
-        if(playSound)
-            return;
-        if(tg == null){
-            playSound = true;
-            try {
-                tg = new ToneGenerator(playSound);
-            } catch (LineUnavailableException | UnsupportedAudioFileException ex) {
-                tg = null;
-                playSound = false;
-                throw ex;
+    public boolean loadRom(File rom) throws IOException, FileNotFoundException{
+        Boolean romStatus = false;
+        try {
+            DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
+            int offset = 0x0;
+            int currByte = 0;
+            chip8Init();
+            while (currByte != -1) {
+                currByte = in.read();
+                mem[0x200 + offset] = currByte & 0xFF;
+                offset += 0x1;
             }
-        }else{
-            playSound = true;
+            
+            romStatus = true;
+        }catch(FileNotFoundException fnfe){
+            romStatus = false;
+            throw fnfe;
+        }catch(IOException ioe){
+            romStatus = false;
+            throw ioe;
         }
+        return romStatus;
     }
-    public void disableSound(){
-        playSound = false;
-    }
-    
     //carry operations for 8xxx series opcodes. Derived from OCTO
     public void writeCarry(int dest, int value, boolean flag){
         v[dest] = (value & 0xFF);
@@ -154,7 +152,7 @@ public class Chip8SOC extends KeyAdapter{
         opcode = (mem[pc] << 8 | mem[pc+1]);
         X = (opcode & 0x0F00) >> 8;
         Y = (opcode & 0x00F0) >> 4;
-         //System.out.println("Current OpCode: " + Integer.toHexString(opcode));
+        //System.out.println("Current OpCode: " + Integer.toHexString(opcode));
         //decode
         switch (opcode) {
             case 0x00E0: //0x00E0
@@ -473,10 +471,10 @@ public class Chip8SOC extends KeyAdapter{
         if(playSound){
             if (sT > 0) {
                 //System.out.println(sT);
-                tg.startSound();
+                tg.playSound();
             } else {
                 //System.out.println(sT);
-                tg.stopSound();
+                tg.pauseSound();
             }
         }
         if(dT > 0){
@@ -649,12 +647,39 @@ public class Chip8SOC extends KeyAdapter{
         return m_WaitForInterrupt;
     }
     
-    public void startSound(){
-        tg.startSound();
+    
+    
+     public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
+        if(tg != null && playSound)
+            return;
+        if(tg == null){
+            playSound = true;
+            try {
+                tg = new ToneGenerator(playSound);
+            } catch (LineUnavailableException | UnsupportedAudioFileException ex) {
+                tg = null;
+                playSound = false;
+                throw ex;
+            }
+        }else{
+            playSound = true;
+        }
+    }
+    public void disableSound(){
+        playSound = false;
+    }
+    
+    public void playSound(){
+        tg.playSound();
+    }
+    
+    public void pauseSound(){
+        tg.pauseSound();
+    }
+    
+    public Boolean isSoundEnabled(){
+        return playSound;
     }
     
     
-    public void stopSound(){
-        tg.stopSound();
-    }
 }

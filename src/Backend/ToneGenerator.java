@@ -65,8 +65,7 @@ public class ToneGenerator {
             while(isPlaying){
                 sourceDataLine.write(abData, 0, abData.length);
             }
-            sourceDataLine.stop();
-            sourceDataLine.flush();
+            
         }
     }
     public void startSound() {
@@ -80,5 +79,7 @@ public class ToneGenerator {
     
     public void stopSound() {
         isPlaying = false;
+        sourceDataLine.stop();
+        sourceDataLine.flush();
     }
 }

@@ -41,7 +41,7 @@ public class SwingDisplay implements Runnable {
     Chip8SOC chip8CPU;
     Dimension size;
 
-    public SwingDisplay(String verNo) throws FileNotFoundException, IOException, LineUnavailableException, UnsupportedAudioFileException {
+    public SwingDisplay(String verNo) throws FileNotFoundException, IOException {
         chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
         mb = new JMenuBar();    
@@ -160,7 +160,12 @@ public class SwingDisplay implements Runnable {
                 System.exit(0);
             }
         });
-        rom = new File("D:\\Others\\src\\Coffee-8\\software\\Pong [Paul Vervalin, 1990].ch8");
+        try{
+            chip8CPU.enableSound();
+        }catch(LineUnavailableException|UnsupportedAudioFileException se){
+           JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+        }
+        rom = new File("D:\\Others\\src\\Coffee-8\\software\\Brick Breaker (by Kyle Saburao)(2019).ch8");
         initStatus = chip8CPU.loadRom(rom);
         f.setVisible(true);
         if(initStatus){
@@ -182,9 +187,6 @@ public class SwingDisplay implements Runnable {
         }catch(IOException ioe){
             JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(0);
-        }catch(LineUnavailableException|UnsupportedAudioFileException se){
-           JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
-           System.exit(0);
         }
         
     }

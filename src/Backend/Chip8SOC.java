@@ -67,7 +67,7 @@ public class Chip8SOC extends KeyAdapter{
 //    }
     //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
-    public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
+    public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
@@ -78,9 +78,8 @@ public class Chip8SOC extends KeyAdapter{
         clipQuirks = m.getQuirks(4);
         vBlankQuirks = m.getQuirks(5);
         IOverflowQuirks = m.getQuirks(6);
-        cycles = 20;
+        cycles = 1000;
         playSound = sound;
-        enableSound();
 //        try{
 //            tg = new ToneGenerator(sound);
 //        }catch(LineUnavailableException | UnsupportedAudioFileException ex){

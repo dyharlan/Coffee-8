@@ -95,13 +95,7 @@ public class Chip8SOC extends KeyAdapter{
             mem[0x50+i] = (short) charSet[i];
         }
         
-        for(int i = 0;i < 0x900;i++){
-            if(i % 10 == 0 && i != 0){
-                System.out.println(Integer.toHexString(0x195+i).toUpperCase());
-                System.out.print("\n");
-            }
-                System.out.print(Integer.toHexString(mem[0x195+i]) + "\t"); 
-        }
+        
         dT = 0;
         sT = 0;
         pc = 0x200;
@@ -123,6 +117,14 @@ public class Chip8SOC extends KeyAdapter{
                 currByte = in.read();
                 mem[0x200 + offset] = currByte & 0xFF;
                 offset += 0x1;
+            }
+            
+            for (int i = 0; i < 0x900; i++) {
+                if (i % 10 == 0 && i != 0) {
+                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
+                    System.out.print("\n");
+                }
+                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
             }
             
             romStatus = true;
@@ -155,10 +157,8 @@ public class Chip8SOC extends KeyAdapter{
         //decode
         switch (opcode) {
             case 0x00E0: //0x00E0
-                for (int x = 0; x < graphics.length; x++) {
-                    //for(int y = 0; y < graphics[x].length; y++){
-                        graphics[x] = 0;  
-                    //}
+                for (int x = 0; x < graphics.length; x++) {                   
+                    graphics[x] = 0;  
                 }
                 pc += 2;
                 return;

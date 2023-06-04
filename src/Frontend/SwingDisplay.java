@@ -15,6 +15,7 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
 import java.io.*;
+import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -44,6 +45,7 @@ public class SwingDisplay implements Runnable {
     public SwingDisplay(String verNo) throws FileNotFoundException, IOException {
         chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
+        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
         mb = new JMenuBar();    
             fileMenu = new JMenu("File");
             mb.add(fileMenu);
@@ -163,7 +165,7 @@ public class SwingDisplay implements Runnable {
         try{
             chip8CPU.enableSound();
         }catch(LineUnavailableException|UnsupportedAudioFileException se){
-           JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+           JOptionPane.showMessageDialog(null, "An Error Occured When Initializing the Sound System. Tt will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
         }
         rom = new File("D:\\Others\\src\\Coffee-8\\software\\Brick Breaker (by Kyle Saburao)(2019).ch8");
         initStatus = chip8CPU.loadRom(rom);

@@ -66,7 +66,7 @@ public class ToneGenerator {
             
         }
     }
-    public void startSound() {
+    public void playSound() {
         if (isPlaying || !isEnabled) 
             return;
         isPlaying = true;
@@ -75,7 +75,7 @@ public class ToneGenerator {
         sThread.start();
     }
     
-    public void stopSound() {
+    public void pauseSound() {
         isPlaying = false;
         sourceDataLine.stop();
         sourceDataLine.flush();

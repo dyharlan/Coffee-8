@@ -70,7 +70,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         loadStoreQuirks = false;
         clipQuirks = false;
         vBlankQuirks = false;
-        cycles = 500;
+        cycles = 20;
     }
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
     private Chip8SOC(File rom, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException { 
@@ -439,7 +439,15 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         }
     }
     public void updateTimers(){
-        
+        if(playSound){
+            if (sT > 0) {
+                System.out.println(sT);
+                tg.startSound();
+            } else {
+                System.out.println(sT);
+                tg.stopSound();
+            }
+        }
         if(dT > 0){
             dT--;
         }
@@ -579,39 +587,11 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         
        public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
-        //long startTime = System.currentTimeMillis();
         while (isRunning) {
-//            if ((System.currentTimeMillis() - startTime) >= 16) { // 60 Hz = 1000/60
-//                startTime = System.currentTimeMillis();
-//                if (m_WaitForInterrupt == 1) {
-//                    m_WaitForInterrupt = 2;
-//                }
-//                if(sT > 0){
-//                    tg.startSound();
-//                }
-//                else{
-//                    tg.stopSound();
-//                }
-//                updateTimers();
-//                cpuExec(); // decrease the timers
-//                screen.repaint();
-//            } else {
-//                if (m_WaitForInterrupt == 1) {
-//                    m_WaitForInterrupt = 2;
-//                }
-//                cpuExec(); // don't decrease the timers
-//                screen.repaint();
-//            }
             for (int i = 0; i < cycles; i++) {
                 cpuExec();
             }
-            if (sT > 0) {
-                System.out.println(sT);
-                tg.startSound();
-            } else {
-                System.out.println(sT);
-                tg.stopSound();
-            }
+            
             updateTimers();
             try {
                 //cpuCycleThread.sleep(msToWait, nsToWait);

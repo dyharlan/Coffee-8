@@ -26,9 +26,10 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
     Boolean loadStoreQuirks;
     Boolean clipQuirks;
     Boolean vBlankQuirks;
+    Boolean IOverflowQuirks;
     int cycles;
     private int pc; //16-bit Program Counter
-    private int I; //16-bit Index register
+    private int I; //12-bit Index register
     private int opcode;
     private int dT; //8-bit delay timer
     private int sT; //sound timer
@@ -63,6 +64,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
     //COSMAC VIP
     public Chip8SOC(File rom, JPanel screen, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException {
         this(rom, sound);
+        graphics = new int[64*32];
         this.screen = screen;
         vfOrderQuirks = false;
         shiftQuirks = false;
@@ -70,6 +72,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         loadStoreQuirks = false;
         clipQuirks = false;
         vBlankQuirks = false;
+        IOverflowQuirks = false;
         cycles = 20;
     }
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
@@ -79,7 +82,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
         tg = new ToneGenerator(sound);
         v = new int[16];
         DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
-        graphics = new int[64*32];
+        //graphics = new int[64*32];
         mem = new int[4096];
         for(int i = 0;i<charSet.length;i++){
             mem[0x50+i] = (short) charSet[i];
@@ -348,9 +351,10 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                 
                 pc += 2;
                 return;
-
+                
             case 0xE000:
                 switch (opcode & 0x00FF) {
+                    //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
                     case 0x009E:
                         if(keyPad[v[X]]){
                             pc+=4;
@@ -359,6 +363,7 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                             pc+=2;
                         }
                         return;
+                    //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
                     case 0x00A1:
                         if(!keyPad[v[X]]){
                             pc+=4;
@@ -373,25 +378,39 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                 }
             case 0xF000:
                 switch(opcode & 0x00FF){
+                    //FX07: Set vX to the value of the delay timer
                     case 0x0007:
                         v[X] = (dT & 0xFF);
                         pc+=2;
                     return;
+                    //FX15: set the delay timer to the value in vX
                     case 0x0015:
                         dT = (v[X] & 0xFF);
                         pc+=2;
                     return;
+                    //FX18: set the sound timer to the value in vX
                     case 0x0018:
                         sT = (v[X] & 0xFF);
                         pc+=2;
                     return;
+                    //FX1E: Add the value of VX to the register index
+                    //IF IOverflowQuirks is on:
+                    //VF is set to 1 if I exceeds 0xFFF, outside of the 12-bit addressing range
+                    //of the chip8
+                    //Apparently, this is needed for one game? idk
                     case 0x001E:
-                        I += v[X] & 0xFF;
-                        if(I >= 0x1000){
-                            v[0xF] = 1;
+                        if (IOverflowQuirks) {
+                            I += v[X] & 0xFFF;
+                            if (I >= 0x1000) {
+                                v[0xF] = 1;
+                            }
+                        }else{
+                            //Original Behaviour of the COSMAC VIP
+                            I += v[X] & 0xFFF;
                         }
                         pc+=2;
                     return;
+                    //FX0A: Stops program execution until a key is pressed.
                     case 0x000A:
                         for(byte key = 0;key < keyPad.length;key++){
                             if(keyPad[key]){
@@ -400,10 +419,15 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                             }
                         }
                     return;
+                    //FX29: Point index register to font in memory
                     case 0x0029:
                         I = ((v[X]*5) +  0x50);
                         pc +=2;
                     return;
+                    //FX33: Get number from vX and
+                    //store hundreds digit in memory point by I
+                    //store tens digit in memory point by I+1
+                    //store ones digit in memory point by I+2
                     case 0x0033:
                         int num = (v[X] & 0xFF);
                         mem[I] = ((num / 100) % 10);//hundreds
@@ -411,6 +435,8 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                         mem[I+2] = ((num % 10));//ones
                         pc+=2;
                     return;
+                    //FX55: store the values of registers v0 to vi, where i is the ith register to use
+                    //in successive memory locations
                     case 0x0055:
                         for(int i = 0; i <= X;i++){
                             mem[I + i] = (v[i] & 0xFF);
@@ -420,6 +446,8 @@ public class Chip8SOC extends KeyAdapter implements Runnable{
                         }
                         pc+=2;
                     return;
+                    //FX55: store the values of successive memory locations from 0 to i, where i is the ith memory location
+                    //in i registers from v0 to vi
                     case 0x0065:
                         for(int i = 0; i <= X;i++){
                             v[i] = (mem[I + i] & 0xFF);

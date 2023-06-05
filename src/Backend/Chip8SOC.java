@@ -16,7 +16,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 public class Chip8SOC extends KeyAdapter{
-    File rom;
+
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
     private Boolean vfOrderQuirks;
@@ -34,7 +34,7 @@ public class Chip8SOC extends KeyAdapter{
     private int sT; //sound timer
     private int[] v; //cpu registers
     public int[] graphics; //screen grid??
-    private boolean[] keyPad = new boolean[16]; 
+    private boolean[] keyPad; 
     private int m_WaitForInterrupt;
     private int[] mem; //4kb of ram
     private final int[] charSet = {
@@ -54,7 +54,7 @@ public class Chip8SOC extends KeyAdapter{
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-    };
+    };;
     int X;
     int Y;
     private pStack cst; //16-bit stack
@@ -70,7 +70,6 @@ public class Chip8SOC extends KeyAdapter{
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
-        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
         vfOrderQuirks = m.getQuirks(0);
         shiftQuirks = m.getQuirks(1);
         logicQuirks = m.getQuirks(2);
@@ -78,7 +77,7 @@ public class Chip8SOC extends KeyAdapter{
         clipQuirks = m.getQuirks(4);
         vBlankQuirks = m.getQuirks(5);
         IOverflowQuirks = m.getQuirks(6);
-        cycles = 1000;
+        cycles = 20;
         playSound = sound;
 //        try{
 //            tg = new ToneGenerator(sound);
@@ -88,14 +87,17 @@ public class Chip8SOC extends KeyAdapter{
 //        }
     }
     
-    private void chip8Init(){
+    public void chip8Init(){
         v = new int[16];
         mem = new int[4096];
-        for(int i = 0;i<charSet.length;i++){
-            mem[0x50+i] = (short) charSet[i];
+        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+//        for(int i = 0; i < keyPad.length; i++){
+//            keyPad[i] = false;
+//        }
+        keyPad = new boolean[16];
+        for(int c = 0;c<charSet.length;c++){
+            mem[0x50+c] = (short) charSet[c];
         }
-        
-        
         dT = 0;
         sT = 0;
         pc = 0x200;
@@ -106,7 +108,8 @@ public class Chip8SOC extends KeyAdapter{
         Y = 0;
         m_WaitForInterrupt = 0;
     }
-    public boolean loadRom(File rom) throws IOException, FileNotFoundException{
+    
+    public boolean loadROM(File rom) throws IOException, FileNotFoundException{
         Boolean romStatus = false;
         try {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
@@ -119,20 +122,17 @@ public class Chip8SOC extends KeyAdapter{
                 offset += 0x1;
             }
             
-            for (int i = 0; i < 0x900; i++) {
-                if (i % 10 == 0 && i != 0) {
-                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
-                    System.out.print("\n");
-                }
-                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
-            }
-            
+//            for (int i = 0; i < 0x900; i++) {
+//                if (i % 10 == 0 && i != 0) {
+//                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
+//                    System.out.print("\n");
+//                }
+//                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
+//            }           
             romStatus = true;
         }catch(FileNotFoundException fnfe){
-            romStatus = false;
             throw fnfe;
         }catch(IOException ioe){
-            romStatus = false;
             throw ioe;
         }
         return romStatus;
@@ -151,16 +151,19 @@ public class Chip8SOC extends KeyAdapter{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        X = (opcode & 0x0F00) >> 8;
-        Y = (opcode & 0x00F0) >> 4;
-        //System.out.println("Current OpCode: " + Integer.toHexString(opcode));
+        //System.out.println(pc);
+        X = ((opcode & 0x0F00) >> 8) & 0xF;
+        //System.out.println(X);
+        Y = ((opcode & 0x00F0) >> 4) & 0xF;
+        //System.out.println(Integer.toHexString(mem[pc]));
+        //System.out.println(Integer.toHexString(mem[pc+1]));
         //decode
         
 
         
         switch (opcode & 0xF000) {
             case 0x0000:
-                switch(opcode & 0x00FF){
+                switch (opcode & 0x00FF) {
                     case 0x00E0: //0x00E0
                         for (int x = 0; x < graphics.length; x++) {
                             graphics[x] = 0;
@@ -361,6 +364,7 @@ public class Chip8SOC extends KeyAdapter{
                 switch (opcode & 0x00FF) {
                     //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
                     case 0x009E:
+                        //System.out.println(X);
                         if(keyPad[v[X]]){
                             pc+=4;
                         }
@@ -496,7 +500,9 @@ public class Chip8SOC extends KeyAdapter{
     }
     
     public void keyPressed(KeyEvent e){
-            
+            if(keyPad == null){
+                return;
+            }
             int keyCode = e.getKeyCode();
             switch(keyCode){
                 case KeyEvent.VK_X:
@@ -555,7 +561,11 @@ public class Chip8SOC extends KeyAdapter{
         }
 
         public void keyReleased(KeyEvent e){
-             int keyCode = e.getKeyCode();
+            if(keyPad == null){
+                return;
+            }
+            int keyCode = e.getKeyCode();
+            
             switch(keyCode){
                 case KeyEvent.VK_X:
                     keyPad[0] = false;

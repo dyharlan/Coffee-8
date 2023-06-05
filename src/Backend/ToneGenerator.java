@@ -4,6 +4,7 @@
  */
 package Backend;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +22,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  */
 public class ToneGenerator {
     InputStream is;
+    BufferedInputStream bis;
     AudioInputStream audioStream;
     AudioFormat audioFormat;
     ByteArrayInputStream bais;
@@ -33,8 +35,8 @@ public class ToneGenerator {
     
     public ToneGenerator(Boolean sound) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
         is = getClass().getResourceAsStream("tone.wav");
-
-        audioStream = AudioSystem.getAudioInputStream(is);
+        bis = new BufferedInputStream(is);
+        audioStream = AudioSystem.getAudioInputStream(bis);
         audioFormat = audioStream.getFormat();
         DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
         sourceDataLine = (SourceDataLine) AudioSystem.getLine(info);
@@ -44,7 +46,7 @@ public class ToneGenerator {
         int nBytesRead = 0;
         abData = new byte[(int)audioStream.getFrameLength()];
         while (nBytesRead != -1) {
-            System.out.println(nBytesRead);
+
             try {
                 nBytesRead = audioStream.read(abData, 0, abData.length);
             } catch (IOException e) {

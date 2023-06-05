@@ -49,69 +49,7 @@ public class SwingDisplay implements Runnable {
         f = new JFrame(verNo);
         isRunning = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
-        mb = new JMenuBar();    
-            fileMenu = new JMenu("File");
-            mb.add(fileMenu);
-                loadROM = new JMenuItem("Load ROM");
-                loadROM.addActionListener((e) -> {
-                    JFileChooser chooser = new JFileChooser();
-                    FileNameExtensionFilter filter = new FileNameExtensionFilter(
-                            "Chip-8 ROM Files", "c8", "ch8");
-                    chooser.setFileFilter(filter);
-                    if(rom == null)
-                         chooser.setCurrentDirectory(new File("."));
-                    else
-                        chooser.setCurrentDirectory(rom);
-                    int returnVal = chooser.showOpenDialog(f);
-                    if (returnVal == JFileChooser.APPROVE_OPTION) {
-                        
-                        rom = chooser.getSelectedFile();
-                        loadROM(rom);
-                           
-                    }
-                });
-                exitSwitch = new JMenuItem("Exit");
-                exitSwitch.addActionListener((e) -> {
-                    System.exit(0);
-                });
-            fileMenu.add(loadROM);
-            fileMenu.add(exitSwitch);
-            emulationMenu = new JMenu("Emulation");
-            mb.add(emulationMenu);
-            pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
-                pauseToggle.addActionListener((e)->{
-                        if(isRunning && pauseToggle.isSelected()){
-                            stopEmulation();
-                        }else{
-                            startEmulation();
-                        }
-                });
-            soundToggle = new JCheckBoxMenuItem("Enable Sound");
-            if(chip8CPU.isSoundEnabled())
-                soundToggle.setSelected(true);
-            else
-                soundToggle.setSelected(false);
-            soundToggle.addActionListener((e)->{
-                        if(!soundToggle.isSelected()){
-                            chip8CPU.disableSound();
-                        }else{
-                            try{
-                                chip8CPU.enableSound();
-                            }catch(LineUnavailableException | UnsupportedAudioFileException se){
-                                JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);  
-                            }catch(IOException ioe){
-                                JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        }
-                });
-            resetSwitch = new JMenuItem("Reset Emulator");
-            resetSwitch.addActionListener((e) -> {
-                if (rom != null)
-                   loadROM(rom);  
-            });
-            emulationMenu.add(resetSwitch);
-            emulationMenu.add(pauseToggle);
-            emulationMenu.add(soundToggle);
+        buildPanel();
        
         sizeX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
         sizeY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
@@ -144,6 +82,75 @@ public class SwingDisplay implements Runnable {
         f.add(gamePanel,BorderLayout.CENTER);
         romStatus = false;
         
+    }
+    
+    public void buildPanel() {
+        mb = new JMenuBar();
+        fileMenu = new JMenu("File");
+        mb.add(fileMenu);
+        loadROM = new JMenuItem("Load ROM");
+        loadROM.addActionListener((e) -> {
+            JFileChooser chooser = new JFileChooser();
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                    "Chip-8 ROM Files", "c8", "ch8");
+            chooser.setFileFilter(filter);
+            if (rom == null) {
+                chooser.setCurrentDirectory(new File("."));
+            } else {
+                chooser.setCurrentDirectory(rom);
+            }
+            int returnVal = chooser.showOpenDialog(f);
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+                rom = chooser.getSelectedFile();
+                loadROM(rom);
+
+            }
+        });
+        exitSwitch = new JMenuItem("Exit");
+        exitSwitch.addActionListener((e) -> {
+            System.exit(0);
+        });
+        fileMenu.add(loadROM);
+        fileMenu.add(exitSwitch);
+        emulationMenu = new JMenu("Emulation");
+        mb.add(emulationMenu);
+        pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
+        pauseToggle.addActionListener((e) -> {
+            if (isRunning && pauseToggle.isSelected()) {
+                stopEmulation();
+            } else {
+                startEmulation();
+            }
+        });
+        soundToggle = new JCheckBoxMenuItem("Enable Sound");
+        if (chip8CPU.isSoundEnabled()) {
+            soundToggle.setSelected(true);
+        } else {
+            soundToggle.setSelected(false);
+        }
+        soundToggle.addActionListener((e) -> {
+            if (!soundToggle.isSelected()) {
+                chip8CPU.disableSound();
+            } else {
+                try {
+                    chip8CPU.enableSound();
+                } catch (LineUnavailableException | UnsupportedAudioFileException se) {
+                    JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
+                } catch (IOException ioe) {
+                    JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        resetSwitch = new JMenuItem("Reset Emulator");
+        resetSwitch.addActionListener((e) -> {
+            if (rom != null) {
+                loadROM(rom);
+            }
+        });
+        emulationMenu.add(resetSwitch);
+        emulationMenu.add(pauseToggle);
+        emulationMenu.add(soundToggle);
     }
     public void loadROM(File rom) {
         try {
@@ -228,7 +235,7 @@ public class SwingDisplay implements Runnable {
     public static void main(String[] args) {
         SwingDisplay d = null;
         try{
-            d = new SwingDisplay("Coffee-8 0.5");
+            d = new SwingDisplay("Coffee-8 0.7");
             d.startApp();
         }catch(FileNotFoundException fnfe){
             JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);

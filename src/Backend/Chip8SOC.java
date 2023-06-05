@@ -54,20 +54,24 @@ public class Chip8SOC extends KeyAdapter{
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-    };;
+    };
     int X;
     int Y;
     private pStack cst; //16-bit stack
     private Boolean playSound;
     ToneGenerator tg;
-    
-//    public Chip8SOC(File rom, Boolean sound) throws FileNotFoundException, IOException,LineUnavailableException, UnsupportedAudioFileException {
-//        this(rom, sound);
-//        
-//    }
+    Random rand;
+    MachineType currentMachine;
+    private Instruction[] _0x0Instructions;
+    private Instruction[] _0x8Instructions;
+    private Instruction[] _0xDInstructions;
+    private Instruction[] _0xEInstructions;
+    private Instruction[] _0xFInstructions;
     //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
+        currentMachine = m;
+        rand = new Random();
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         vfOrderQuirks = m.getQuirks(0);
@@ -79,21 +83,68 @@ public class Chip8SOC extends KeyAdapter{
         IOverflowQuirks = m.getQuirks(6);
         cycles = 20;
         playSound = sound;
-//        try{
-//            tg = new ToneGenerator(sound);
-//        }catch(LineUnavailableException | UnsupportedAudioFileException ex){
-//            playSound = false;
-//            throw ex;
-//        }
+        fillInstructionTable();
+    }
+    
+    public void fillInstructionTable(){
+       int i;
+       _0x0Instructions = new Instruction[0xFE];
+       for(i = 0; i < _0x0Instructions.length;i++){
+          _0x0Instructions[i] = () -> C8INST_UNKNOWN();
+       }
+       
+       _0x0Instructions[0xE0] = () -> C8INST_00E0();
+       _0x0Instructions[0xEE] = () -> C8INST_00EE(); 
+       
+       _0x8Instructions = new Instruction[0xF];
+       for(i = 0; i < _0x8Instructions.length ;i++){
+          _0x8Instructions[i] = () -> C8INST_UNKNOWN();
+       }
+       _0x8Instructions[0x0] = () -> C8INST_8XY0();
+       _0x8Instructions[0x1] = () -> C8INST_8XY1();
+       _0x8Instructions[0x2] = () -> C8INST_8XY2();
+       _0x8Instructions[0x3] = () -> C8INST_8XY3();
+       _0x8Instructions[0x4] = () -> C8INST_8XY4();
+       _0x8Instructions[0x5] = () -> C8INST_8XY5();
+       _0x8Instructions[0x6] = () -> C8INST_8XY6();
+       _0x8Instructions[0x7] = () -> C8INST_8XY7();
+       _0x8Instructions[0xE] = () -> C8INST_8XYE();
+       
+       _0xDInstructions = new Instruction[0x10];
+       _0xDInstructions[0x0] = () -> C8INST_DXY0();
+       for(i = 0x1; i < _0xDInstructions.length ;i++){
+          _0xDInstructions[i] = () -> C8INST_DXYN();
+       }
+              
+       _0xEInstructions = new Instruction[0xF];
+       for(i = 0; i < _0xEInstructions.length ;i++){
+          _0xEInstructions[i] = () -> C8INST_UNKNOWN();
+       }
+       
+       _0xEInstructions[0x1] = () -> C8INST_EXA1();
+       _0xEInstructions[0xE] = () -> C8INST_EX9E();
+       
+       _0xFInstructions = new Instruction[0x86];
+       for(i = 0; i < _0xFInstructions.length ;i++){
+          _0xFInstructions[i] = () -> C8INST_UNKNOWN();
+       }
+       _0xFInstructions[0x07] = () -> C8INST_FX07();
+       _0xFInstructions[0x15] = () -> C8INST_FX15();
+       _0xFInstructions[0x18] = () -> C8INST_FX18();
+       _0xFInstructions[0x1E] = () -> C8INST_FX1E();
+       _0xFInstructions[0x0A] = () -> C8INST_FX0A();
+       _0xFInstructions[0x29] = () -> C8INST_FX29();
+       _0xFInstructions[0x33] = () -> C8INST_FX33();
+       _0xFInstructions[0x55] = () -> C8INST_FX55();
+       _0xFInstructions[0x65] = () -> C8INST_FX65();
+       
+       
     }
     
     public void chip8Init(){
         v = new int[16];
         mem = new int[4096];
         graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
-//        for(int i = 0; i < keyPad.length; i++){
-//            keyPad[i] = false;
-//        }
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
@@ -120,8 +171,7 @@ public class Chip8SOC extends KeyAdapter{
                 currByte = in.read();
                 mem[0x200 + offset] = currByte & 0xFF;
                 offset += 0x1;
-            }
-            
+            }            
 //            for (int i = 0; i < 0x900; i++) {
 //                if (i % 10 == 0 && i != 0) {
 //                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
@@ -137,346 +187,7 @@ public class Chip8SOC extends KeyAdapter{
         }
         return romStatus;
     }
-    //carry operations for 8xxx series opcodes. Derived from OCTO
-    public void writeCarry(int dest, int value, boolean flag){
-        v[dest] = (value & 0xFF);
-        v[0xF] = flag? 1:0;
-        //enable vF quirk for certain programs
-        if(vfOrderQuirks){
-            v[dest] = (value & 0xFF);
-        }
-    }
-    //cpu cyle
-    public void cpuExec() {
-        //fetch
-        //grab opcode and combine them
-        opcode = (mem[pc] << 8 | mem[pc+1]);
-        //System.out.println(pc);
-        X = ((opcode & 0x0F00) >> 8) & 0xF;
-        //System.out.println(X);
-        Y = ((opcode & 0x00F0) >> 4) & 0xF;
-        //System.out.println(Integer.toHexString(mem[pc]));
-        //System.out.println(Integer.toHexString(mem[pc+1]));
-        //decode
-        
-
-        
-        switch (opcode & 0xF000) {
-            case 0x0000:
-                switch (opcode & 0x00FF) {
-                    case 0x00E0: //0x00E0
-                        for (int x = 0; x < graphics.length; x++) {
-                            graphics[x] = 0;
-                        }
-                        pc += 2;
-                        break;
-                    case 0x00EE: //Returns from a subroutine. 
-                        pc = cst.pop();
-                        pc += 2;
-                        break;
-                }
-            break;
-            
-            case 0x1000: //0x1NNN jump to address NNN
-                pc = (opcode & 0x0FFF);
-                break;
-
-            case 0x2000: //0x2NNN calls subroutin at address NNN
-                cst.push(pc);
-                pc = (opcode & 0x0FFF);
-                break;
-
-            case 0x3000: //0x3XNN skip next instruction if VX == NN
-                if (v[X] == (opcode & 0x00FF)) {
-                    pc += 4;
-                }
-                else
-                    pc += 2;
-                break;
-
-            //implement 4XNN, 5XY0 and 9XY0
-            case 0x4000: //0x4XNN skip next instruction if VX != NN
-                if (v[X] != (opcode & 0x00FF)) {
-                    pc += 4;
-                }
-                else
-                    pc += 2;
-                break;
-
-            case 0x5000: //0x5XY0 skip next instruction if VX == VY
-                if (v[X] == v[Y]) {
-                    pc += 4;
-                }
-                else
-                    pc += 2;
-                break;
-
-            case 0x9000: //0x9XY0 skip next instruction if VX != VY
-                if (v[X] != v[Y]) {
-                    pc += 4;
-                }
-                else
-                    pc += 2;
-                break;
-
-            case 0x6000: //0x6XNN set Vx to NN
-                v[X] = (opcode & 0x00FF) & 0xFF;
-                pc += 2;
-                break;
-
-            case 0x7000: //0x7XNN add NN to Vx w/o changing borrow flag
-                v[X] = (v[X] +(opcode & 0x00FF)) & 0xFF;
-                pc += 2;
-                break;
-
-            case 0x8000:
-                switch (opcode & 0x000F) {
-                    case 0x0000: //0x8XY0 set the value of Vx to Vy
-                        v[X] = (v[Y] & 0xFF);
-                        pc += 2;
-                        break;
-
-                    case 0x0001: //0x8XY1 set Vx to (Vx | Vy)
-                        v[X] = (v[X] | v[Y]) &0xFF;
-                        if(logicQuirks){
-                            v[0xF] = 0;
-                        }
-                        pc += 2;
-                        break;
-
-                    case 0x0002: //0x8XY2 set Vx to (Vx & Vy)
-                        v[X] =(v[X] & v[Y]) &0xFF;
-                        if(logicQuirks){
-                            v[0xF] = 0;
-                        }
-                        pc += 2;
-                        break;
-
-                    case 0x0003: //0x8XY3 set Vx to (Vx ^ Vy)
-                        v[X] = (v[X] ^ v[Y]) &0xFF;
-                        if(logicQuirks){
-                            v[0xF] = 0;
-                        }
-                        pc += 2;
-                        break;
-
-                    case 0x0004: //0x8XY4 add Vy to Vx. VF is set to 1 if there's a carry, 0 otherwise.
-                        int sum = (v[X] + v[Y]);
-                        v[X] = sum & 0xFF;
-                        writeCarry(X, sum, (sum > 0xFF));
-                        pc += 2;
-                        break;
-
-                    case 0x0005: //0x8XY5 subtract Vy from Vx. VF is 0 if subtrahend is smaller than minuend.
-                        
-                        int diff1 = (v[X] - v[Y]);  
-                        v[X] = diff1 & 0xFF; 
-                        writeCarry(X, diff1, (diff1 >= 0x0));
-                        pc += 2;
-                        break;
-
-                    case 0x0007: //0x8XY7 subtract Vx from Vy. VF is 0 if subtrahend is smaller than minuend.
-                        int diff2 = (v[Y] - v[X]);
-                        v[X] = diff2 & 0xFF;
-                        writeCarry(X, diff2, (diff2 >= 0x0));
-                        pc += 2;
-                        break;
-
-                    case 0x0006: //0x8XY6 stores the LSB of VX in VF and shifts VX to the right by 1
-                        if(shiftQuirks){
-                            Y = X;
-                        }
-                        
-                        int set = v[Y] >> 1;
-                        writeCarry(X, set, (v[Y] & 0x1) == 0x1);
-                        pc += 2;
-                        break;
-
-                    case 0x000E: //0x8XYE stores the MSB of VX in VF and shifts VX to the left by 1
-			if(shiftQuirks){
-                            Y = X;
-                        }
-                        int set2 = v[Y] << 1;
-                        writeCarry(X, set2, ((v[Y] >> 7) & 0x1) == 0x1);
-                        pc += 2;
-                        break;
-                }
-                break;
-            case 0xA000: //0xANNN set index register to the value of NNN
-                I = (opcode & 0x0FFF);
-                pc += 2;
-                break;
-                
-            case 0xB000: //0xBNNN Jumps to the address NNN plus cpu->v0
-                pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
-                break;
-
-            case 0xC000: //0xCXNN generates a random number, binary ANDs it with NN, and stores it in Vx.
-                Random rand = new Random();
-                v[X] = (rand.nextInt(0x100) & (opcode & 0x00FF)) & 0xFF;
-                pc += 2;
-                break;
-            /*
-            * DXYN derived from Octo and https://github.com/Klairm/chip8
-            */
-            /*
-            * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
-            */
-            case 0xD000:
-                if (WaitForInterrupt()) {
-                    return;
-                }
-                int x = v[X];
-                int y = v[Y];
-                int n = (int) (opcode & 0x000F);
-                v[0xF] = 0;
-                
-                int currPixel = 0;
-                int targetPixel = 0;
-                for (byte yLine = 0; yLine < n; yLine++) {
-                   
-                    for (byte xLine = 0; xLine < 8; xLine++) {
-                        currPixel = ((mem[I+yLine] >> (7-xLine)) & 0x1);
-                        targetPixel = ((x+xLine) % DISPLAY_WIDTH) + ((y+yLine) % DISPLAY_HEIGHT)*DISPLAY_WIDTH;
-                        if (clipQuirks) {
-                            if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
-                                currPixel = 0;
-                            }
-                        }
-                        //check if pixel in current sprite row is on
-                        if (currPixel != 0) {
-                            if(graphics[targetPixel] == 1){
-                                this.graphics[targetPixel] = 0;
-                                this.v[0xF] = 0x1;
-                            }
-                            else{
-                                graphics[targetPixel] ^= 1;
-                            }                      
-                        }
-                    }
-                }
-                  
-                
-                pc += 2;
-                break;
-                
-            case 0xE000:
-                switch (opcode & 0x00FF) {
-                    //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
-                    case 0x009E:
-                        //System.out.println(X);
-                        if(keyPad[v[X]]){
-                            pc+=4;
-                        }
-                        else{
-                            pc+=2;
-                        }
-                        break;
-                    //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
-                    case 0x00A1:
-                        if(!keyPad[v[X]]){
-                            pc+=4;
-                        }
-                        else{
-                            pc+=2;
-                        }
-                        break;
-                    default:
-                        System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                        break;
-                }
-                break;
-            case 0xF000:
-                switch(opcode & 0x00FF){
-                    //FX07: Set vX to the value of the delay timer
-                    case 0x0007:
-                        v[X] = (dT & 0xFF);
-                        pc+=2;
-                    break;
-                    //FX15: set the delay timer to the value in vX
-                    case 0x0015:
-                        dT = (v[X] & 0xFF);
-                        pc+=2;
-                    break;
-                    //FX18: set the sound timer to the value in vX
-                    case 0x0018:
-                        sT = (v[X] & 0xFF);
-                        pc+=2;
-                    break;
-                    //FX1E: Add the value of VX to the register index
-                    //IF IOverflowQuirks is on:
-                    //VF is set to 1 if I exceeds 0xFFF, outside of the 12-bit addressing range
-                    //of the chip8
-                    //Apparently, this is needed for one game? idk
-                    case 0x001E:
-                        if (IOverflowQuirks) {
-                            I += v[X] & 0xFFF;
-                            if (I >= 0x1000) {
-                                v[0xF] = 1;
-                            }
-                        }else{
-                            //Original Behaviour of the COSMAC VIP
-                            I += v[X] & 0xFFF;
-                        }
-                        pc+=2;
-                    break;
-                    //FX0A: Stops program execution until a key is pressed.
-                    case 0x000A:
-                        for(byte key = 0;key < keyPad.length;key++){
-                            if(keyPad[key]){
-                                v[X] = (key & 0xFF);
-                                pc+=2;
-                            }
-                        }
-                    break;
-                    //FX29: Point index register to font in memory
-                    case 0x0029:
-                        I = ((v[X]*5) +  0x50);
-                        pc +=2;
-                    break;
-                    //FX33: Get number from vX and
-                    //store hundreds digit in memory point by I
-                    //store tens digit in memory point by I+1
-                    //store ones digit in memory point by I+2
-                    case 0x0033:
-                        int num = (v[X] & 0xFF);
-                        mem[I] = ((num / 100) % 10);//hundreds
-                        mem[I+1] = ((num / 10) % 10);//tens
-                        mem[I+2] = ((num % 10));//ones
-                        pc+=2;
-                    break;
-                    //FX55: store the values of registers v0 to vi, where i is the ith register to use
-                    //in successive memory locations
-                    case 0x0055:
-                        for(int i = 0; i <= X;i++){
-                            mem[I + i] = (v[i] & 0xFF);
-                        }
-                        if(!loadStoreQuirks){
-                            I = (I+X+1) & 0xFFFF;
-                        }
-                        pc+=2;
-                    break;
-                    //FX55: store the values of successive memory locations from 0 to i, where i is the ith memory location
-                    //in i registers from v0 to vi
-                    case 0x0065:
-                        for(int i = 0; i <= X;i++){
-                            v[i] = (mem[I + i] & 0xFF);
-                        }
-                        if(!loadStoreQuirks){
-                            I = (I+X+1) & 0xFFFF;
-                        }
-                        pc+=2;
-                    break;
-                    default:
-                        System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                        break;
-                }
-                break;
-            default:
-                System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                break;
-        }
-    }
+    
     public void updateTimers(){
         if(playSound){
             if (sT > 0) {
@@ -493,10 +204,7 @@ public class Chip8SOC extends KeyAdapter{
         if(sT > 0){
             sT--;
         }
-        
-        
-        
-        
+          
     }
     
     public void keyPressed(KeyEvent e){
@@ -697,5 +405,403 @@ public class Chip8SOC extends KeyAdapter{
         return playSound;
     }
     
+    //carry operations for 8xxx series opcodes. Derived from OCTO
+    public void writeCarry(int dest, int value, boolean flag){
+        v[dest] = (value & 0xFF);
+        v[0xF] = flag? 1:0;
+        //enable vF quirk for certain programs
+        if(vfOrderQuirks){
+            v[dest] = (value & 0xFF);
+        }
+    }
+    //cpu cycle
+    public void cpuExec() {
+        //fetch
+        //grab opcode and combine them
+        opcode = (mem[pc] << 8 | mem[pc+1]);
+        //System.out.println(pc);
+        X = ((opcode & 0x0F00) >> 8) & 0xF;
+        //System.out.println(X);
+        Y = ((opcode & 0x00F0) >> 4) & 0xF;
+        System.out.println(Integer.toHexString(X));
+        //System.out.println(Integer.toHexString(mem[pc]));
+        //System.out.println(Integer.toHexString(mem[pc+1]));
+        //decode
+        c8Instructions[(opcode & 0xF000) >> 12].execute();
+
+        
+        
+    }
     
+    private Instruction[] c8Instructions = new Instruction[]{
+        ()-> C8INSTSET_0000(),
+        ()-> C8INST_1NNN(),
+        ()-> C8INST_2NNN(),
+        ()-> C8INST_3XNN(),
+        ()-> C8INST_4XNN(),
+        ()-> C8INST_5XY0(),
+        ()-> C8INST_6XNN(),
+        ()-> C8INST_7XNN(),
+        ()-> C8INSTSET_8000(),
+        ()-> C8INST_9XY0(),
+        ()-> C8INST_ANNN(),
+        ()-> C8INST_BNNN(),
+        ()-> C8INST_CXNN(),
+        ()-> C8INSTSET_DXY(),
+        ()-> C8INSTSET_E000(),
+        ()-> C8INSTSET_F000()
+    };
+    
+    private void C8INST_UNKNOWN(){
+        System.out.println("Unknown Opcode: " + Integer.toHexString(opcode));
+    }
+    
+    private void C8INSTSET_0000(){
+        _0x0Instructions[(opcode & 0xFF)].execute();
+    }
+    
+    private void C8INST_00E0(){
+        for (int x = 0; x < graphics.length; x++) {
+            graphics[x] = 0;
+        }
+        pc += 2;
+    }
+    
+    private void C8INST_00EE(){
+        pc = cst.pop();
+        pc += 2;
+    }
+    
+    private void C8INST_1NNN(){
+        pc = (opcode & 0x0FFF);
+    }
+    
+    private void C8INST_2NNN(){
+        cst.push(pc);
+        pc = (opcode & 0x0FFF);
+    }
+    
+    private void C8INST_3XNN(){
+        if (v[X] == (opcode & 0x00FF)) {
+            pc += 4;
+        } else
+            pc += 2;
+    }
+    
+    private void C8INST_4XNN(){
+        if (v[X] != (opcode & 0x00FF)) {
+            pc += 4;
+        } else
+            pc += 2;
+    }
+    
+    private void C8INST_5XY0(){
+        if (v[X] == v[Y]) {
+            pc += 4;
+        } else
+            pc += 2;
+    }
+    
+    private void C8INST_6XNN(){
+        v[X] = (opcode & 0x00FF) & 0xFF;
+        pc += 2;
+    }
+    
+    private void C8INST_7XNN(){
+        v[X] = (v[X] +(opcode & 0x00FF)) & 0xFF;
+        pc += 2;
+    }
+    
+//    private Instruction[] _0x8Instructions = new Instruction[]{
+//        () -> C8INST_8XY0(),
+//        () -> C8INST_8XY1(),
+//        () -> C8INST_8XY2(),
+//        () -> C8INST_8XY3(),
+//        () -> C8INST_8XY4(),
+//        () -> C8INST_8XY5(),
+//        () -> C8INST_8XY6(),
+//        () -> C8INST_8XY7(),
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        () -> C8INST_8XYE(),
+//        null
+//    };
+    
+    private void C8INSTSET_8000(){
+        _0x8Instructions[(opcode & 0xF)].execute();
+    }
+    
+    private void C8INST_8XY0(){
+        v[X] = (v[Y] & 0xFF);
+        pc += 2;
+    }
+    
+    private void C8INST_8XY1(){
+        v[X] = (v[X] | v[Y]) & 0xFF;
+        if (logicQuirks) {
+            v[0xF] = 0;
+        }
+        pc += 2;
+    }
+    
+    private void C8INST_8XY2(){
+        v[X] = (v[X] & v[Y]) & 0xFF;
+        if (logicQuirks) {
+            v[0xF] = 0;
+        }
+        pc += 2;
+    }
+    
+    private void C8INST_8XY3(){
+        v[X] = (v[X] ^ v[Y]) & 0xFF;
+        if (logicQuirks) {
+            v[0xF] = 0;
+        }
+        pc += 2; 
+    }
+    
+    private void C8INST_8XY4(){
+        int sum = (v[X] + v[Y]);
+        v[X] = sum & 0xFF;
+        writeCarry(X, sum, (sum > 0xFF));
+        pc += 2;
+    }
+    
+    private void C8INST_8XY5(){
+        int diff1 = (v[X] - v[Y]);
+        v[X] = diff1 & 0xFF;
+        writeCarry(X, diff1, (diff1 >= 0x0));
+        pc += 2;
+    }
+    
+    private void C8INST_8XY6(){
+        if (shiftQuirks) {
+            Y = X;
+        }
+
+        int set = v[Y] >> 1;
+        writeCarry(X, set, (v[Y] & 0x1) == 0x1);
+        pc += 2;
+    }
+    
+    private void C8INST_8XY7(){
+        int diff2 = (v[Y] - v[X]);
+        v[X] = diff2 & 0xFF;
+        writeCarry(X, diff2, (diff2 >= 0x0));
+        pc += 2;
+    }
+    
+    private void C8INST_8XYE(){
+        if (shiftQuirks) {
+            Y = X;
+        }
+        int set2 = v[Y] << 1;
+        writeCarry(X, set2, ((v[Y] >> 7) & 0x1) == 0x1);
+        pc += 2;
+    }
+     
+    private void C8INST_9XY0(){
+        if (v[X] != v[Y]) {
+            pc += 4;
+        } else
+            pc += 2;
+    }
+    
+    private void C8INST_ANNN() {
+        I = (opcode & 0x0FFF);
+        pc += 2;
+    }
+
+    private void C8INST_BNNN() {
+        pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
+    }
+
+    private void C8INST_CXNN() {
+        v[X] = (rand.nextInt(0x100) & (opcode & 0x00FF)) & 0xFF;
+        pc += 2;
+    }
+//    private Instruction[] _0xDInstructions = new Instruction[]{
+//        () -> C8INST_DXY0(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//        () -> C8INST_DXYN(),
+//    };
+    private void C8INSTSET_DXY(){
+        _0xDInstructions[(opcode & 0xF)].execute();
+    } 
+    
+    private void C8INST_DXY0(){
+        if(currentMachine == MachineType.COSMAC_VIP)
+            C8INST_DXYN();
+    } 
+    
+    private void C8INST_DXYN() {
+        if (WaitForInterrupt()) {
+            return;
+        }
+        int x = v[X];
+        int y = v[Y];
+        int n = (int) (opcode & 0x000F);
+        v[0xF] = 0;
+
+        int currPixel = 0;
+        int targetPixel = 0;
+        for (byte yLine = 0; yLine < n; yLine++) {
+
+            for (byte xLine = 0; xLine < 8; xLine++) {
+                currPixel = ((mem[I + yLine] >> (7 - xLine)) & 0x1);
+                targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                if (clipQuirks) {
+                    if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+                        currPixel = 0;
+                    }
+                }
+                //check if pixel in current sprite row is on
+                if (currPixel != 0) {
+                    if (graphics[targetPixel] == 1) {
+                        this.graphics[targetPixel] = 0;
+                        this.v[0xF] = 0x1;
+                    } else {
+                        graphics[targetPixel] ^= 1;
+                    }
+                }
+            }
+        }
+        pc += 2;
+    }
+    
+//    private Instruction[] _0xEInstructions = new Instruction[]{
+//        null,
+//        () -> C8INST_EXA1(),
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        null,
+//        () -> C8INST_EX9E(),
+//        null
+//    };
+    
+    private void C8INSTSET_E000(){
+        _0xEInstructions[(opcode & 0xF)].execute();
+    } 
+    
+    private void C8INST_EX9E(){
+        if (keyPad[v[X]]) {
+            pc += 4;
+        } else {
+            pc += 2;
+        }
+    }
+    
+    private void C8INST_EXA1(){
+        if (!keyPad[v[X]]) {
+            pc += 4;
+        } else {
+            pc += 2;
+        }
+    }
+    
+    private void C8INSTSET_F000(){
+        _0xFInstructions[(opcode & 0xFF)].execute();
+    }
+    
+    private void C8INST_FX07(){
+        v[X] = (dT & 0xFF);
+        pc+=2;
+    }
+    
+    private void C8INST_FX15(){
+        dT = (v[X] & 0xFF);
+        pc+=2;
+    }
+    
+    private void C8INST_FX18(){
+        sT = (v[X] & 0xFF);
+        pc+=2;
+    }
+    
+    private void C8INST_FX1E(){
+        if (IOverflowQuirks) {
+            I += v[X] & 0xFFF;
+            if (I >= 0x1000) {
+                v[0xF] = 1;
+            }
+        } else {
+            //Original Behaviour of the COSMAC VIP
+            I += v[X] & 0xFFF;
+        }
+        pc += 2;
+    }
+    
+    private void C8INST_FX0A(){
+        for (byte key = 0; key < keyPad.length; key++) {
+            if (keyPad[key]) {
+                v[X] = (key & 0xFF);
+                pc += 2;
+            }
+        }
+    }
+    
+    private void C8INST_FX29(){
+        I = ((v[X]*5) +  0x50);
+        pc +=2;
+    }
+    
+    private void C8INST_FX33(){
+        int num = (v[X] & 0xFF);
+        mem[I] = ((num / 100) % 10);//hundreds
+        mem[I + 1] = ((num / 10) % 10);//tens
+        mem[I + 2] = ((num % 10));//ones
+        pc += 2;
+    }
+    
+    private void C8INST_FX55(){
+        for (int i = 0; i <= X; i++) {
+            mem[I + i] = (v[i] & 0xFF);
+        }
+        if (!loadStoreQuirks) {
+            I = (I + X + 1) & 0xFFFF;
+        }
+        pc += 2;
+    }
+    
+    private void C8INST_FX65(){
+        for (int i = 0; i <= X; i++) {
+            v[i] = (mem[I + i] & 0xFF);
+        }
+        if (!loadStoreQuirks) {
+            I = (I + X + 1) & 0xFFFF;
+        }
+        pc += 2; 
+    }
+    
+    
+    @FunctionalInterface
+    interface Instruction{
+        public void execute();
+    }
 }

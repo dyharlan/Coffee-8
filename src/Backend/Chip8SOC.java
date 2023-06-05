@@ -426,12 +426,31 @@ public class Chip8SOC extends KeyAdapter{
         //System.out.println(Integer.toHexString(mem[pc]));
         //System.out.println(Integer.toHexString(mem[pc+1]));
         //decode
+        //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
         c8Instructions[(opcode & 0xF000) >> 12].execute();
 
         
         
     }
-    
+    /*
+    * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
+    * they look like this:
+    * public void execute(){
+    *   //a function that calls a specific instruction
+    * }
+    *
+    * Idea from here: https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
+    */
+    @FunctionalInterface
+    interface Instruction{
+        public void execute();
+    }
+    /*
+    * Array of interfaces.
+    * this is called under cpuExec() where the index is derived by
+    * obtaining the 4th nibble of an opcode.
+    * another array is referenced when a nibble as multiple instructions, as is the case for 0x0, 0x8, 0xD,0xE, and 0xFz
+    */
     private Instruction[] c8Instructions = new Instruction[]{
         ()-> C8INSTSET_0000(),
         ()-> C8INST_1NNN(),
@@ -450,95 +469,76 @@ public class Chip8SOC extends KeyAdapter{
         ()-> C8INSTSET_E000(),
         ()-> C8INSTSET_F000()
     };
-    
+    //this is called if the opcode executed is either unknown or unimplemented
     private void C8INST_UNKNOWN(){
         System.out.println("Unknown Opcode: " + Integer.toHexString(opcode));
     }
-    
+    //execute instructions that have 0x0 as their prefix
     private void C8INSTSET_0000(){
         _0x0Instructions[(opcode & 0xFF)].execute();
     }
-    
+    //00E0: Clear Screen
     private void C8INST_00E0(){
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
         pc += 2;
     }
-    
+    //00EE: Returns from a subroutine on top of the stack. 
     private void C8INST_00EE(){
         pc = cst.pop();
         pc += 2;
     }
-    
+    //0x1NNN jump to address NNN
     private void C8INST_1NNN(){
         pc = (opcode & 0x0FFF);
     }
-    
+    //0x2NNN calls subroutin at address NNN
     private void C8INST_2NNN(){
         cst.push(pc);
         pc = (opcode & 0x0FFF);
     }
-    
+    //0x3XNN skip next instruction if VX == NN
     private void C8INST_3XNN(){
         if (v[X] == (opcode & 0x00FF)) {
             pc += 4;
         } else
             pc += 2;
     }
-    
+    //0x4XNN skip next instruction if VX != NN
     private void C8INST_4XNN(){
         if (v[X] != (opcode & 0x00FF)) {
             pc += 4;
         } else
             pc += 2;
     }
-    
+    //0x5XY0 skip next instruction if VX == VY
     private void C8INST_5XY0(){
         if (v[X] == v[Y]) {
             pc += 4;
         } else
             pc += 2;
     }
-    
+    //0x6XNN set Vx to NN
     private void C8INST_6XNN(){
         v[X] = (opcode & 0x00FF) & 0xFF;
         pc += 2;
     }
-    
+    //0x7XNN add NN to Vx w/o changing borrow flag
     private void C8INST_7XNN(){
         v[X] = (v[X] +(opcode & 0x00FF)) & 0xFF;
         pc += 2;
     }
-    
-//    private Instruction[] _0x8Instructions = new Instruction[]{
-//        () -> C8INST_8XY0(),
-//        () -> C8INST_8XY1(),
-//        () -> C8INST_8XY2(),
-//        () -> C8INST_8XY3(),
-//        () -> C8INST_8XY4(),
-//        () -> C8INST_8XY5(),
-//        () -> C8INST_8XY6(),
-//        () -> C8INST_8XY7(),
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        () -> C8INST_8XYE(),
-//        null
-//    };
-    
+    //Execute instructions that have 0x8 as their prefix
     private void C8INSTSET_8000(){
         _0x8Instructions[(opcode & 0xF)].execute();
     }
-    
+    //0x8XY0 set the value of Vx to Vy
     private void C8INST_8XY0(){
         v[X] = (v[Y] & 0xFF);
         pc += 2;
     }
-    
+    //0x8XY1 set Vx to (Vx | Vy)
     private void C8INST_8XY1(){
         v[X] = (v[X] | v[Y]) & 0xFF;
         if (logicQuirks) {
@@ -546,7 +546,7 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2;
     }
-    
+    //0x8XY2 set Vx to (Vx & Vy)
     private void C8INST_8XY2(){
         v[X] = (v[X] & v[Y]) & 0xFF;
         if (logicQuirks) {
@@ -554,7 +554,7 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2;
     }
-    
+    //0x8XY3 set Vx to (Vx ^ Vy)
     private void C8INST_8XY3(){
         v[X] = (v[X] ^ v[Y]) & 0xFF;
         if (logicQuirks) {
@@ -562,21 +562,21 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2; 
     }
-    
+    //0x8XY4 add Vy to Vx. VF is set to 1 if there's a carry, 0 otherwise.
     private void C8INST_8XY4(){
         int sum = (v[X] + v[Y]);
         v[X] = sum & 0xFF;
         writeCarry(X, sum, (sum > 0xFF));
         pc += 2;
     }
-    
+    //0x8XY5 subtract Vy from Vx. VF is 0 if subtrahend is smaller than minuend.
     private void C8INST_8XY5(){
         int diff1 = (v[X] - v[Y]);
         v[X] = diff1 & 0xFF;
         writeCarry(X, diff1, (diff1 >= 0x0));
         pc += 2;
     }
-    
+    //0x8XY6 stores the LSB of VX in VF and shifts VX to the right by 1
     private void C8INST_8XY6(){
         if (shiftQuirks) {
             Y = X;
@@ -586,14 +586,14 @@ public class Chip8SOC extends KeyAdapter{
         writeCarry(X, set, (v[Y] & 0x1) == 0x1);
         pc += 2;
     }
-    
+    //0x8XY7 subtract Vx from Vy. VF is 0 if subtrahend is smaller than minuend.
     private void C8INST_8XY7(){
         int diff2 = (v[Y] - v[X]);
         v[X] = diff2 & 0xFF;
         writeCarry(X, diff2, (diff2 >= 0x0));
         pc += 2;
     }
-    
+    //0x8XYE stores the MSB of VX in VF and shifts VX to the left by 1
     private void C8INST_8XYE(){
         if (shiftQuirks) {
             Y = X;
@@ -602,54 +602,42 @@ public class Chip8SOC extends KeyAdapter{
         writeCarry(X, set2, ((v[Y] >> 7) & 0x1) == 0x1);
         pc += 2;
     }
-     
+    //0x9XY0 skip next instruction if VX != VY 
     private void C8INST_9XY0(){
         if (v[X] != v[Y]) {
             pc += 4;
         } else
             pc += 2;
     }
-    
+    //0xANNN set index register to the value of NNN
     private void C8INST_ANNN() {
         I = (opcode & 0x0FFF);
         pc += 2;
     }
-
+    //0xBNNN Jumps to the address NNN plus cpu->v0
     private void C8INST_BNNN() {
         pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
     }
-
+    //0xCXNN generates a random number, binary ANDs it with NN, and stores it in Vx.
     private void C8INST_CXNN() {
         v[X] = (rand.nextInt(0x100) & (opcode & 0x00FF)) & 0xFF;
         pc += 2;
     }
-//    private Instruction[] _0xDInstructions = new Instruction[]{
-//        () -> C8INST_DXY0(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//        () -> C8INST_DXYN(),
-//    };
+    //Only reason why this is an instruction subset is because of superchip.
     private void C8INSTSET_DXY(){
         _0xDInstructions[(opcode & 0xF)].execute();
     } 
-    
+    //In superchip: draw a 16x16 sprite, otherwise, draw normally
     private void C8INST_DXY0(){
         if(currentMachine == MachineType.COSMAC_VIP)
             C8INST_DXYN();
     } 
-    
+    /*
+    * DXYN derived from Octo and https://github.com/Klairm/chip8
+    */
+    /*
+    * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
+    */
     private void C8INST_DXYN() {
         if (WaitForInterrupt()) {
             return;
@@ -684,30 +672,11 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2;
     }
-    
-//    private Instruction[] _0xEInstructions = new Instruction[]{
-//        null,
-//        () -> C8INST_EXA1(),
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        null,
-//        () -> C8INST_EX9E(),
-//        null
-//    };
-    
+    //Execute instructions that start with 0xE as their prefix
     private void C8INSTSET_E000(){
         _0xEInstructions[(opcode & 0xF)].execute();
     } 
-    
+    //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
     private void C8INST_EX9E(){
         if (keyPad[v[X]]) {
             pc += 4;
@@ -715,7 +684,7 @@ public class Chip8SOC extends KeyAdapter{
             pc += 2;
         }
     }
-    
+    //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
     private void C8INST_EXA1(){
         if (!keyPad[v[X]]) {
             pc += 4;
@@ -723,26 +692,30 @@ public class Chip8SOC extends KeyAdapter{
             pc += 2;
         }
     }
-    
+    //Execute instructions that start with 0xF as their prefix
     private void C8INSTSET_F000(){
         _0xFInstructions[(opcode & 0xFF)].execute();
     }
-    
+    //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){
         v[X] = (dT & 0xFF);
         pc+=2;
     }
-    
+    //FX15: set the delay timer to the value in vX
     private void C8INST_FX15(){
         dT = (v[X] & 0xFF);
         pc+=2;
     }
-    
+    //FX18: set the sound timer to the value in vX
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
         pc+=2;
     }
-    
+    //FX1E: Add the value of VX to the register index
+    //IF IOverflowQuirks is on:
+    //VF is set to 1 if I exceeds 0xFFF, outside of the 12-bit addressing range
+    //of the chip8
+    //Apparently, this is needed for one game? idk
     private void C8INST_FX1E(){
         if (IOverflowQuirks) {
             I += v[X] & 0xFFF;
@@ -755,7 +728,7 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2;
     }
-    
+    //FX0A: Stops program execution until a key is pressed.
     private void C8INST_FX0A(){
         for (byte key = 0; key < keyPad.length; key++) {
             if (keyPad[key]) {
@@ -764,12 +737,15 @@ public class Chip8SOC extends KeyAdapter{
             }
         }
     }
-    
+    //FX29: Point index register to font in memory
     private void C8INST_FX29(){
         I = ((v[X]*5) +  0x50);
         pc +=2;
     }
-    
+    //FX33: Get number from vX and
+    //store hundreds digit in memory point by I
+    //store tens digit in memory point by I+1
+    //store ones digit in memory point by I+2
     private void C8INST_FX33(){
         int num = (v[X] & 0xFF);
         mem[I] = ((num / 100) % 10);//hundreds
@@ -777,7 +753,8 @@ public class Chip8SOC extends KeyAdapter{
         mem[I + 2] = ((num % 10));//ones
         pc += 2;
     }
-    
+    //FX55: store the values of registers v0 to vi, where i is the ith register to use
+    //in successive memory locations
     private void C8INST_FX55(){
         for (int i = 0; i <= X; i++) {
             mem[I + i] = (v[i] & 0xFF);
@@ -787,7 +764,8 @@ public class Chip8SOC extends KeyAdapter{
         }
         pc += 2;
     }
-    
+    //FX65: store the values of successive memory locations from 0 to i, where i is the ith memory location
+    //in i registers from v0 to vi
     private void C8INST_FX65(){
         for (int i = 0; i <= X; i++) {
             v[i] = (mem[I + i] & 0xFF);
@@ -799,8 +777,5 @@ public class Chip8SOC extends KeyAdapter{
     }
     
     
-    @FunctionalInterface
-    interface Instruction{
-        public void execute();
-    }
+    
 }

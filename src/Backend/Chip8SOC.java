@@ -155,29 +155,33 @@ public class Chip8SOC extends KeyAdapter{
         Y = (opcode & 0x00F0) >> 4;
         //System.out.println("Current OpCode: " + Integer.toHexString(opcode));
         //decode
-        switch (opcode) {
-            case 0x00E0: //0x00E0
-                for (int x = 0; x < graphics.length; x++) {                   
-                    graphics[x] = 0;  
-                }
-                pc += 2;
-                return;
-            case 0x00EE: //Returns from a subroutine. 
-                pc = cst.pop();
-                pc += 2;
-                return;
-        }
+        
 
         
         switch (opcode & 0xF000) {
+            case 0x0000:
+                switch(opcode & 0x00FF){
+                    case 0x00E0: //0x00E0
+                        for (int x = 0; x < graphics.length; x++) {
+                            graphics[x] = 0;
+                        }
+                        pc += 2;
+                        break;
+                    case 0x00EE: //Returns from a subroutine. 
+                        pc = cst.pop();
+                        pc += 2;
+                        break;
+                }
+            break;
+            
             case 0x1000: //0x1NNN jump to address NNN
                 pc = (opcode & 0x0FFF);
-                return;
+                break;
 
             case 0x2000: //0x2NNN calls subroutin at address NNN
                 cst.push(pc);
                 pc = (opcode & 0x0FFF);
-                return;
+                break;
 
             case 0x3000: //0x3XNN skip next instruction if VX == NN
                 if (v[X] == (opcode & 0x00FF)) {
@@ -185,7 +189,7 @@ public class Chip8SOC extends KeyAdapter{
                 }
                 else
                     pc += 2;
-                return;
+                break;
 
             //implement 4XNN, 5XY0 and 9XY0
             case 0x4000: //0x4XNN skip next instruction if VX != NN
@@ -194,7 +198,7 @@ public class Chip8SOC extends KeyAdapter{
                 }
                 else
                     pc += 2;
-                return;
+                break;
 
             case 0x5000: //0x5XY0 skip next instruction if VX == VY
                 if (v[X] == v[Y]) {
@@ -202,7 +206,7 @@ public class Chip8SOC extends KeyAdapter{
                 }
                 else
                     pc += 2;
-                return;
+                break;
 
             case 0x9000: //0x9XY0 skip next instruction if VX != VY
                 if (v[X] != v[Y]) {
@@ -210,24 +214,24 @@ public class Chip8SOC extends KeyAdapter{
                 }
                 else
                     pc += 2;
-                return;
+                break;
 
             case 0x6000: //0x6XNN set Vx to NN
                 v[X] = (opcode & 0x00FF) & 0xFF;
                 pc += 2;
-                return;
+                break;
 
             case 0x7000: //0x7XNN add NN to Vx w/o changing borrow flag
                 v[X] = (v[X] +(opcode & 0x00FF)) & 0xFF;
                 pc += 2;
-                return;
+                break;
 
             case 0x8000:
                 switch (opcode & 0x000F) {
                     case 0x0000: //0x8XY0 set the value of Vx to Vy
                         v[X] = (v[Y] & 0xFF);
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0001: //0x8XY1 set Vx to (Vx | Vy)
                         v[X] = (v[X] | v[Y]) &0xFF;
@@ -235,7 +239,7 @@ public class Chip8SOC extends KeyAdapter{
                             v[0xF] = 0;
                         }
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0002: //0x8XY2 set Vx to (Vx & Vy)
                         v[X] =(v[X] & v[Y]) &0xFF;
@@ -243,7 +247,7 @@ public class Chip8SOC extends KeyAdapter{
                             v[0xF] = 0;
                         }
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0003: //0x8XY3 set Vx to (Vx ^ Vy)
                         v[X] = (v[X] ^ v[Y]) &0xFF;
@@ -251,14 +255,14 @@ public class Chip8SOC extends KeyAdapter{
                             v[0xF] = 0;
                         }
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0004: //0x8XY4 add Vy to Vx. VF is set to 1 if there's a carry, 0 otherwise.
                         int sum = (v[X] + v[Y]);
                         v[X] = sum & 0xFF;
                         writeCarry(X, sum, (sum > 0xFF));
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0005: //0x8XY5 subtract Vy from Vx. VF is 0 if subtrahend is smaller than minuend.
                         
@@ -266,14 +270,14 @@ public class Chip8SOC extends KeyAdapter{
                         v[X] = diff1 & 0xFF; 
                         writeCarry(X, diff1, (diff1 >= 0x0));
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0007: //0x8XY7 subtract Vx from Vy. VF is 0 if subtrahend is smaller than minuend.
                         int diff2 = (v[Y] - v[X]);
                         v[X] = diff2 & 0xFF;
                         writeCarry(X, diff2, (diff2 >= 0x0));
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x0006: //0x8XY6 stores the LSB of VX in VF and shifts VX to the right by 1
                         if(shiftQuirks){
@@ -283,7 +287,7 @@ public class Chip8SOC extends KeyAdapter{
                         int set = v[Y] >> 1;
                         writeCarry(X, set, (v[Y] & 0x1) == 0x1);
                         pc += 2;
-                        return;
+                        break;
 
                     case 0x000E: //0x8XYE stores the MSB of VX in VF and shifts VX to the left by 1
 			if(shiftQuirks){
@@ -292,22 +296,23 @@ public class Chip8SOC extends KeyAdapter{
                         int set2 = v[Y] << 1;
                         writeCarry(X, set2, ((v[Y] >> 7) & 0x1) == 0x1);
                         pc += 2;
-                        return;
+                        break;
                 }
+                break;
             case 0xA000: //0xANNN set index register to the value of NNN
                 I = (opcode & 0x0FFF);
                 pc += 2;
-                return;
+                break;
                 
             case 0xB000: //0xBNNN Jumps to the address NNN plus cpu->v0
                 pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
-                return;
+                break;
 
             case 0xC000: //0xCXNN generates a random number, binary ANDs it with NN, and stores it in Vx.
                 Random rand = new Random();
                 v[X] = (rand.nextInt(0x100) & (opcode & 0x00FF)) & 0xFF;
                 pc += 2;
-                return;
+                break;
             /*
             * DXYN derived from Octo and https://github.com/Klairm/chip8
             */
@@ -350,7 +355,7 @@ public class Chip8SOC extends KeyAdapter{
                   
                 
                 pc += 2;
-                return;
+                break;
                 
             case 0xE000:
                 switch (opcode & 0x00FF) {
@@ -362,7 +367,7 @@ public class Chip8SOC extends KeyAdapter{
                         else{
                             pc+=2;
                         }
-                        return;
+                        break;
                     //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
                     case 0x00A1:
                         if(!keyPad[v[X]]){
@@ -371,28 +376,29 @@ public class Chip8SOC extends KeyAdapter{
                         else{
                             pc+=2;
                         }
-                        return;
+                        break;
                     default:
                         System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                        return;
+                        break;
                 }
+                break;
             case 0xF000:
                 switch(opcode & 0x00FF){
                     //FX07: Set vX to the value of the delay timer
                     case 0x0007:
                         v[X] = (dT & 0xFF);
                         pc+=2;
-                    return;
+                    break;
                     //FX15: set the delay timer to the value in vX
                     case 0x0015:
                         dT = (v[X] & 0xFF);
                         pc+=2;
-                    return;
+                    break;
                     //FX18: set the sound timer to the value in vX
                     case 0x0018:
                         sT = (v[X] & 0xFF);
                         pc+=2;
-                    return;
+                    break;
                     //FX1E: Add the value of VX to the register index
                     //IF IOverflowQuirks is on:
                     //VF is set to 1 if I exceeds 0xFFF, outside of the 12-bit addressing range
@@ -409,7 +415,7 @@ public class Chip8SOC extends KeyAdapter{
                             I += v[X] & 0xFFF;
                         }
                         pc+=2;
-                    return;
+                    break;
                     //FX0A: Stops program execution until a key is pressed.
                     case 0x000A:
                         for(byte key = 0;key < keyPad.length;key++){
@@ -418,12 +424,12 @@ public class Chip8SOC extends KeyAdapter{
                                 pc+=2;
                             }
                         }
-                    return;
+                    break;
                     //FX29: Point index register to font in memory
                     case 0x0029:
                         I = ((v[X]*5) +  0x50);
                         pc +=2;
-                    return;
+                    break;
                     //FX33: Get number from vX and
                     //store hundreds digit in memory point by I
                     //store tens digit in memory point by I+1
@@ -434,7 +440,7 @@ public class Chip8SOC extends KeyAdapter{
                         mem[I+1] = ((num / 10) % 10);//tens
                         mem[I+2] = ((num % 10));//ones
                         pc+=2;
-                    return;
+                    break;
                     //FX55: store the values of registers v0 to vi, where i is the ith register to use
                     //in successive memory locations
                     case 0x0055:
@@ -445,7 +451,7 @@ public class Chip8SOC extends KeyAdapter{
                             I = (I+X+1) & 0xFFFF;
                         }
                         pc+=2;
-                    return;
+                    break;
                     //FX55: store the values of successive memory locations from 0 to i, where i is the ith memory location
                     //in i registers from v0 to vi
                     case 0x0065:
@@ -456,14 +462,15 @@ public class Chip8SOC extends KeyAdapter{
                             I = (I+X+1) & 0xFFFF;
                         }
                         pc+=2;
-                    return;
+                    break;
                     default:
                         System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                        return;
+                        break;
                 }
+                break;
             default:
                 System.out.println("Unknown OpCode: " + Integer.toHexString(opcode));
-                return;
+                break;
         }
     }
     public void updateTimers(){
@@ -648,7 +655,7 @@ public class Chip8SOC extends KeyAdapter{
     
     
     
-     public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
+    public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
         if(tg != null && playSound)
             return;
         if(tg == null){

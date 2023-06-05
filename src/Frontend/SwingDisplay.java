@@ -18,18 +18,20 @@ import java.io.*;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class SwingDisplay implements Runnable {
-
+    Boolean romStatus;
     private Thread cpuCycleThread;
     private Boolean isRunning;
-    private Boolean initStatus;
     private Graphics2D g2d;
     private JFrame f;
     private JMenuBar mb;
         private JMenu fileMenu;
-        
+            private JMenuItem loadROM;
+            private JMenuItem exitSwitch;
         private JMenu emulationMenu;
+            private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
             private JCheckBoxMenuItem soundToggle;
     private JPanel gamePanel;
@@ -45,19 +47,43 @@ public class SwingDisplay implements Runnable {
     public SwingDisplay(String verNo) throws FileNotFoundException, IOException {
         chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
+        isRunning = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
         mb = new JMenuBar();    
             fileMenu = new JMenu("File");
             mb.add(fileMenu);
-            
+                loadROM = new JMenuItem("Load ROM");
+                loadROM.addActionListener((e) -> {
+                    JFileChooser chooser = new JFileChooser();
+                    FileNameExtensionFilter filter = new FileNameExtensionFilter(
+                            "Chip-8 ROM Files", "c8", "ch8");
+                    chooser.setFileFilter(filter);
+                    if(rom == null)
+                         chooser.setCurrentDirectory(new File("."));
+                    else
+                        chooser.setCurrentDirectory(rom);
+                    int returnVal = chooser.showOpenDialog(f);
+                    if (returnVal == JFileChooser.APPROVE_OPTION) {
+                        
+                        rom = chooser.getSelectedFile();
+                        loadROM(rom);
+                           
+                    }
+                });
+                exitSwitch = new JMenuItem("Exit");
+                exitSwitch.addActionListener((e) -> {
+                    System.exit(0);
+                });
+            fileMenu.add(loadROM);
+            fileMenu.add(exitSwitch);
             emulationMenu = new JMenu("Emulation");
             mb.add(emulationMenu);
             pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
                 pauseToggle.addActionListener((e)->{
-                        if(isRunning &&  pauseToggle.isSelected()){
-                            stop();
+                        if(isRunning && pauseToggle.isSelected()){
+                            stopEmulation();
                         }else{
-                            start();
+                            startEmulation();
                         }
                 });
             soundToggle = new JCheckBoxMenuItem("Enable Sound");
@@ -78,6 +104,12 @@ public class SwingDisplay implements Runnable {
                             }
                         }
                 });
+            resetSwitch = new JMenuItem("Reset Emulator");
+            resetSwitch.addActionListener((e) -> {
+                if (rom != null)
+                   loadROM(rom);  
+            });
+            emulationMenu.add(resetSwitch);
             emulationMenu.add(pauseToggle);
             emulationMenu.add(soundToggle);
        
@@ -91,16 +123,18 @@ public class SwingDisplay implements Runnable {
                 super.paintComponent(g2d);
                 g2d.scale(SCALE_FACTOR, SCALE_FACTOR);
 
-                for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
-                    for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                        if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                            g.setColor(Color.BLUE);
-                            g.fillRect(x, y, 1, 1);
-                        } else {
-                            g.setColor(Color.ORANGE);
-                            g.fillRect(x, y, 1, 1);
+                if (chip8CPU.graphics != null) {
+                    for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
+                        for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
+                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
+                                g.setColor(Color.BLUE);
+                                g.fillRect(x, y, 1, 1);
+                            } else {
+                                g.setColor(Color.ORANGE);
+                                g.fillRect(x, y, 1, 1);
+                            }
                         }
-                    }
+                    } 
                 }
 
             }
@@ -108,23 +142,41 @@ public class SwingDisplay implements Runnable {
         gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
-        initStatus = false;
+        romStatus = false;
+        
+    }
+    public void loadROM(File rom) {
+        try {
+            romStatus = chip8CPU.loadROM(rom);
+            if (romStatus) {
+                if (pauseToggle.isSelected()) {
+                    pauseToggle.setSelected(false);
+                }
+                startEmulation();
+            } else {
+                romStatus = false;
+                JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (IOException ioe) {
+            romStatus = false;
+            JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
-    public void start() {
+    public void startEmulation() {
         if (cpuCycleThread == null) {
             isRunning = true;
             cpuCycleThread = new Thread(this);
-            
+
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
-                   cpuCycleThread.start();
+                    cpuCycleThread.start();
                 }
             });
         }
     }
 
-    public void stop() {
+    public void stopEmulation() {
         chip8CPU.pauseSound();
         isRunning = false;
         cpuCycleThread = null;
@@ -144,15 +196,16 @@ public class SwingDisplay implements Runnable {
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
-
+            //System.out.println(chip8CPU.getVBLankInterrupt());
             if (chip8CPU.getVBLankInterrupt() == 1) {
+                
                 chip8CPU.setVBLankInterrupt(2);
             }
             gamePanel.repaint();
         }
     }
 
-    public void startApp() throws FileNotFoundException, IOException{
+    public void startApp() throws IOException{
         f.setResizable(false);
         f.pack();
         f.setLocationRelativeTo(null);
@@ -167,14 +220,8 @@ public class SwingDisplay implements Runnable {
         }catch(LineUnavailableException|UnsupportedAudioFileException se){
            JOptionPane.showMessageDialog(null, "An Error Occured When Initializing the Sound System. Tt will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
         }
-        rom = new File("D:\\Others\\src\\Coffee-8\\software\\Brick Breaker (by Kyle Saburao)(2019).ch8");
-        initStatus = chip8CPU.loadRom(rom);
         f.setVisible(true);
-        if(initStatus){
-            start();
-        }else{
-            JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE); 
-        }
+        
 
     }
 

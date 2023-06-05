@@ -44,7 +44,7 @@ public class SwingDisplay implements Runnable {
     Chip8SOC chip8CPU;
     Dimension size;
 
-    public SwingDisplay(String verNo) throws FileNotFoundException, IOException {
+    public SwingDisplay(String verNo) throws IOException {
         chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
         isRunning = false;
@@ -124,21 +124,16 @@ public class SwingDisplay implements Runnable {
             }
         });
         soundToggle = new JCheckBoxMenuItem("Enable Sound");
-        if (chip8CPU.isSoundEnabled()) {
-            soundToggle.setSelected(true);
-        } else {
-            soundToggle.setSelected(false);
-        }
+        
         soundToggle.addActionListener((e) -> {
             if (!soundToggle.isSelected()) {
                 chip8CPU.disableSound();
             } else {
                 try {
                     chip8CPU.enableSound();
-                } catch (LineUnavailableException | UnsupportedAudioFileException se) {
-                    JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system, it will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
-                } catch (IOException ioe) {
-                    JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
+                } catch (LineUnavailableException | UnsupportedAudioFileException | IOException se) {
+                    soundToggle.setSelected(false);
+                    JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -224,26 +219,32 @@ public class SwingDisplay implements Runnable {
         });
         try{
             chip8CPU.enableSound();
-        }catch(LineUnavailableException|UnsupportedAudioFileException se){
-           JOptionPane.showMessageDialog(null, "An Error Occured When Initializing the Sound System. Tt will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+        }catch(LineUnavailableException|UnsupportedAudioFileException |IOException se ){
+           JOptionPane.showMessageDialog(null, "An Error Occured When Initializing the Sound System. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+        }
+        if (chip8CPU.isSoundEnabled()) {
+            soundToggle.setSelected(true);
+        } else {
+            soundToggle.setSelected(false);
         }
         f.setVisible(true);
         
 
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         SwingDisplay d = null;
-        try{
+        //try{
             d = new SwingDisplay("Coffee-8 0.7");
             d.startApp();
-        }catch(FileNotFoundException fnfe){
-            JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(0);
-        }catch(IOException ioe){
-            JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(0);
-        }
+            
+        //}catch(FileNotFoundException fnfe){
+            //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
+            //System.exit(0);
+       // }catch(IOException ioe){
+            //JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
+            //System.exit(0);
+        //}
         
     }
 }

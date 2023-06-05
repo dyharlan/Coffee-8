@@ -373,14 +373,14 @@ public class Chip8SOC extends KeyAdapter{
     
     
     
-    public void enableSound() throws IOException,LineUnavailableException, UnsupportedAudioFileException {
+    public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
         if(tg != null && playSound)
             return;
         if(tg == null){
             playSound = true;
             try {
                 tg = new ToneGenerator(playSound);
-            } catch (LineUnavailableException | UnsupportedAudioFileException ex) {
+            } catch (LineUnavailableException | UnsupportedAudioFileException | IOException ex) {
                 tg = null;
                 playSound = false;
                 throw ex;
@@ -423,7 +423,6 @@ public class Chip8SOC extends KeyAdapter{
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
-        System.out.println(Integer.toHexString(X));
         //System.out.println(Integer.toHexString(mem[pc]));
         //System.out.println(Integer.toHexString(mem[pc+1]));
         //decode

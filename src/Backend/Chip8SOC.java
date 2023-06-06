@@ -88,7 +88,7 @@ public class Chip8SOC extends KeyAdapter{
     
     public void fillInstructionTable(){
        int i;
-       _0x0Instructions = new Instruction[0xFE];
+       _0x0Instructions = new Instruction[0x100];
        for(i = 0; i < _0x0Instructions.length;i++){
           _0x0Instructions[i] = () -> C8INST_UNKNOWN();
        }
@@ -646,18 +646,21 @@ public class Chip8SOC extends KeyAdapter{
         int y = v[Y];
         int n = (int) (opcode & 0x000F);
         v[0xF] = 0;
-
+        int i = I;
         int currPixel = 0;
         int targetPixel = 0;
         for (byte yLine = 0; yLine < n; yLine++) {
 
             for (byte xLine = 0; xLine < 8; xLine++) {
-                currPixel = ((mem[I + yLine] >> (7 - xLine)) & 0x1);
+                currPixel = ((mem[i + yLine] >> (7 - xLine)) & 0x1);
                 targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
                 if (clipQuirks) {
                     if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                         currPixel = 0;
                     }
+                }
+                if (currPixel == 0) { 
+                    continue; 
                 }
                 //check if pixel in current sprite row is on
                 if (currPixel != 0) {
@@ -670,6 +673,7 @@ public class Chip8SOC extends KeyAdapter{
                 }
             }
         }
+        
         pc += 2;
     }
     //Execute instructions that start with 0xE as their prefix

@@ -34,12 +34,14 @@ public class SwingDisplay implements Runnable {
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
             private JCheckBoxMenuItem soundToggle;
+            private JMenuItem backgroundColorManager;
+            private JMenuItem foregroundColorManager;
     private JPanel gamePanel;
-    
     private final int SCALE_FACTOR = 20;
     private int sizeX = 0;
     private int sizeY = 0;
-
+    private Color backgroundColor;
+    private Color foregroundColor;
     File rom;
     Chip8SOC chip8CPU;
     Dimension size;
@@ -50,7 +52,8 @@ public class SwingDisplay implements Runnable {
         isRunning = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
         buildPanel();
-       
+        backgroundColor = Color.ORANGE;
+        foregroundColor = Color.BLUE;
         sizeX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
         sizeY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
         
@@ -65,10 +68,11 @@ public class SwingDisplay implements Runnable {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
                             if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                g.setColor(Color.BLUE);
+                                g.setColor(foregroundColor);
                                 g.fillRect(x, y, 1, 1);
+                                
                             } else {
-                                g.setColor(Color.ORANGE);
+                                g.setColor(backgroundColor);
                                 g.fillRect(x, y, 1, 1);
                             }
                         }
@@ -143,7 +147,20 @@ public class SwingDisplay implements Runnable {
                 loadROM(rom);
             }
         });
+        backgroundColorManager = new JMenuItem("Set Background Color");
+        backgroundColorManager.addActionListener((e) -> {
+            ColorManager cm = new ColorManager(f,backgroundColor);
+            backgroundColor = cm.getColor();
+        });
+        foregroundColorManager = new JMenuItem("Set Foreground Color");
+        foregroundColorManager.addActionListener((e) -> {
+            ColorManager cm = new ColorManager(f,foregroundColor);
+            foregroundColor = cm.getColor();
+        });
+        
         emulationMenu.add(resetSwitch);
+        emulationMenu.add(backgroundColorManager);
+        emulationMenu.add(foregroundColorManager);
         emulationMenu.add(pauseToggle);
         emulationMenu.add(soundToggle);
     }

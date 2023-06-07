@@ -272,7 +272,7 @@ public class SwingDisplay implements Runnable {
         SwingDisplay d = null;
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            d = new SwingDisplay("Coffee-8 0.7");
+            d = new SwingDisplay("Coffee-8 0.9");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

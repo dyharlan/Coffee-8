@@ -20,7 +20,7 @@ public class ColorManager {
         this.c = c;
         jcc = new JColorChooser(this.c);
         previewPanel = new JPanel();
-        previewPanel.add(new JLabel("tubol"));
+        previewPanel.add(new JLabel("This is the color"));
         previewPanel.setBackground(this.c);
         if (dialog == null) {
             dialog = JColorChooser.createDialog(

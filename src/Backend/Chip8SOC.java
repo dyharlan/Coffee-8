@@ -359,16 +359,20 @@ public class Chip8SOC extends KeyAdapter{
         return DISPLAY_HEIGHT;
     }
     
-    public int getCycles(){
-        return cycles;
-    }
-    
     public void setVBLankInterrupt(int status){
         m_WaitForInterrupt = status;
     }
     
     public int getVBLankInterrupt(){
         return m_WaitForInterrupt;
+    }
+    
+    public void setCycles(int cycleCount){
+        cycles = cycleCount;
+    }
+    
+    public int getCycles(){
+        return cycles;
     }
     
     

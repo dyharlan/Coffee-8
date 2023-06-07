@@ -14,11 +14,11 @@ public enum MachineType {
 //     shiftQuirks = false;
 //     logicQuirks = true;
 //     loadStoreQuirks = false;
-//     clipQuirks = false;
+//     clipQuirks = true;
 //     vBlankQuirks = true;
 //     IOverflowQuirks = true;
 
-    COSMAC_VIP("COSMAC VIP",64,32,new boolean[]{false,false,true,false,false,true,true});
+    COSMAC_VIP("COSMAC VIP",64,32,new boolean[]{false,false,true,false,true,true,true});
     
     private String machineName;
     private int displayWidth;

@@ -31,6 +31,7 @@ public class SwingDisplay implements Runnable {
             private JMenuItem loadROM;
             private JMenuItem exitSwitch;
         private JMenu emulationMenu;
+            private JMenuItem cycleManager;
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
             private JCheckBoxMenuItem soundToggle;
@@ -118,13 +119,21 @@ public class SwingDisplay implements Runnable {
         fileMenu.add(loadROM);
         fileMenu.add(exitSwitch);
         emulationMenu = new JMenu("Emulation");
+        
         mb.add(emulationMenu);
         pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
         pauseToggle.addActionListener((e) -> {
-            if (isRunning && pauseToggle.isSelected()) {
+            if (romStatus && pauseToggle.isSelected()) {
+                pauseToggle.setSelected(true);
+                
                 stopEmulation();
-            } else {
+            } else if(romStatus && !pauseToggle.isSelected()) {
+                pauseToggle.setSelected(false);
+                
                 startEmulation();
+            }else{
+                
+                pauseToggle.setSelected(false);
             }
         });
         soundToggle = new JCheckBoxMenuItem("Enable Sound");
@@ -151,6 +160,7 @@ public class SwingDisplay implements Runnable {
         backgroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,backgroundColor);
             backgroundColor = cm.getColor();
+
         });
         foregroundColorManager = new JMenuItem("Set Foreground Color");
         foregroundColorManager.addActionListener((e) -> {
@@ -158,6 +168,12 @@ public class SwingDisplay implements Runnable {
             foregroundColor = cm.getColor();
         });
         
+        cycleManager = new JMenuItem("Set CPU Cycle Count");
+        cycleManager.addActionListener((e) -> {
+            CycleManager cyManager = new CycleManager(chip8CPU,f);
+            cyManager.showDialog();
+        });
+        emulationMenu.add(cycleManager);
         emulationMenu.add(resetSwitch);
         emulationMenu.add(backgroundColorManager);
         emulationMenu.add(foregroundColorManager);
@@ -171,7 +187,11 @@ public class SwingDisplay implements Runnable {
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
                 }
-                startEmulation();
+                 SwingUtilities.invokeLater(new Runnable() {
+                    public void run() {
+                        startEmulation();
+                    }
+                });
             } else {
                 romStatus = false;
                 JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -187,11 +207,7 @@ public class SwingDisplay implements Runnable {
             isRunning = true;
             cpuCycleThread = new Thread(this);
 
-            SwingUtilities.invokeLater(new Runnable() {
-                public void run() {
-                    cpuCycleThread.start();
-                }
-            });
+            cpuCycleThread.start();
         }
     }
 
@@ -223,6 +239,9 @@ public class SwingDisplay implements Runnable {
             gamePanel.repaint();
         }
     }
+    
+
+    
 
     public void startApp() throws IOException{
         f.setResizable(false);
@@ -249,9 +268,10 @@ public class SwingDisplay implements Runnable {
 
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException  {
         SwingDisplay d = null;
         //try{
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             d = new SwingDisplay("Coffee-8 0.7");
             d.startApp();
             

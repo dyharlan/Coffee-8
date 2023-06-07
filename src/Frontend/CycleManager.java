@@ -64,7 +64,7 @@ public class CycleManager {
         cancelButton.addActionListener((e)->{
             dialog.dispose();
         });
-        
+         dialog.getRootPane().setDefaultButton(okButton);
     }
     
     public void showDialog(){

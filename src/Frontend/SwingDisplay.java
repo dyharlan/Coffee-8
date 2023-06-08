@@ -89,7 +89,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(gamePanel,BorderLayout.CENTER);
         romStatus = false;
         keyQueue = new ArrayBlockingQueue<>(4);
-        t = new Timer(250, (e)->{
+        t = new Timer(200, (e)->{
             System.out.println("checking...");
             if(!keyQueue.isEmpty()){
                 while(!keyQueue.isEmpty()){

@@ -9,8 +9,10 @@ package Frontend;
  * @author dyhar
  */
 import Backend.Chip8SOC;
+import Backend.InputCircularQueue;
 import Backend.MachineType;
 import java.awt.Graphics;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
@@ -20,7 +22,7 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-public class SwingDisplay implements Runnable {
+public class SwingDisplay extends KeyAdapter implements Runnable {
     Boolean romStatus;
     private Thread cpuCycleThread;
     private Boolean isRunning;
@@ -46,7 +48,8 @@ public class SwingDisplay implements Runnable {
     File rom;
     Chip8SOC chip8CPU;
     Dimension size;
-
+    Timer t;
+    ArrayBlockingQueue<Integer> keyQueue;
     public SwingDisplay(String verNo) throws IOException {
         chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
         f = new JFrame(verNo);
@@ -86,7 +89,18 @@ public class SwingDisplay implements Runnable {
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
         romStatus = false;
-        
+        keyQueue = new ArrayBlockingQueue<>(4);
+        t = new Timer(250, (e)->{
+            System.out.println("checking...");
+            if(!keyQueue.isEmpty()){
+                while(!keyQueue.isEmpty()){
+                    int currKey = keyQueue.poll();
+                    chip8CPU.keyPad[currKey] = false;
+                    System.out.println("Cleared: " + currKey);
+                }
+            }
+                
+        });
     }
     
     public void buildPanel() {
@@ -125,11 +139,13 @@ public class SwingDisplay implements Runnable {
         pauseToggle.addActionListener((e) -> {
             if (romStatus && pauseToggle.isSelected()) {
                 pauseToggle.setSelected(true);
-                
+                if(t.isRunning())
+                    t.stop();
                 stopEmulation();
             } else if(romStatus && !pauseToggle.isSelected()) {
                 pauseToggle.setSelected(false);
-                
+                if(!t.isRunning())
+                    t.start();
                 startEmulation();
             }else{
                 
@@ -189,15 +205,24 @@ public class SwingDisplay implements Runnable {
                 }
                  SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
+                        if(!t.isRunning()){
+                           t.start(); 
+                        }
                         startEmulation();
                     }
                 });
             } else {
                 romStatus = false;
+                if (t.isRunning()) {
+                    t.stop();
+                }
                 JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (IOException ioe) {
             romStatus = false;
+            if (t.isRunning()) {
+                    t.stop();
+            }
             JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -240,14 +265,190 @@ public class SwingDisplay implements Runnable {
         }
     }
     
+        public void keyPressed(KeyEvent e){
+            if(chip8CPU.keyPad == null || keyQueue.remainingCapacity() <= 0){
+                return;
+            }
+            int keyCode = e.getKeyCode();
+            switch(keyCode){
+                case KeyEvent.VK_X:
+                    chip8CPU.keyPad[0] = true;
+                    
+                    break;
+                case KeyEvent.VK_1:
+                    chip8CPU.keyPad[1] = true;
+                    
+                    break;
+                case KeyEvent.VK_2:
+                    chip8CPU.keyPad[2] = true;
+                    
+                    break;
+                case KeyEvent.VK_3:
+                    chip8CPU.keyPad[3] = true;
+                    
+                    break;
+                case KeyEvent.VK_Q:
+                    chip8CPU.keyPad[4] = true;
+                    
+                    break;
+                case KeyEvent.VK_W:
+                    chip8CPU.keyPad[5] = true;
+                    
+                    break;
+                case KeyEvent.VK_E:
+                    chip8CPU.keyPad[6] = true;
+                    break;
+                case KeyEvent.VK_A:
+                    chip8CPU.keyPad[7] = true;
+                    break;
+                case KeyEvent.VK_S:
+                    chip8CPU.keyPad[8] = true;
+                    break;
+                case KeyEvent.VK_D:
+                    chip8CPU.keyPad[9] = true;
+                    break;
+                case KeyEvent.VK_Z:
+                    chip8CPU.keyPad[10] = true;
+                    break;
+                case KeyEvent.VK_C:
+                    chip8CPU.keyPad[11] = true;
+                    break;
+                case KeyEvent.VK_4:
+                    chip8CPU.keyPad[12] = true;
+                    break;
+                case KeyEvent.VK_R:
+                    chip8CPU.keyPad[13] = true;
+                    break;
+                case KeyEvent.VK_F:
+                    chip8CPU.keyPad[14] = true;
+                    break;
+                case KeyEvent.VK_V:
+                    chip8CPU.keyPad[15] = true;
+                    break;
+            }
+//            for(int i = 0;i < chip8CPU.keyPad.length;i++){
+//                System.out.println(chip8CPU.keyPad[i] + "\t");
+//            }
+//            System.out.println("");
+        }
 
+        public void keyReleased(KeyEvent e){
+            if(chip8CPU.keyPad == null || keyQueue.remainingCapacity() <= 0){
+                return;
+            }
+            int keyCode = e.getKeyCode();
+            
+            switch(keyCode){
+                case KeyEvent.VK_X:
+                    //chip8CPU.keyPad[0] = false;
+                    if(!keyQueue.contains(0)){
+                        keyQueue.offer(0);
+                    }
+                    break;
+                case KeyEvent.VK_1:
+                    //chip8CPU.keyPad[1] = false;
+                    if(!keyQueue.contains(1)){
+                        keyQueue.offer(1);
+                    }
+                    break;
+                case KeyEvent.VK_2:
+                    //chip8CPU.keyPad[2] = false;
+                    if(!keyQueue.contains(2)){
+                        keyQueue.offer(2);
+                    }
+                    break;
+                case KeyEvent.VK_3:
+                    //chip8CPU.keyPad[3] = false;
+                    if(!keyQueue.contains(3)){
+                        keyQueue.offer(3);
+                    }
+                    break;
+                case KeyEvent.VK_Q:
+                    //chip8CPU.keyPad[4] = false;
+                    if(!keyQueue.contains(4)){
+                        keyQueue.offer(4);
+                    }
+                    break;
+                case KeyEvent.VK_W:
+                    //chip8CPU.keyPad[5] = false;
+                    if(!keyQueue.contains(5)){
+                        keyQueue.offer(5);
+                    }
+                    break;
+                case KeyEvent.VK_E:
+                    //chip8CPU.keyPad[6] = false;
+                    if(!keyQueue.contains(6)){
+                        keyQueue.offer(6);
+                    }
+                    break;
+                case KeyEvent.VK_A:
+                    //chip8CPU.keyPad[7] = false;
+                    if(!keyQueue.contains(7)){
+                        keyQueue.offer(7);
+                    }
+                    break;
+                case KeyEvent.VK_S:
+                    //chip8CPU.keyPad[8] = false;
+                    if(!keyQueue.contains(8)){
+                        keyQueue.offer(8);
+                    }
+                    break;
+                case KeyEvent.VK_D:
+                    //chip8CPU.keyPad[9] = false;
+                    if(!keyQueue.contains(9)){
+                        keyQueue.offer(9);
+                    }
+                    break;
+                case KeyEvent.VK_Z:
+                    //chip8CPU.keyPad[10] = false;
+                    if(!keyQueue.contains(10)){
+                        keyQueue.offer(10);
+                    }
+                    break;
+                case KeyEvent.VK_C:
+                    //chip8CPU.keyPad[11] = false;
+                    if(!keyQueue.contains(11)){
+                        keyQueue.offer(11);
+                    }
+                    break;
+                case KeyEvent.VK_4:
+                    //chip8CPU.keyPad[12] = false;
+                    if(!keyQueue.contains(12)){
+                        keyQueue.offer(12);
+                    }
+                    break;
+                case KeyEvent.VK_R:
+                    //chip8CPU.keyPad[13] = false;
+                    if(!keyQueue.contains(13)){
+                        keyQueue.offer(13);
+                    }
+                    break;
+                case KeyEvent.VK_F:
+                    //chip8CPU.keyPad[14] = false;
+                    if(!keyQueue.contains(14)){
+                        keyQueue.offer(14);
+                    }
+                    break;
+                case KeyEvent.VK_V:
+                    //chip8CPU.keyPad[15] = false;
+                    if(!keyQueue.contains(15)){
+                        keyQueue.offer(15);
+                    }
+                    break;
+            }
+//                       for (int i = 0; i < chip8CPU.keyPad.length; i++) {
+//                System.out.println(chip8CPU.keyPad[i] + "\t");
+//            }
+//            System.out.println("");
+        }
+        
     
 
     public void startApp() throws IOException{
         f.setResizable(false);
         f.pack();
         f.setLocationRelativeTo(null);
-        f.addKeyListener(chip8CPU);
+        f.addKeyListener(this);
         f.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 System.exit(0);

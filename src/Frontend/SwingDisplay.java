@@ -9,7 +9,6 @@ package Frontend;
  * @author dyhar
  */
 import Backend.Chip8SOC;
-import Backend.InputCircularQueue;
 import Backend.MachineType;
 import java.awt.Graphics;
 import java.util.concurrent.ArrayBlockingQueue;

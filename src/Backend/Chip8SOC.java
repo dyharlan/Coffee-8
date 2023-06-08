@@ -15,7 +15,7 @@ import java.io.*;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-public class Chip8SOC extends KeyAdapter{
+public class Chip8SOC{
 
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
@@ -34,7 +34,7 @@ public class Chip8SOC extends KeyAdapter{
     private int sT; //sound timer
     private int[] v; //cpu registers
     public int[] graphics; //screen grid??
-    private boolean[] keyPad; 
+    public boolean[] keyPad; 
     private int m_WaitForInterrupt;
     private int[] mem; //4kb of ram
     private final int[] charSet = {
@@ -207,129 +207,7 @@ public class Chip8SOC extends KeyAdapter{
           
     }
     
-    public void keyPressed(KeyEvent e){
-            if(keyPad == null){
-                return;
-            }
-            int keyCode = e.getKeyCode();
-            switch(keyCode){
-                case KeyEvent.VK_X:
-                    keyPad[0] = true;
-                    break;
-                case KeyEvent.VK_1:
-                    keyPad[1] = true;
-                    break;
-                case KeyEvent.VK_2:
-                    keyPad[2] = true;
-                    break;
-                case KeyEvent.VK_3:
-                    keyPad[3] = true;
-                    break;
-                case KeyEvent.VK_Q:
-                    keyPad[4] = true;
-                    break;
-                case KeyEvent.VK_W:
-                    keyPad[5] = true;
-                    break;
-                case KeyEvent.VK_E:
-                    keyPad[6] = true;
-                    break;
-                case KeyEvent.VK_A:
-                    keyPad[7] = true;
-                    break;
-                case KeyEvent.VK_S:
-                    keyPad[8] = true;
-                    break;
-                case KeyEvent.VK_D:
-                    keyPad[9] = true;
-                    break;
-                case KeyEvent.VK_Z:
-                    keyPad[10] = true;
-                    break;
-                case KeyEvent.VK_C:
-                    keyPad[11] = true;
-                    break;
-                case KeyEvent.VK_4:
-                    keyPad[12] = true;
-                    break;
-                case KeyEvent.VK_R:
-                    keyPad[13] = true;
-                    break;
-                case KeyEvent.VK_F:
-                    keyPad[14] = true;
-                    break;
-                case KeyEvent.VK_V:
-                    keyPad[15] = true;
-                    break;
-            }
-//            for(int i = 0;i < keyPad.length;i++){
-//                System.out.println(keyPad[i] + "\t");
-//            }
-//            System.out.println("");
-        }
 
-        public void keyReleased(KeyEvent e){
-            if(keyPad == null){
-                return;
-            }
-            int keyCode = e.getKeyCode();
-            
-            switch(keyCode){
-                case KeyEvent.VK_X:
-                    keyPad[0] = false;
-                    break;
-                case KeyEvent.VK_1:
-                    keyPad[1] = false;
-                    break;
-                case KeyEvent.VK_2:
-                    keyPad[2] = false;
-                    break;
-                case KeyEvent.VK_3:
-                    keyPad[3] = false;
-                    break;
-                case KeyEvent.VK_Q:
-                    keyPad[4] = false;
-                    break;
-                case KeyEvent.VK_W:
-                    keyPad[5] = false;
-                    break;
-                case KeyEvent.VK_E:
-                    keyPad[6] = false;
-                    break;
-                case KeyEvent.VK_A:
-                    keyPad[7] = false;
-                    break;
-                case KeyEvent.VK_S:
-                    keyPad[8] = false;
-                    break;
-                case KeyEvent.VK_D:
-                    keyPad[9] = false;
-                    break;
-                case KeyEvent.VK_Z:
-                    keyPad[10] = false;
-                    break;
-                case KeyEvent.VK_C:
-                    keyPad[11] = false;
-                    break;
-                case KeyEvent.VK_4:
-                    keyPad[12] = false;
-                    break;
-                case KeyEvent.VK_R:
-                    keyPad[13] = false;
-                    break;
-                case KeyEvent.VK_F:
-                    keyPad[14] = false;
-                    break;
-                case KeyEvent.VK_V:
-                    keyPad[15] = false;
-                    break;
-            }
-//                       for (int i = 0; i < keyPad.length; i++) {
-//                System.out.println(keyPad[i] + "\t");
-//            }
-//            System.out.println("");
-        }
-        
         
     
     /*
@@ -423,7 +301,7 @@ public class Chip8SOC extends KeyAdapter{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        //System.out.println(pc);
+        //System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;

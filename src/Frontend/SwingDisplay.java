@@ -90,12 +90,12 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         romStatus = false;
         keyQueue = new ArrayBlockingQueue<>(4);
         t = new Timer(200, (e)->{
-            System.out.println("checking...");
+            //System.out.println("checking...");
             if(!keyQueue.isEmpty()){
                 while(!keyQueue.isEmpty()){
                     int currKey = keyQueue.poll();
                     chip8CPU.keyPad[currKey] = false;
-                    System.out.println("Cleared: " + currKey);
+                    //System.out.println("Cleared: " + currKey);
                 }
             }
                 

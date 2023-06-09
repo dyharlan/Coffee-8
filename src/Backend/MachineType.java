@@ -20,6 +20,16 @@ public enum MachineType {
 //     jumpQuirks = false;
 
     COSMAC_VIP("COSMAC VIP",64,32,new boolean[]{false,false,true,false,true,true,true,false}),
+    
+//SuperChip 1.1 settings
+//     vfOrderQuirks = false;
+//     shiftQuirks = true;
+//     logicQuirks = false;
+//     loadStoreQuirks = true;
+//     clipQuirks = true;
+//     vBlankQuirks = false;
+//     IOverflowQuirks = true;
+//     jumpQuirks = true;
     SUPERCHIP_1_1("Super-Chip 1.1",64,32,new boolean[]{false,true,false,true,true,false,true,true});
 
     private String machineName;

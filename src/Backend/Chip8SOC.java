@@ -188,7 +188,7 @@ public class Chip8SOC{
         hires = false;
         v = new int[16];
         mem = new int[4096];
-        graphics = new int[128*64];
+        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
         flags = new int[16];
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
@@ -261,10 +261,13 @@ public class Chip8SOC{
             hires = true;
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
+            graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
+            graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+
         }
     }    
     
@@ -359,7 +362,7 @@ public class Chip8SOC{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        System.out.println(Integer.toHexString(opcode));
+        //System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
@@ -462,14 +465,14 @@ public class Chip8SOC{
         System.exit(0);
     }
     private void C8INST_00FE(){
-        setHiRes(true);
+        setHiRes(false);
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
         pc+=2;
     }
     private void C8INST_00FF(){
-        setHiRes(false);
+        setHiRes(true);
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
@@ -621,35 +624,37 @@ public class Chip8SOC{
     private void C8INST_DXY0(){
         if(currentMachine == MachineType.COSMAC_VIP)
             C8INST_DXYN();
-        if (WaitForInterrupt()) {
-            return;
-        }
-        int x = v[X];
-        int y = v[Y];
-        v[0xF] = 0;
-        int i = I;
-        int currPixel = 0;
-        int targetPixel = 0;
-        for (byte yLine = 0; yLine < 16; yLine++) {
+        else {
+            if (WaitForInterrupt()) {
+                return;
+            }
+            int x = v[X];
+            int y = v[Y];
+            v[0xF] = 0;
+            int i = I;
+            int currPixel = 0;
+            int targetPixel = 0;
+            for (byte yLine = 0; yLine < 16; yLine++) {
 
-            for (byte xLine = 0; xLine < 16; xLine++) {
-                currPixel = ((mem[i + (yLine*2)+(xLine >7? 1:0)] >> (7-(xLine%8))) & 0x1);
-                targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
-                if (clipQuirks) {
-                    if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
-                        currPixel = 0;
+                for (byte xLine = 0; xLine < 16; xLine++) {
+                    currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
+                    targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                    if (clipQuirks) {
+                        if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+                            currPixel = 0;
+                        }
                     }
-                }
-                if (currPixel == 0) { 
-                    continue; 
-                }
-                //check if pixel in current sprite row is on
-                if (currPixel != 0) {
-                    if (graphics[targetPixel] == 1) {
-                        this.graphics[targetPixel] = 0;
-                        this.v[0xF] = 0x1;
-                    } else {
-                        graphics[targetPixel] ^= 1;
+                    if (currPixel == 0) {
+                        continue;
+                    }
+                    //check if pixel in current sprite row is on
+                    if (currPixel != 0) {
+                        if (graphics[targetPixel] == 1) {
+                            this.graphics[targetPixel] = 0;
+                            this.v[0xF] = 0x1;
+                        } else {
+                            graphics[targetPixel] ^= 1;
+                        }
                     }
                 }
             }

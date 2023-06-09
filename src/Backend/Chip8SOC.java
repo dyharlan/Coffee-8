@@ -26,6 +26,8 @@ public class Chip8SOC{
     private Boolean clipQuirks;
     private Boolean vBlankQuirks;
     private Boolean IOverflowQuirks;
+    private Boolean jumpQuirks;
+
     private int cycles;
     private int pc; //16-bit Program Counter
     private int I; //12-bit Index register
@@ -53,12 +55,25 @@ public class Chip8SOC{
         0xF0, 0x80, 0x80, 0x80, 0xF0, // C
         0xE0, 0x90, 0x90, 0x90, 0xE0, // D
         0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+        0xF0, 0x80, 0xF0, 0x80, 0x80,  // F
+        
+        //Hi-Res fonts
+        0x3C, 0x7E, 0xE7, 0xC3, 0xC3, 0xC3, 0xC3, 0xE7, 0x7E, 0x3C, // "0"
+        0x18, 0x38, 0x58, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, // "1"
+        0x3E, 0x7F, 0xC3, 0x06, 0x0C, 0x18, 0x30, 0x60, 0xFF, 0xFF, // "2"
+        0x3C, 0x7E, 0xC3, 0x03, 0x0E, 0x0E, 0x03, 0xC3, 0x7E, 0x3C, // "3"
+        0x06, 0x0E, 0x1E, 0x36, 0x66, 0xC6, 0xFF, 0xFF, 0x06, 0x06, // "4"
+        0xFF, 0xFF, 0xC0, 0xC0, 0xFC, 0xFE, 0x03, 0xC3, 0x7E, 0x3C, // "5"
+        0x3E, 0x7C, 0xC0, 0xC0, 0xFC, 0xFE, 0xC3, 0xC3, 0x7E, 0x3C, // "6"
+        0xFF, 0xFF, 0x03, 0x06, 0x0C, 0x18, 0x30, 0x60, 0x60, 0x60, // "7"
+        0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // "8"
+        0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C // "9"            
     };
     int X;
     int Y;
     private pStack cst; //16-bit stack
     private Boolean playSound;
+    private Boolean hires;
     ToneGenerator tg;
     Random rand;
     MachineType currentMachine;
@@ -67,9 +82,11 @@ public class Chip8SOC{
     private Instruction[] _0xDInstructions;
     private Instruction[] _0xEInstructions;
     private Instruction[] _0xFInstructions;
+    private int[] flags;
     //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
+        hires = false;
         currentMachine = m;
         rand = new Random();
         DISPLAY_WIDTH = m.getDisplayWidth();
@@ -81,6 +98,7 @@ public class Chip8SOC{
         clipQuirks = m.getQuirks(4);
         vBlankQuirks = m.getQuirks(5);
         IOverflowQuirks = m.getQuirks(6);
+        jumpQuirks = m.getQuirks(7);
         cycles = 20;
         playSound = sound;
         fillInstructionTable();
@@ -92,9 +110,30 @@ public class Chip8SOC{
        for(i = 0; i < _0x0Instructions.length;i++){
           _0x0Instructions[i] = () -> C8INST_UNKNOWN();
        }
-       
+       _0x0Instructions[0xC0] = () -> C8INST_00CN();
+       _0x0Instructions[0xC1] = () -> C8INST_00CN();
+       _0x0Instructions[0xC2] = () -> C8INST_00CN();
+       _0x0Instructions[0xC3] = () -> C8INST_00CN();
+       _0x0Instructions[0xC4] = () -> C8INST_00CN();
+       _0x0Instructions[0xC5] = () -> C8INST_00CN();
+       _0x0Instructions[0xC6] = () -> C8INST_00CN();
+       _0x0Instructions[0xC7] = () -> C8INST_00CN();
+       _0x0Instructions[0xC8] = () -> C8INST_00CN();
+       _0x0Instructions[0xC9] = () -> C8INST_00CN();
+       _0x0Instructions[0xCA] = () -> C8INST_00CN();
+       _0x0Instructions[0xCB] = () -> C8INST_00CN();
+       _0x0Instructions[0xCC] = () -> C8INST_00CN();
+       _0x0Instructions[0xCD] = () -> C8INST_00CN();
+       _0x0Instructions[0xCE] = () -> C8INST_00CN();
+       _0x0Instructions[0xCF] = () -> C8INST_00CN();
        _0x0Instructions[0xE0] = () -> C8INST_00E0();
        _0x0Instructions[0xEE] = () -> C8INST_00EE(); 
+       _0x0Instructions[0xFB] = () -> C8INST_00FB(); 
+       _0x0Instructions[0xFC] = () -> C8INST_00FC(); 
+       _0x0Instructions[0xFD] = () -> C8INST_00FD(); 
+       _0x0Instructions[0xFE] = () -> C8INST_00FE(); 
+       _0x0Instructions[0xFF] = () -> C8INST_00FF(); 
+
        
        _0x8Instructions = new Instruction[0xF];
        for(i = 0; i < _0x8Instructions.length ;i++){
@@ -134,17 +173,23 @@ public class Chip8SOC{
        _0xFInstructions[0x1E] = () -> C8INST_FX1E();
        _0xFInstructions[0x0A] = () -> C8INST_FX0A();
        _0xFInstructions[0x29] = () -> C8INST_FX29();
+       _0xFInstructions[0x30] = () -> C8INST_FX30();
        _0xFInstructions[0x33] = () -> C8INST_FX33();
        _0xFInstructions[0x55] = () -> C8INST_FX55();
        _0xFInstructions[0x65] = () -> C8INST_FX65();
+       _0xFInstructions[0x75] = () -> C8INST_FX75();
+       _0xFInstructions[0x85] = () -> C8INST_FX85();
+       
        
        
     }
     
     public void chip8Init(){
+        hires = false;
         v = new int[16];
         mem = new int[4096];
-        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+        graphics = new int[128*64];
+        flags = new int[16];
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
@@ -161,6 +206,7 @@ public class Chip8SOC{
     }
     
     public boolean loadROM(File rom) throws IOException, FileNotFoundException{
+        hires = false;
         Boolean romStatus = false;
         try {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
@@ -207,8 +253,20 @@ public class Chip8SOC{
           
     }
     
-
-        
+    public Boolean getHiRes(){
+        return hires;
+    }
+    public void setHiRes(Boolean flag){
+        if(flag){
+            hires = true;
+            DISPLAY_WIDTH = 128;
+            DISPLAY_HEIGHT = 64;
+        }else if(!flag){
+            hires = false;
+            DISPLAY_WIDTH = 64;
+            DISPLAY_HEIGHT = 32;
+        }
+    }    
     
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
@@ -301,7 +359,7 @@ public class Chip8SOC{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        //System.out.println(Integer.toHexString(opcode));
+        System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
@@ -359,6 +417,14 @@ public class Chip8SOC{
     private void C8INSTSET_0000(){
         _0x0Instructions[(opcode & 0xFF)].execute();
     }
+    
+    private void C8INST_00CN(){
+        int height = opcode & 0xF;
+        for (var z = graphics.length - 1; z >= 0; z--) {
+            graphics[z] = (z >= DISPLAY_WIDTH * height) ? graphics[z - (DISPLAY_WIDTH * height)] : 0;
+        }
+        pc+=2;
+    }
     //00E0: Clear Screen
     private void C8INST_00E0(){
         for (int x = 0; x < graphics.length; x++) {
@@ -370,6 +436,44 @@ public class Chip8SOC{
     private void C8INST_00EE(){
         pc = cst.pop();
         pc += 2;
+    }
+    
+    private void C8INST_00FB() {
+
+        for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
+            for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
+                graphics[y + x] = (x > 3) ? graphics[y + x - 4] : 0;
+            }
+        }
+        pc+=2;
+    }
+    
+    private void C8INST_00FC() {
+
+        for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
+            for (int x = 0; x < DISPLAY_WIDTH; x++) {
+                graphics[y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[y + x + 4] : 0;
+            }
+        }
+        pc+=2;
+    }
+    //00FD: Exit interpreter
+    private void C8INST_00FD(){
+        System.exit(0);
+    }
+    private void C8INST_00FE(){
+        setHiRes(true);
+        for (int x = 0; x < graphics.length; x++) {
+            graphics[x] = 0;
+        }
+        pc+=2;
+    }
+    private void C8INST_00FF(){
+        setHiRes(false);
+        for (int x = 0; x < graphics.length; x++) {
+            graphics[x] = 0;
+        }
+        pc+=2;
     }
     //0x1NNN jump to address NNN
     private void C8INST_1NNN(){
@@ -498,7 +602,11 @@ public class Chip8SOC{
     }
     //0xBNNN Jumps to the address NNN plus cpu->v0
     private void C8INST_BNNN() {
-        pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
+        if(jumpQuirks){
+            pc = ((opcode & 0x0FFF) + v[X]) & 0xFFFF;
+        }else{
+            pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
+        }
     }
     //0xCXNN generates a random number, binary ANDs it with NN, and stores it in Vx.
     private void C8INST_CXNN() {
@@ -513,6 +621,41 @@ public class Chip8SOC{
     private void C8INST_DXY0(){
         if(currentMachine == MachineType.COSMAC_VIP)
             C8INST_DXYN();
+        if (WaitForInterrupt()) {
+            return;
+        }
+        int x = v[X];
+        int y = v[Y];
+        v[0xF] = 0;
+        int i = I;
+        int currPixel = 0;
+        int targetPixel = 0;
+        for (byte yLine = 0; yLine < 16; yLine++) {
+
+            for (byte xLine = 0; xLine < 16; xLine++) {
+                currPixel = ((mem[i + (yLine*2)+(xLine >7? 1:0)] >> (7-(xLine%8))) & 0x1);
+                targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                if (clipQuirks) {
+                    if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+                        currPixel = 0;
+                    }
+                }
+                if (currPixel == 0) { 
+                    continue; 
+                }
+                //check if pixel in current sprite row is on
+                if (currPixel != 0) {
+                    if (graphics[targetPixel] == 1) {
+                        this.graphics[targetPixel] = 0;
+                        this.v[0xF] = 0x1;
+                    } else {
+                        graphics[targetPixel] ^= 1;
+                    }
+                }
+            }
+        }
+        
+        pc += 2;
     } 
     /*
     * DXYN derived from Octo and https://github.com/Klairm/chip8
@@ -628,6 +771,11 @@ public class Chip8SOC{
         I = ((v[X]*5) +  0x50);
         pc +=2;
     }
+    
+     private void C8INST_FX30(){
+        I = ((v[X]*10) +  0xA0);
+        pc +=2;
+    }
     //FX33: Get number from vX and
     //store hundreds digit in memory point by I
     //store tens digit in memory point by I+1
@@ -662,6 +810,18 @@ public class Chip8SOC{
         pc += 2; 
     }
     
+     private void C8INST_FX75(){
+        for(int n = 0;n < flags.length;n++){
+            flags[n] = v[n];
+        }
+        pc += 2; 
+    }
     
+     private void C8INST_FX85(){
+        for(int n = 0;n < flags.length;n++){
+            v[n] = flags[n];
+        }
+        pc += 2; 
+    }
     
 }

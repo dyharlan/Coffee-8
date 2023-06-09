@@ -845,14 +845,14 @@ public class Chip8SOC{
     }
     
      private void C8INST_FX75(){
-        for(int n = 0;n < flags.length;n++){
+        for(int n = 0;(n < X) || (n <= 7);n++){
             flags[n] = v[n];
         }
         pc += 2; 
     }
     
      private void C8INST_FX85(){
-        for(int n = 0;n < flags.length;n++){
+        for(int n = 0;(n < X) || (n <= 7);n++){
             v[n] = flags[n];
         }
         pc += 2; 

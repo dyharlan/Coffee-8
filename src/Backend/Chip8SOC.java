@@ -27,7 +27,8 @@ public class Chip8SOC{
     private Boolean vBlankQuirks;
     private Boolean IOverflowQuirks;
     private Boolean jumpQuirks;
-
+    private int waitReg;
+    private Boolean waitState;
     private int cycles;
     private int pc; //16-bit Program Counter
     private int I; //12-bit Index register
@@ -101,6 +102,8 @@ public class Chip8SOC{
         jumpQuirks = m.getQuirks(7);
         cycles = 20;
         playSound = sound;
+        waitReg = -1;
+        waitState = false;
         fillInstructionTable();
     }
     
@@ -764,13 +767,39 @@ public class Chip8SOC{
     }
     //FX0A: Stops program execution until a key is pressed.
     private void C8INST_FX0A(){
-        for (byte key = 0; key < keyPad.length; key++) {
-            if (keyPad[key]) {
-                v[X] = (key & 0xFF);
-                pc += 2;
-            }
-        }
+        //for (byte key = 0; key < keyPad.length; key++) {
+            //if (keyPad[key]) {
+            //    v[X] = (key & 0xFF);
+            //    pc += 2;
+            //}
+        //}
+        waitState = true; waitReg = X;
     }
+    
+    
+    
+    public void sendKeyStroke(int keyValue){
+        v[waitReg] = keyValue;
+        pc+=2;
+    }
+    
+    public int getWaitReg() {
+        return waitReg;
+    }
+
+    public Boolean getWaitState() {
+        return waitState;
+    }
+
+    public void setWaitReg(int waitReg) {
+        this.waitReg = waitReg;
+    }
+
+    public void setWaitState(Boolean waitState) {
+        this.waitState = waitState;
+    }
+    
+    
     //FX29: Point index register to font in memory
     private void C8INST_FX29(){
         I = ((v[X]*5) +  0x50);

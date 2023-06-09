@@ -40,6 +40,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             private JMenuItem foregroundColorManager;
     private JPanel gamePanel;
     private final int SCALE_FACTOR = 20;
+    private final int LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
     private int sizeX = 0;
     private int sizeY = 0;
     private Color backgroundColor;
@@ -66,7 +67,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
                 if(chip8CPU.getHiRes()){
-                    g2d.scale(SCALE_FACTOR/2, SCALE_FACTOR/2);
+                    g2d.scale(LOWRES_SCALE_FACTOR, LOWRES_SCALE_FACTOR);
                 }else{
                     g2d.scale(SCALE_FACTOR, SCALE_FACTOR);
                 }

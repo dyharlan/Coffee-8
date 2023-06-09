@@ -50,7 +50,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     Timer t;
     ArrayBlockingQueue<Integer> keyQueue;
     public SwingDisplay(String verNo) throws IOException {
-        chip8CPU = new Chip8SOC(true, MachineType.COSMAC_VIP);
+        chip8CPU = new Chip8SOC(true, MachineType.SUPERCHIP_1_1);
         f = new JFrame(verNo);
         isRunning = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
@@ -65,7 +65,12 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-                g2d.scale(SCALE_FACTOR, SCALE_FACTOR);
+                if(chip8CPU.getHiRes()){
+                    g2d.scale(SCALE_FACTOR/2, SCALE_FACTOR/2);
+                }else{
+                    g2d.scale(SCALE_FACTOR, SCALE_FACTOR);
+                }
+                
 
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {

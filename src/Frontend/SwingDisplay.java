@@ -49,7 +49,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     Chip8SOC chip8CPU;
     Dimension size;
     Timer t;
-    ArrayBlockingQueue<Integer> keyQueue;
     public SwingDisplay(String verNo) throws IOException {
         chip8CPU = new Chip8SOC(true, MachineType.SUPERCHIP_1_1);
         f = new JFrame(verNo);
@@ -94,18 +93,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
         romStatus = false;
-        keyQueue = new ArrayBlockingQueue<>(4);
-//        t = new Timer(0, (e)->{
-//            //System.out.println("checking...");
-//            if(!keyQueue.isEmpty()){
-//                while(!keyQueue.isEmpty()){
-//                    int currKey = keyQueue.poll();
-//                    chip8CPU.keyPad[currKey] = false;
-//                    //System.out.println("Cleared: " + currKey);
-//                }
-//            }
-//                
-//        });
+
     }
     
     public void buildPanel() {
@@ -144,13 +132,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         pauseToggle.addActionListener((e) -> {
             if (romStatus && pauseToggle.isSelected()) {
                 pauseToggle.setSelected(true);
-//                if(t.isRunning())
-//                    t.stop();
                 stopEmulation();
             } else if(romStatus && !pauseToggle.isSelected()) {
                 pauseToggle.setSelected(false);
-//                if(!t.isRunning())
-//                    t.start();
                 startEmulation();
             }else{
                 
@@ -210,24 +194,15 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }
                  SwingUtilities.invokeLater(new Runnable() {
                     public void run() {
-//                        if(!t.isRunning()){
-//                           t.start(); 
-//                        }
                         startEmulation();
                     }
                 });
             } else {
                 romStatus = false;
-//                if (t.isRunning()) {
-//                    t.stop();
-//                }
                 JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (IOException ioe) {
             romStatus = false;
-//            if (t.isRunning()) {
-//                    t.stop();
-//            }
             JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -350,9 +325,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(0);
                     }
                     chip8CPU.keyPad[0] = false;
-                    //if(!keyQueue.contains(0)){
-                    //    keyQueue.offer(0);
-                    //}
                     break;
                 case KeyEvent.VK_1:
                     if(chip8CPU.getWaitState()){
@@ -360,10 +332,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(1);
                     }
                     chip8CPU.keyPad[1] = false;
-                    //chip8CPU.keyPad[1] = false;
-//                    if(!keyQueue.contains(1)){
-//                        keyQueue.offer(1);
-//                    }
                     break;
                 case KeyEvent.VK_2:
                     if(chip8CPU.getWaitState()){
@@ -371,10 +339,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(2);
                     }
                     chip8CPU.keyPad[2] = false;
-                    //chip8CPU.keyPad[2] = false;
-//                    if(!keyQueue.contains(2)){
-//                        keyQueue.offer(2);
-//                    }
                     break;
                 case KeyEvent.VK_3:
                     if(chip8CPU.getWaitState()){
@@ -382,10 +346,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(3);
                     }
                     chip8CPU.keyPad[3] = false;
-                    //chip8CPU.keyPad[3] = false;
-//                    if(!keyQueue.contains(3)){
-//                        keyQueue.offer(3);
-//                    }
                     break;
                 case KeyEvent.VK_Q:
                     if(chip8CPU.getWaitState()){
@@ -393,10 +353,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(4);
                     }
                     chip8CPU.keyPad[4] = false;
-                    //chip8CPU.keyPad[4] = false;
-//                    if(!keyQueue.contains(4)){
-//                        keyQueue.offer(4);
-//                    }
                     break;
                 case KeyEvent.VK_W:
                     if(chip8CPU.getWaitState()){
@@ -404,10 +360,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(5);
                     }
                     chip8CPU.keyPad[5] = false;
-                    //chip8CPU.keyPad[5] = false;
-//                    if(!keyQueue.contains(5)){
-//                        keyQueue.offer(5);
-//                    }
                     break;
                 case KeyEvent.VK_E:
                     if(chip8CPU.getWaitState()){
@@ -415,10 +367,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(6);
                     }
                     chip8CPU.keyPad[6] = false;
-                    //chip8CPU.keyPad[6] = false;
-//                    if(!keyQueue.contains(6)){
-//                        keyQueue.offer(6);
-//                    }
                     break;
                 case KeyEvent.VK_A:
                     if(chip8CPU.getWaitState()){
@@ -426,10 +374,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(7);
                     }
                     chip8CPU.keyPad[7] = false;
-                    //chip8CPU.keyPad[7] = false;
-//                    if(!keyQueue.contains(7)){
-//                        keyQueue.offer(7);
-//                    }
                     break;
                 case KeyEvent.VK_S:
                     if(chip8CPU.getWaitState()){
@@ -437,10 +381,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(8);
                     }
                     chip8CPU.keyPad[8] = false;
-                    //chip8CPU.keyPad[8] = false;
-//                    if(!keyQueue.contains(8)){
-//                        keyQueue.offer(8);
-//                    }
                     break;
                 case KeyEvent.VK_D:
                     if(chip8CPU.getWaitState()){
@@ -448,10 +388,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(9);
                     }
                     chip8CPU.keyPad[9] = false;
-                    //chip8CPU.keyPad[9] = false;
-//                    if(!keyQueue.contains(9)){
-//                        keyQueue.offer(9);
-//                    }
                     break;
                 case KeyEvent.VK_Z:
                     if(chip8CPU.getWaitState()){
@@ -459,10 +395,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(10);
                     }
                     chip8CPU.keyPad[10] = false;
-                    //chip8CPU.keyPad[10] = false;
-//                    if(!keyQueue.contains(10)){
-//                        keyQueue.offer(10);
-//                    }
                     break;
                 case KeyEvent.VK_C:
                     if(chip8CPU.getWaitState()){
@@ -470,10 +402,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(11);
                     }
                     chip8CPU.keyPad[11] = false;
-                    //chip8CPU.keyPad[11] = false;
-//                    if(!keyQueue.contains(11)){
-//                        keyQueue.offer(11);
-//                    }
                     break;
                 case KeyEvent.VK_4:
                     if(chip8CPU.getWaitState()){
@@ -481,10 +409,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(12);
                     }
                     chip8CPU.keyPad[12] = false;
-                    //chip8CPU.keyPad[12] = false;
-//                    if(!keyQueue.contains(12)){
-//                        keyQueue.offer(12);
-//                    }
                     break;
                 case KeyEvent.VK_R:
                     if(chip8CPU.getWaitState()){
@@ -492,10 +416,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(13);
                     }
                     chip8CPU.keyPad[13] = false;
-                    //chip8CPU.keyPad[13] = false;
-//                    if(!keyQueue.contains(13)){
-//                        keyQueue.offer(13);
-//                    }
                     break;
                 case KeyEvent.VK_F:
                     if(chip8CPU.getWaitState()){
@@ -503,10 +423,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(14);
                     }
                     chip8CPU.keyPad[14] = false;
-                    //chip8CPU.keyPad[14] = false;
-//                    if(!keyQueue.contains(14)){
-//                        keyQueue.offer(14);
-//                    }
                     break;
                 case KeyEvent.VK_V:
                     if(chip8CPU.getWaitState()){
@@ -514,10 +430,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.sendKeyStroke(15);
                     }
                     chip8CPU.keyPad[15] = false;
-                    //chip8CPU.keyPad[15] = false;
-//                    if(!keyQueue.contains(15)){
-//                        keyQueue.offer(15);
-//                    }
                     break;
             }
 //                       for (int i = 0; i < chip8CPU.keyPad.length; i++) {
@@ -557,7 +469,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         SwingDisplay d = null;
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            d = new SwingDisplay("Coffee-8 0.9");
+            d = new SwingDisplay("Coffee-8 0.98");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

@@ -61,5 +61,7 @@ public enum MachineType {
         this.quirks = quirks;
     }
     
-    
+    public String toString(){
+        return machineName;
+    }
 }

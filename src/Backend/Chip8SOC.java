@@ -10,7 +10,6 @@ package Backend;
  * @author dyhar
  */
 import java.util.*;
-import java.awt.event.*;
 import java.io.*;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -87,9 +86,19 @@ public class Chip8SOC{
     //Default machine is COSMAC VIP
     //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
-        hires = false;
-        currentMachine = m;
+        
         rand = new Random();
+        cycles = 20;
+        playSound = sound;
+        hires = false;
+       
+
+        setCurrentMachine(m);
+        fillInstructionTable();
+    }
+    
+    public void setCurrentMachine(MachineType m){
+        currentMachine = m;
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         vfOrderQuirks = m.getQuirks(0);
@@ -100,11 +109,6 @@ public class Chip8SOC{
         vBlankQuirks = m.getQuirks(5);
         IOverflowQuirks = m.getQuirks(6);
         jumpQuirks = m.getQuirks(7);
-        cycles = 20;
-        playSound = sound;
-        waitReg = -1;
-        waitState = false;
-        fillInstructionTable();
     }
     
     public void fillInstructionTable(){
@@ -206,6 +210,8 @@ public class Chip8SOC{
         X = 0;
         Y = 0;
         m_WaitForInterrupt = 0;
+        waitReg = -1;
+        waitState = false;
     }
     
     public boolean loadROM(File rom) throws IOException, FileNotFoundException{
@@ -259,6 +265,11 @@ public class Chip8SOC{
     public Boolean getHiRes(){
         return hires;
     }
+    
+    public MachineType getCurrentMachine(){
+        return currentMachine;
+    }
+    
     public void setHiRes(Boolean flag){
         if(flag){
             hires = true;
@@ -365,7 +376,7 @@ public class Chip8SOC{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        //System.out.println(Integer.toHexString(opcode));
+        System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
@@ -756,7 +767,7 @@ public class Chip8SOC{
     private void C8INST_FX1E(){
         if (IOverflowQuirks) {
             I += v[X] & 0xFFF;
-            if (I >= 0x1000) {
+            if (I > 0xFFF) {
                 v[0xF] = 1;
             }
         } else {

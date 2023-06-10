@@ -11,7 +11,6 @@ package Frontend;
 import Backend.Chip8SOC;
 import Backend.MachineType;
 import java.awt.Graphics;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
@@ -32,6 +31,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             private JMenuItem loadROM;
             private JMenuItem exitSwitch;
         private JMenu emulationMenu;
+            private JMenu machineTypeMenu;
+                private ButtonGroup machineGroup;
+                private JRadioButtonMenuItem cosmacVIP;
+                private JRadioButtonMenuItem sChip1_1;
+                private ItemListener machineChangeListener;
             private JMenuItem cycleManager;
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
@@ -47,14 +51,21 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     private Color foregroundColor;
     File rom;
     Chip8SOC chip8CPU;
-    Dimension size;
-    Timer t;
+    MachineType m;
     public SwingDisplay(String verNo) throws IOException {
-        chip8CPU = new Chip8SOC(true, MachineType.SUPERCHIP_1_1);
+        
         f = new JFrame(verNo);
         isRunning = false;
+        romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
         buildPanel();
+        m = MachineType.COSMAC_VIP;
+        chip8CPU = new Chip8SOC(true, m);
+        if(chip8CPU.getCurrentMachine() == MachineType.COSMAC_VIP){
+            cosmacVIP.setSelected(true);
+        }else if(chip8CPU.getCurrentMachine() == MachineType.SUPERCHIP_1_1){
+            sChip1_1.setSelected(true);
+        }
         backgroundColor = Color.ORANGE;
         foregroundColor = Color.BLUE;
         sizeX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
@@ -92,7 +103,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
-        romStatus = false;
+       
 
     }
     
@@ -103,9 +114,12 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         loadROM = new JMenuItem("Load ROM");
         loadROM.addActionListener((e) -> {
             JFileChooser chooser = new JFileChooser();
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(
+            FileNameExtensionFilter c8roms = new FileNameExtensionFilter(
                     "Chip-8 ROM Files", "c8", "ch8");
-            chooser.setFileFilter(filter);
+            chooser.setFileFilter(c8roms);
+            FileNameExtensionFilter sc8roms = new FileNameExtensionFilter(
+                    "Superchip ROM Files", "sc8");
+            chooser.addChoosableFileFilter(sc8roms);
             if (rom == null) {
                 chooser.setCurrentDirectory(new File("."));
             } else {
@@ -128,6 +142,53 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu = new JMenu("Emulation");
         
         mb.add(emulationMenu);
+        machineTypeMenu = new JMenu("Select Machine Type");
+            machineGroup = new ButtonGroup();
+            cosmacVIP = new JRadioButtonMenuItem("COSMAC VIP");
+            sChip1_1 = new JRadioButtonMenuItem("Superchip 1.1");
+            machineGroup.add(cosmacVIP);
+            machineGroup.add(sChip1_1);
+            machineTypeMenu.add(cosmacVIP);
+            machineTypeMenu.add(sChip1_1);
+
+            machineChangeListener = (e) -> {
+                if(cosmacVIP.isSelected()){   
+                    if(romStatus && rom != null){          
+                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: " + m + " ? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        if(choice == JOptionPane.YES_OPTION){
+                            m = MachineType.COSMAC_VIP;
+                            chip8CPU.setCurrentMachine(m);
+                            loadROM(rom);
+                        }else if(choice == JOptionPane.NO_OPTION){
+                            if(sChip1_1.isSelected()){
+                                cosmacVIP.setSelected(true);
+                            }
+                        }
+                    }else{
+                       m = MachineType.COSMAC_VIP; 
+                       chip8CPU.setCurrentMachine(m);
+                    }
+                }else if(sChip1_1.isSelected()){
+                    
+                    if(romStatus && rom != null){
+                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: " + m + " ? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        if(choice == JOptionPane.YES_OPTION){
+                            m = MachineType.SUPERCHIP_1_1;
+                            chip8CPU.setCurrentMachine(m);
+                            loadROM(rom);
+                        }else if(choice == JOptionPane.NO_OPTION){
+                            if(cosmacVIP.isSelected()){
+                                sChip1_1.setSelected(true);
+                            }
+                        }
+                    }else{
+                        m = MachineType.SUPERCHIP_1_1;
+                        chip8CPU.setCurrentMachine(m);
+                    }
+                }
+            };
+            cosmacVIP.addItemListener(machineChangeListener);
+            sChip1_1.addItemListener(machineChangeListener);
         pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
         pauseToggle.addActionListener((e) -> {
             if (romStatus && pauseToggle.isSelected()) {
@@ -178,6 +239,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             CycleManager cyManager = new CycleManager(chip8CPU,f);
             cyManager.showDialog();
         });
+        emulationMenu.add(machineTypeMenu);
         emulationMenu.add(cycleManager);
         emulationMenu.add(resetSwitch);
         emulationMenu.add(backgroundColorManager);

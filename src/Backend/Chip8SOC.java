@@ -215,7 +215,6 @@ public class Chip8SOC{
     }
     
     public boolean loadROM(File rom) throws IOException, FileNotFoundException{
-        hires = false;
         Boolean romStatus = false;
         try {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));

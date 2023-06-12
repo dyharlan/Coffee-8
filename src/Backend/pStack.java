@@ -3,13 +3,13 @@ package Backend;
 
 public class pStack {
 
-    private int maxSize;
+    private final int MAX_SIZE;
     private int[] stackArray;
     private int top;
 
     pStack(int s) {
-        maxSize = s;
-        stackArray = new int[maxSize];
+        MAX_SIZE = s;
+        stackArray = new int[MAX_SIZE];
         top = -1;
     }
 

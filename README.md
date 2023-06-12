@@ -1,13 +1,13 @@
-<h1><center>Coffee-8</center></h1>
-<center><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></center>
+<h1 align="center">Coffee-8</h1>
+<h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
-<h2><center>A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Currently simulates both the SuperChip 1.1, and the COSMAC VIP interpreters.</center></h2>
+<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Currently simulates both the SuperChip 1.1, and the COSMAC VIP interpreters.</h2>
 
-<center>
+<h3 align="center">
 <img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/>
 <img alt="Space Invaders by David Winter" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Space%20Invaders.PNG" width="420" height="240"/>
 <img alt="Spacefight 2091 by Carsten Soerensen" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Spacefight%202091.PNG" width="420" height="240"/>
-</center>
+</h3>
 
 ## Accuracy
 Coffee-8 passes [Timedus'](https://github.com/Timendus/chip8-test-suite) and [metteo's](https://github.com/metteo/chip8-test-rom) Test Suite for the Chip-8 and the Super-Chip.

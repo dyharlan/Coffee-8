@@ -24,8 +24,7 @@ public class pStack {
 
     public int pop() {
         if (this.isEmpty() == true) {
-            //throw new Exception("The stack is empty!");
-            return -1;
+            throw new IllegalStateException("Stack Underflow");
         } else {
             return stackArray[top--];
         }

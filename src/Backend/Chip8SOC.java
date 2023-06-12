@@ -101,7 +101,6 @@ public class Chip8SOC{
     private Instruction[] _0xFInstructions;
     private int[] flags;
     //Default machine is COSMAC VIP
-    //switch table structure derived from: https://github.com/brokenprogrammer/CHIP-8-Emulator
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
         
         rand = new Random();

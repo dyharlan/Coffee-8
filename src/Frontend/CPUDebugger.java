@@ -22,6 +22,11 @@
  * THE SOFTWARE.
  */
 package Frontend;
+/**
+ *
+ * @author dyharlan
+ */
+
 import java.io.*;
 
 public class CPUDebugger {

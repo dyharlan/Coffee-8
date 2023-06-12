@@ -25,7 +25,7 @@ package Backend;
 
 /**
  *
- * @author dyhar
+ * @author dyharlan
  */
 public enum MachineType {
 //cosmac VIP settings

@@ -37,7 +37,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 /**
  *
- * @author dyhar
+ * @author dyharlan
  */
 public class ToneGenerator {
     InputStream is;

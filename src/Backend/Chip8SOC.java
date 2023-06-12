@@ -24,7 +24,7 @@
 package Backend;
 /**
  *
- * @author dyhar
+ * @author dyharlan
  */
 import java.util.*;
 import java.io.*;
@@ -54,7 +54,7 @@ public class Chip8SOC{
     private int[] v; //cpu registers
     public int[] graphics; //screen grid??
     public boolean[] keyPad; 
-    private int m_WaitForInterrupt;
+    private int interruptState;
     private int[] mem; //4kb of ram
     private final int[] charSet = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -108,8 +108,6 @@ public class Chip8SOC{
         cycles = 20;
         playSound = sound;
         hires = false;
-       
-
         setCurrentMachine(m);
         fillInstructionTable();
     }
@@ -226,7 +224,7 @@ public class Chip8SOC{
         cst = new pStack(12);
         X = 0;
         Y = 0;
-        m_WaitForInterrupt = 0;
+        interruptState = 0;
         waitReg = -1;
         waitState = false;
     }
@@ -310,17 +308,18 @@ public class Chip8SOC{
             return false;
         }
 
-        switch (m_WaitForInterrupt) {
+        switch (interruptState) {
             case 0:
-                m_WaitForInterrupt = 1;
+                interruptState = 1;
                 return true;
             case 1:
                 return true;
             default:
-                m_WaitForInterrupt = 0;
+                interruptState = 0;
                 return false;
         }
     }
+    //setters and getters for various global variables
     public int getMachineWidth(){
         return DISPLAY_WIDTH;
     }
@@ -329,11 +328,11 @@ public class Chip8SOC{
     }
     
     public void setVBLankInterrupt(int status){
-        m_WaitForInterrupt = status;
+        interruptState = status;
     }
     
     public int getVBLankInterrupt(){
-        return m_WaitForInterrupt;
+        return interruptState;
     }
     
     public void setCycles(int cycleCount){
@@ -442,13 +441,13 @@ public class Chip8SOC{
     };
     //this is called if the opcode executed is either unknown or unimplemented
     private void C8INST_UNKNOWN(){
-        System.out.println("Unknown Opcode: " + Integer.toHexString(opcode));
+        System.err.println("Unknown Opcode: " + Integer.toHexString(opcode));
     }
     //execute instructions that have 0x0 as their prefix
     private void C8INSTSET_0000(){
         _0x0Instructions[(opcode & 0xFF)].execute();
     }
-    
+    //00CN: Scroll display N pixels down; in low resolution mode, N/2 pixels
     private void C8INST_00CN(){
         int height = opcode & 0xF;
         for (var z = graphics.length - 1; z >= 0; z--) {
@@ -468,7 +467,7 @@ public class Chip8SOC{
         pc = cst.pop();
         pc += 2;
     }
-    
+    //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
 
         for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
@@ -478,7 +477,7 @@ public class Chip8SOC{
         }
         pc+=2;
     }
-    
+    //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
 
         for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
@@ -492,6 +491,7 @@ public class Chip8SOC{
     private void C8INST_00FD(){
         System.exit(0);
     }
+    //00FE: disable hi-res
     private void C8INST_00FE(){
         setHiRes(false);
         for (int x = 0; x < graphics.length; x++) {
@@ -499,6 +499,7 @@ public class Chip8SOC{
         }
         pc+=2;
     }
+    //enable hi-res
     private void C8INST_00FF(){
         setHiRes(true);
         for (int x = 0; x < graphics.length; x++) {
@@ -691,7 +692,7 @@ public class Chip8SOC{
         pc += 2;
     } 
     /*
-    * DXYN derived from Octo and https://github.com/Klairm/chip8
+    * DXYN derived from Octo
     */
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
@@ -801,7 +802,9 @@ public class Chip8SOC{
         waitState = true; waitReg = X;
     }
     
-    
+    /*
+    * These are a public methods that frontends need to use to get input on keyUp during FX0A
+    */
     
     public void sendKeyStroke(int keyValue){
         v[waitReg] = keyValue;
@@ -830,8 +833,8 @@ public class Chip8SOC{
         I = ((v[X]*5) +  0x50);
         pc +=2;
     }
-    
-     private void C8INST_FX30(){
+    //FX30: Point I to 10-byte font sprite for digit VX (only digits 0-9)
+    private void C8INST_FX30(){
         I = ((v[X]*10) +  0xA0);
         pc +=2;
     }
@@ -868,15 +871,15 @@ public class Chip8SOC{
         }
         pc += 2; 
     }
-    
-     private void C8INST_FX75(){
+    //FX75: Store V0..VX in RPL user flags (X <= 7)
+    private void C8INST_FX75(){
         for(int n = 0;(n < X) || (n <= 7);n++){
             flags[n] = v[n];
         }
         pc += 2; 
     }
-    
-     private void C8INST_FX85(){
+    //FX85: Read V0..VX from RPL user flags (X <= 7)
+    private void C8INST_FX85(){
         for(int n = 0;(n < X) || (n <= 7);n++){
             v[n] = flags[n];
         }

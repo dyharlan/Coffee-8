@@ -28,9 +28,10 @@ import java.awt.*;
 import java.awt.event.*;
 /**
  *
- * @author dyhar
+ * @author dyharlan
  */
 public class CycleManager {
+    //global variables
     Chip8SOC chip8CPU;
     JDialog dialog;
     JFrame parentFrame;
@@ -38,6 +39,7 @@ public class CycleManager {
     JButton okButton,cancelButton;
     JLabel errorLabel;
     JTextField inputField;
+    //constructor
     public CycleManager(Chip8SOC chip8CPU, JFrame f){
         this.chip8CPU = chip8CPU;
         parentFrame = f;
@@ -48,6 +50,12 @@ public class CycleManager {
                     dialog.dispose();
                 }
             });
+        /*
+        * Layout of the cycle manager:
+        * hintPanel: tells what the cycle setting does
+        * inputPanel: contains the input field for setting the cycles
+        * buttonPanel: contains the buttons for doing actions
+        */
         dialog.setLayout(new GridLayout(3,1));
         hintPanel = new JPanel();
         hintPanel.setLayout(new FlowLayout());
@@ -68,7 +76,7 @@ public class CycleManager {
             buttonPanel.add(okButton);
             buttonPanel.add(cancelButton);
        
-        
+        //action listener for the ok button
         okButton.addActionListener((e)->{
             try{
                 chip8CPU.setCycles(Integer.parseInt(inputField.getText()));
@@ -78,12 +86,13 @@ public class CycleManager {
             }
             
         });
+        //action listener for the cancel button
         cancelButton.addActionListener((e)->{
             dialog.dispose();
         });
          dialog.getRootPane().setDefaultButton(okButton);
     }
-    
+    //show dialog method
     public void showDialog(){
         dialog.pack();
         dialog.setResizable(false);

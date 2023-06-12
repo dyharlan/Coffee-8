@@ -22,7 +22,10 @@
  * THE SOFTWARE.
  */
 package Frontend;
-
+/**
+ *
+ * @author dyharlan
+ */
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -30,17 +33,20 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 public class ColorManager {
+    //Global Vars
     Color c;
     JColorChooser jcc;
     JDialog dialog;
     JPanel previewPanel;
-
+    //Constructor
     ColorManager(JFrame parentComponent, Color c) {
         this.c = c;
         jcc = new JColorChooser(this.c);
+        //create a simple preview panel
         previewPanel = new JPanel();
         previewPanel.add(new JLabel("This is the color"));
         previewPanel.setBackground(this.c);
+        //Build a custom JColorChooser JDialog
         if (dialog == null) {
             dialog = JColorChooser.createDialog(
                     parentComponent, // parent comp
@@ -50,7 +56,9 @@ public class ColorManager {
                     new okListener(),
                     new cancelListener());
         }
+        //set preview panel
         jcc.setPreviewPanel(previewPanel);
+        //set a listener for the ok button
         jcc.getSelectionModel().addChangeListener(new okListener());
         dialog.addWindowListener( new WindowAdapter(){
                 public void windowClosing(WindowEvent e){
@@ -60,22 +68,22 @@ public class ColorManager {
         dialog.setVisible(true);
         
     }
-    
+    //return set color
     public Color getColor(){
         return c;
     }
-    
+    //listener for the ok button
     public class okListener implements ActionListener,ChangeListener  {
         public void actionPerformed(ActionEvent e) {
             c = jcc.getColor();
         }
         
-         public void stateChanged(ChangeEvent event) {
+        public void stateChanged(ChangeEvent event) {
             Color newColor = jcc.getColor();
             previewPanel.setBackground(newColor);
         }
     }
-    
+    // listener for the cancel button
     public class cancelListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
             if(dialog != null)

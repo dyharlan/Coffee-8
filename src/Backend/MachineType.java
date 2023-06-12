@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2023 dyhar.
+ * Copyright 2023 dyharlan.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal

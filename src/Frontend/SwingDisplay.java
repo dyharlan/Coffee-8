@@ -43,7 +43,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     private Thread cpuCycleThread;
     private Boolean isRunning;
     private Graphics2D g2d;
-    private JFrame f;
+    protected JFrame f;
     private JMenuBar mb;
         private JMenu fileMenu;
             private JMenuItem loadROM;
@@ -54,15 +54,16 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 private JRadioButtonMenuItem cosmacVIP;
                 private JRadioButtonMenuItem sChip1_1;
                 private ActionListener machineChangeListener;
+            private JMenuItem scalingManager;
             private JMenuItem cycleManager;
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
             private JCheckBoxMenuItem soundToggle;
             private JMenuItem backgroundColorManager;
             private JMenuItem foregroundColorManager;
-    private JPanel gamePanel;
-    private final int SCALE_FACTOR = 20;
-    private final int LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
+    protected JPanel gamePanel;
+    protected int SCALE_FACTOR = 20;
+    protected int LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
     private int sizeX = 0;
     private int sizeY = 0;
     private Color backgroundColor;
@@ -118,6 +119,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
             }
         };
+        f.setMinimumSize(new Dimension(128,64));
         gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
@@ -243,13 +245,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                    gamePanel.repaint();
             }
         });
-        
+        scalingManager = new JMenuItem("Set Video Scale");
+        scalingManager.addActionListener((e) -> {
+            ScalingManager scManager = new ScalingManager(this);
+            scManager.showDialog();
+        });
         cycleManager = new JMenuItem("Set CPU Cycle Count");
         cycleManager.addActionListener((e) -> {
             CycleManager cyManager = new CycleManager(chip8CPU,f);
             cyManager.showDialog();
         });
         emulationMenu.add(machineTypeMenu);
+        emulationMenu.add(scalingManager);
         emulationMenu.add(cycleManager);
         emulationMenu.add(resetSwitch);
         emulationMenu.add(backgroundColorManager);

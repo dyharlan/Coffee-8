@@ -152,16 +152,17 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             machineTypeMenu.add(sChip1_1);
 
             machineChangeListener = (e) -> {
-                if(cosmacVIP.isSelected()){   
+                if(cosmacVIP.isSelected()){  
+                    
                     if(romStatus && rom != null){          
-                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to the COSMAC VIP? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
-                        if(choice == JOptionPane.YES_OPTION){
+                        //int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to the COSMAC VIP? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        //if(choice == JOptionPane.YES_OPTION){
                             m = MachineType.COSMAC_VIP;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
-                        }else if(choice == JOptionPane.NO_OPTION){
-                            sChip1_1.setSelected(true);
-                        }
+                        //}else if(choice == JOptionPane.NO_OPTION){
+                        //    sChip1_1.setSelected(true);
+                        //}
                     }else{
                        m = MachineType.COSMAC_VIP; 
                        chip8CPU.setCurrentMachine(m);
@@ -169,14 +170,14 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }else if(sChip1_1.isSelected()){
                     
                     if(romStatus && rom != null){
-                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: the SuperChip 1.1? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
-                        if(choice == JOptionPane.YES_OPTION){
+                        //int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: the SuperChip 1.1? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        //if(choice == JOptionPane.YES_OPTION){
                             m = MachineType.SUPERCHIP_1_1;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
-                        }else if(choice == JOptionPane.NO_OPTION){
-                            cosmacVIP.setSelected(true);
-                        }
+                        //}else if(choice == JOptionPane.NO_OPTION){
+                        //    cosmacVIP.setSelected(true);
+                        //}
                     }else{
                         m = MachineType.SUPERCHIP_1_1;
                         chip8CPU.setCurrentMachine(m);
@@ -222,12 +223,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         backgroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,backgroundColor);
             backgroundColor = cm.getColor();
+            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+                   gamePanel.repaint();
+            }
 
         });
         foregroundColorManager = new JMenuItem("Set Foreground Color");
         foregroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,foregroundColor);
             foregroundColor = cm.getColor();
+            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+                   gamePanel.repaint();
+            }
         });
         
         cycleManager = new JMenuItem("Set CPU Cycle Count");

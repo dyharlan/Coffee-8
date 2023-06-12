@@ -30,7 +30,20 @@ import java.util.*;
 import java.io.*;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+ /*
+    * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
+    * they look like this:
+    * public void execute(){
+    *   //a function that calls a specific instruction
+    * }
+    *
+    * Idea from here: https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
+ */
+@FunctionalInterface
+interface Instruction {
 
+    public void execute();
+}
 public class Chip8SOC{
 
     private int DISPLAY_WIDTH;
@@ -94,6 +107,7 @@ public class Chip8SOC{
     ToneGenerator tg;
     Random rand;
     MachineType currentMachine;
+    private Instruction[] c8Instructions;
     private Instruction[] _0x0Instructions;
     private Instruction[] _0x8Instructions;
     private Instruction[] _0xDInstructions;
@@ -126,6 +140,24 @@ public class Chip8SOC{
     }
     
     public void fillInstructionTable(){
+        c8Instructions = new Instruction[]{
+            () -> C8INSTSET_0000(),
+            () -> C8INST_1NNN(),
+            () -> C8INST_2NNN(),
+            () -> C8INST_3XNN(),
+            () -> C8INST_4XNN(),
+            () -> C8INST_5XY0(),
+            () -> C8INST_6XNN(),
+            () -> C8INST_7XNN(),
+            () -> C8INSTSET_8000(),
+            () -> C8INST_9XY0(),
+            () -> C8INST_ANNN(),
+            () -> C8INST_BNNN(),
+            () -> C8INST_CXNN(),
+            () -> C8INSTSET_DXY(),
+            () -> C8INSTSET_E000(),
+            () -> C8INSTSET_F000()
+        };
        int i;
        _0x0Instructions = new Instruction[0x100];
        for(i = 0; i < _0x0Instructions.length;i++){
@@ -401,43 +433,14 @@ public class Chip8SOC{
         
         
     }
-    /*
-    * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
-    * they look like this:
-    * public void execute(){
-    *   //a function that calls a specific instruction
-    * }
-    *
-    * Idea from here: https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
-    */
-    @FunctionalInterface
-    interface Instruction{
-        public void execute();
-    }
+   
     /*
     * Array of interfaces.
     * this is called under cpuExec() where the index is derived by
     * obtaining the 4th nibble of an opcode.
     * another array is referenced when a nibble as multiple instructions, as is the case for 0x0, 0x8, 0xD,0xE, and 0xFz
     */
-    private Instruction[] c8Instructions = new Instruction[]{
-        ()-> C8INSTSET_0000(),
-        ()-> C8INST_1NNN(),
-        ()-> C8INST_2NNN(),
-        ()-> C8INST_3XNN(),
-        ()-> C8INST_4XNN(),
-        ()-> C8INST_5XY0(),
-        ()-> C8INST_6XNN(),
-        ()-> C8INST_7XNN(),
-        ()-> C8INSTSET_8000(),
-        ()-> C8INST_9XY0(),
-        ()-> C8INST_ANNN(),
-        ()-> C8INST_BNNN(),
-        ()-> C8INST_CXNN(),
-        ()-> C8INSTSET_DXY(),
-        ()-> C8INSTSET_E000(),
-        ()-> C8INSTSET_F000()
-    };
+    
     //this is called if the opcode executed is either unknown or unimplemented
     private void C8INST_UNKNOWN(){
         System.err.println("Unknown Opcode: " + Integer.toHexString(opcode));

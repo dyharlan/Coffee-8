@@ -328,8 +328,6 @@ public class Chip8SOC{
         return cycles;
     }
     
-    
-    
     public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
         if(tg != null && playSound)
             return;
@@ -376,7 +374,7 @@ public class Chip8SOC{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        System.out.println(Integer.toHexString(opcode));
+        //System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;

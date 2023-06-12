@@ -35,7 +35,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 private ButtonGroup machineGroup;
                 private JRadioButtonMenuItem cosmacVIP;
                 private JRadioButtonMenuItem sChip1_1;
-                private ItemListener machineChangeListener;
+                private ActionListener machineChangeListener;
             private JMenuItem cycleManager;
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
@@ -154,15 +154,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             machineChangeListener = (e) -> {
                 if(cosmacVIP.isSelected()){   
                     if(romStatus && rom != null){          
-                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: " + m + " ? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to the COSMAC VIP? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
                         if(choice == JOptionPane.YES_OPTION){
                             m = MachineType.COSMAC_VIP;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
                         }else if(choice == JOptionPane.NO_OPTION){
-                            if(sChip1_1.isSelected()){
-                                cosmacVIP.setSelected(true);
-                            }
+                            sChip1_1.setSelected(true);
                         }
                     }else{
                        m = MachineType.COSMAC_VIP; 
@@ -171,15 +169,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }else if(sChip1_1.isSelected()){
                     
                     if(romStatus && rom != null){
-                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: " + m + " ? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
+                        int choice = JOptionPane.showConfirmDialog(f, "Are you sure you want to change the machine type to: the SuperChip 1.1? \nThis will reset the emulator.", "Action Confirmation", JOptionPane.YES_NO_OPTION );
                         if(choice == JOptionPane.YES_OPTION){
                             m = MachineType.SUPERCHIP_1_1;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
                         }else if(choice == JOptionPane.NO_OPTION){
-                            if(cosmacVIP.isSelected()){
-                                sChip1_1.setSelected(true);
-                            }
+                            cosmacVIP.setSelected(true);
                         }
                     }else{
                         m = MachineType.SUPERCHIP_1_1;
@@ -187,8 +183,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     }
                 }
             };
-            cosmacVIP.addItemListener(machineChangeListener);
-            sChip1_1.addItemListener(machineChangeListener);
+            cosmacVIP.addActionListener(machineChangeListener);
+            sChip1_1.addActionListener(machineChangeListener);
         pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
         pauseToggle.addActionListener((e) -> {
             if (romStatus && pauseToggle.isSelected()) {

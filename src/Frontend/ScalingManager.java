@@ -47,6 +47,7 @@ public class ScalingManager {
         dialog = new JDialog(s.f,"Set Video Scaling", true);
         
         dialog.addWindowListener( new WindowAdapter(){
+                @Override
                 public void windowClosing(WindowEvent e){
                     s.SCALE_FACTOR = currentScalingMultiplier;
                     s.LOWRES_SCALE_FACTOR = currentScalingMultiplier/2;

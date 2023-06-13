@@ -28,6 +28,7 @@ package Backend;
  */
 import java.util.*;
 import java.io.*;
+import java.util.zip.CRC32;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
  /*
@@ -48,6 +49,7 @@ public class Chip8SOC{
 
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
+    private long crc32Checksum;
     private Boolean vfOrderQuirks;
     private Boolean shiftQuirks;
     private Boolean logicQuirks;
@@ -238,6 +240,7 @@ public class Chip8SOC{
     }
     
     public void chip8Init(){
+        int crc32Checksum = 0;
         hires = false;
         v = new int[16];
         mem = new int[4096];
@@ -262,23 +265,27 @@ public class Chip8SOC{
     
     public boolean loadROM(File rom) throws IOException, FileNotFoundException{
         Boolean romStatus = false;
-        try {
-            DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)))){ 
+            //ByteArrayOutputStream baos = new ByteArrayOutputStream();
             int offset = 0x0;
             int currByte = 0;
             chip8Init();
+            CRC32 crc32 = new CRC32();
             while (currByte != -1) {
                 currByte = in.read();
+                crc32.update(currByte & 0xFF);
                 mem[0x200 + offset] = currByte & 0xFF;
                 offset += 0x1;
-            }            
+            }
+            crc32Checksum = crc32.getValue();
 //            for (int i = 0; i < 0x900; i++) {
 //                if (i % 10 == 0 && i != 0) {
 //                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
 //                    System.out.print("\n");
 //                }
 //                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
-//            }           
+//            }
+            in.close();
             romStatus = true;
         }catch(FileNotFoundException fnfe){
             throw fnfe;
@@ -875,16 +882,46 @@ public class Chip8SOC{
     }
     //FX75: Store V0..VX in RPL user flags (X <= 7)
     private void C8INST_FX75(){
-        for(int n = 0;(n < X) || (n <= 7);n++){
-            flags[n] = v[n];
+//        for(int n = 0;(n < X) || (n <= 7);n++){
+//            flags[n] = v[n];
+//        }
+        File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
+        
+        try{
+            if (!f.exists()) {
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+            }
+            try ( DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
+
+                for (int n = 0; (n <= X); n++) {
+                    out.writeInt(v[n] & 0xFF);
+                }
+                out.flush();
+                out.close();
+            }catch(IOException ioe){
+                throw ioe;
+            }
+        }catch(IOException ioe){
+            ioe.printStackTrace();
         }
+        
         pc += 2; 
     }
     //FX85: Read V0..VX from RPL user flags (X <= 7)
     private void C8INST_FX85(){
-        for(int n = 0;(n < X) || (n <= 7);n++){
-            v[n] = flags[n];
+        File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
+        if (f.exists()) {
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));) {
+                for (int n = 0; (n <= X) || in.available() > 0; n++) {
+                    v[n] = in.readInt();
+                }
+                in.close();
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
         }
+         
         pc += 2; 
     }
     

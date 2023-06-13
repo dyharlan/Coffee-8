@@ -46,6 +46,7 @@ public class CycleManager {
         dialog = new JDialog(f,"Set CPU Cycle Count", true);
         
         dialog.addWindowListener( new WindowAdapter(){
+                @Override
                 public void windowClosing(WindowEvent e){
                     dialog.dispose();
                 }

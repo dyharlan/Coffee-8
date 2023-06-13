@@ -61,6 +61,7 @@ public class ColorManager {
         //set a listener for the ok button
         jcc.getSelectionModel().addChangeListener(new okListener());
         dialog.addWindowListener( new WindowAdapter(){
+                @Override
                 public void windowClosing(WindowEvent e){
                     dialog.dispose();
                 }
@@ -74,10 +75,12 @@ public class ColorManager {
     }
     //listener for the ok button
     public class okListener implements ActionListener,ChangeListener  {
+        @Override
         public void actionPerformed(ActionEvent e) {
             c = jcc.getColor();
         }
         
+        @Override
         public void stateChanged(ChangeEvent event) {
             Color newColor = jcc.getColor();
             previewPanel.setBackground(newColor);
@@ -85,6 +88,7 @@ public class ColorManager {
     }
     // listener for the cancel button
     public class cancelListener implements ActionListener {
+        @Override
         public void actionPerformed(ActionEvent e) {
             if(dialog != null)
                 dialog.dispose();

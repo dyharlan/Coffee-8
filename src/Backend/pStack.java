@@ -66,11 +66,7 @@ public class pStack {
     }
 
     public boolean isFull() {
-        if (top == stackArray.length - 1) {
-            return true;
-        } else {
-            return false;
-        }
+        return top == stackArray.length - 1;
     }
 
     public void clear() {

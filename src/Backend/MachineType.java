@@ -51,36 +51,36 @@ public enum MachineType {
 //     jumpQuirks = true;
     SUPERCHIP_1_1("Super-Chip 1.1",64,32,new boolean[]{false,true,false,true,true,false,true,true});
 
-    private String machineName;
-    private int displayWidth;
-    private int displayHeight;
-    private boolean quirks[];
+    private final String MACHINE_NAME;
+    private final int DISPLAY_WIDTH;
+    private final int DISPLAY_HEIGHT;
+    private final boolean[] MACHINE_QUIRKS;
 
 
     public String getMachineName() {
-        return machineName;
+        return MACHINE_NAME;
     }
 
     public int getDisplayWidth() {
-        return displayWidth;
+        return DISPLAY_WIDTH;
     }
 
     public int getDisplayHeight() {
-        return displayHeight;
+        return DISPLAY_HEIGHT;
     }
 
     public boolean getQuirks(int i) {
-        return quirks[i];
+        return MACHINE_QUIRKS[i];
     }
     
     MachineType(String machineName,int displayW, int displayH, boolean quirks[]){
-        this.machineName = machineName;
-        displayWidth = displayW;
-        displayHeight = displayH;
-        this.quirks = quirks;
+        this.MACHINE_NAME = machineName;
+        DISPLAY_WIDTH = displayW;
+        DISPLAY_HEIGHT = displayH;
+        this.MACHINE_QUIRKS = quirks;
     }
     
     public String toString(){
-        return machineName;
+        return MACHINE_NAME;
     }
 }

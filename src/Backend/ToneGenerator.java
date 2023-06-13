@@ -47,7 +47,6 @@ public class ToneGenerator {
     ByteArrayInputStream bais;
     SourceDataLine sourceDataLine;
     soundThread sThread;
-    byte[] buf;
     byte[] abData;
     Boolean isPlaying;
     Boolean isEnabled;

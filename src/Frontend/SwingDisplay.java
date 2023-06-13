@@ -91,6 +91,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         sizeY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
         
         gamePanel = new JPanel() {
+            @Override
             public void paint(Graphics g) {
 
                 g2d = (Graphics2D) g;
@@ -271,10 +272,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
                 }
-                 SwingUtilities.invokeLater(new Runnable() {
-                    public void run() {
-                        startEmulation();
-                    }
+                 SwingUtilities.invokeLater(() -> {
+                     startEmulation();
                 });
             } else {
                 romStatus = false;
@@ -300,7 +299,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         isRunning = false;
         cpuCycleThread = null;
     }
-
+    @Override
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         while (isRunning) {
@@ -311,19 +310,17 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
             chip8CPU.updateTimers();
             try {
-                cpuCycleThread.sleep(16);
+                cpuCycleThread.sleep(17);
             } catch (InterruptedException ex) {
                 ex.printStackTrace();
             }
-            //System.out.println(chip8CPU.getVBLankInterrupt());
             if (chip8CPU.getVBLankInterrupt() == 1) {
-                
                 chip8CPU.setVBLankInterrupt(2);
             }
             gamePanel.repaint();
         }
     }
-    
+        @Override
         public void keyPressed(KeyEvent e){
             if(chip8CPU.keyPad == null){
                 return;
@@ -390,7 +387,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 //            }
 //            System.out.println("");
         }
-
+        
+        @Override
         public void keyReleased(KeyEvent e){
             if(chip8CPU.keyPad == null){
                 return;
@@ -525,6 +523,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.setLocationRelativeTo(null);
         f.addKeyListener(this);
         f.addWindowListener(new WindowAdapter() {
+            @Override
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
             }
@@ -545,10 +544,10 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException  {
-        SwingDisplay d = null;
+        
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            d = new SwingDisplay("Coffee-8 1.0rc1");
+            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc1");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

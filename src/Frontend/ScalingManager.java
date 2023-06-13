@@ -25,7 +25,6 @@ package Frontend;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import Frontend.SwingDisplay;
 /**
  *
  * @author dyharlan

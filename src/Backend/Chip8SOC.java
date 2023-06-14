@@ -115,7 +115,6 @@ public class Chip8SOC{
     private Instruction[] _0xDInstructions;
     private Instruction[] _0xEInstructions;
     private Instruction[] _0xFInstructions;
-    private int[] flags;
     //Default machine is COSMAC VIP
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
         
@@ -245,7 +244,6 @@ public class Chip8SOC{
         v = new int[16];
         mem = new int[4096];
         graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
-        flags = new int[16];
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
@@ -328,6 +326,7 @@ public class Chip8SOC{
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
             graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+            
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;

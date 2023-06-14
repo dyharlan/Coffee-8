@@ -184,6 +184,10 @@ public class ScalingManager {
                 s.f.pack();
                 dialog.dispose();
             }
+            s.hiResViewWidth = s.IMGWIDTH * s.LOWRES_SCALE_FACTOR;
+            s.hiResViewHeight = s.IMGHEIGHT * s.LOWRES_SCALE_FACTOR;
+            s.lowResViewWidth = s.IMGWIDTH * s.SCALE_FACTOR;
+            s.lowResViewHeight = s.IMGHEIGHT * s.SCALE_FACTOR;
         }
     }
 }

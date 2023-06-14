@@ -32,6 +32,7 @@ import java.awt.Graphics;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
@@ -39,7 +40,24 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class SwingDisplay extends KeyAdapter implements Runnable {
-    Boolean romStatus;
+    protected final int IMGWIDTH = 128;
+    protected final int IMGHEIGHT = 64;
+    protected int hiResViewWidth;
+    protected int hiResViewHeight; 
+    protected int lowResViewWidth;
+    protected int lowResViewHeight; 
+    protected int SCALE_FACTOR;
+    protected int LOWRES_SCALE_FACTOR;
+    private int panelX;
+    private int panelY;
+    private Color backgroundColor;
+    private Color foregroundColor;
+    File rom;
+    MachineType m;
+    
+    public BufferedImage image;
+    public Graphics2D frameBuffer;
+    private Boolean romStatus;
     private Thread cpuCycleThread;
     private Boolean isRunning;
     private Graphics2D g2d;
@@ -61,24 +79,25 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             private JCheckBoxMenuItem soundToggle;
             private JMenuItem backgroundColorManager;
             private JMenuItem foregroundColorManager;
-    protected JPanel gamePanel;
-    protected int SCALE_FACTOR = 20;
-    protected int LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
-    private int sizeX = 0;
-    private int sizeY = 0;
-    private Color backgroundColor;
-    private Color foregroundColor;
-    File rom;
+    public JPanel gamePanel;
+    
+
     Chip8SOC chip8CPU;
-    MachineType m;
+
     public SwingDisplay(String verNo) throws IOException {
-        
+        image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
+        frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        isRunning = false;
-        romStatus = false;
-        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
+        SCALE_FACTOR = 20;
+        LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
         buildPanel();
-        m = MachineType.COSMAC_VIP;
+        m = MachineType.SUPERCHIP_1_1;
+        
+        
+        hiResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
+        hiResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
+        lowResViewWidth = IMGWIDTH * SCALE_FACTOR;
+        lowResViewHeight = IMGHEIGHT * SCALE_FACTOR;
         chip8CPU = new Chip8SOC(true, m);
         if(chip8CPU.getCurrentMachine() == MachineType.COSMAC_VIP){
             cosmacVIP.setSelected(true);
@@ -87,41 +106,40 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         }
         backgroundColor = Color.ORANGE;
         foregroundColor = Color.BLUE;
-        sizeX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
-        sizeY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
-        
+        isRunning = false;
+        romStatus = false;
+        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
+        panelX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
+        panelY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
         gamePanel = new JPanel() {
             @Override
             public void paint(Graphics g) {
-
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-                if(chip8CPU.getHiRes()){
-                    g2d.scale(LOWRES_SCALE_FACTOR, LOWRES_SCALE_FACTOR);
-                }else{
-                    g2d.scale(SCALE_FACTOR, SCALE_FACTOR);
-                }
-                
 
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
                             if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                g.setColor(foregroundColor);
-                                g.fillRect(x, y, 1, 1);
-                                
+                                frameBuffer.setColor(foregroundColor);
+                                frameBuffer.fillRect(x, y, 1, 1);
+
                             } else {
-                                g.setColor(backgroundColor);
-                                g.fillRect(x, y, 1, 1);
+                                frameBuffer.setColor(backgroundColor);
+                                frameBuffer.fillRect(x, y, 1, 1);
                             }
                         }
-                    } 
+                    }
                 }
 
+                if (chip8CPU.getHiRes()) {
+                    g2d.drawImage(image, 0, 0, hiResViewWidth, hiResViewHeight, gamePanel);
+                } else {
+                    g2d.drawImage(image, 0, 0, lowResViewWidth, lowResViewHeight, gamePanel);
+                }
             }
         };
-        f.setMinimumSize(new Dimension(128,64));
-        gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
+        gamePanel.setPreferredSize(new Dimension(panelX, panelY));
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
        
@@ -177,6 +195,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     if(romStatus && rom != null){          
                             m = MachineType.COSMAC_VIP;
                             chip8CPU.setCurrentMachine(m);
+                            
                             loadROM(rom);
                     }else{
                        m = MachineType.COSMAC_VIP; 
@@ -184,9 +203,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     }
                 }else if(sChip1_1.isSelected()){
                     if(romStatus && rom != null){
-
                             m = MachineType.SUPERCHIP_1_1;
                             chip8CPU.setCurrentMachine(m);
+                            
                             loadROM(rom);
                     }else{
                         m = MachineType.SUPERCHIP_1_1;
@@ -284,7 +303,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-
     public void startEmulation() {
         if (cpuCycleThread == null) {
             isRunning = true;
@@ -547,7 +565,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc1");
+            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc3");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

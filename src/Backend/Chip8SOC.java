@@ -71,6 +71,7 @@ public class Chip8SOC{
     public boolean[] keyPad; 
     private int interruptState;
     private int[] mem; //4kb of ram
+    private int plane;
     private final int[] charSet = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
         0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -111,6 +112,7 @@ public class Chip8SOC{
     MachineType currentMachine;
     private Instruction[] c8Instructions;
     private Instruction[] _0x0Instructions;
+    private Instruction[] _0x5Instructions;
     private Instruction[] _0x8Instructions;
     private Instruction[] _0xDInstructions;
     private Instruction[] _0xEInstructions;
@@ -147,7 +149,8 @@ public class Chip8SOC{
             () -> C8INST_2NNN(),
             () -> C8INST_3XNN(),
             () -> C8INST_4XNN(),
-            () -> C8INST_5XY0(),
+            //() -> C8INST_5XY0(),
+            () -> C8INSTSET_5000(),
             () -> C8INST_6XNN(),
             () -> C8INST_7XNN(),
             () -> C8INSTSET_8000(),
@@ -180,6 +183,24 @@ public class Chip8SOC{
        _0x0Instructions[0xCD] = () -> C8INST_00CN();
        _0x0Instructions[0xCE] = () -> C8INST_00CN();
        _0x0Instructions[0xCF] = () -> C8INST_00CN();
+       
+        _0x0Instructions[0xD0] = () -> C8INST_00DN();
+        _0x0Instructions[0xD1] = () -> C8INST_00DN();
+        _0x0Instructions[0xD2] = () -> C8INST_00DN();
+        _0x0Instructions[0xD3] = () -> C8INST_00DN();
+        _0x0Instructions[0xD4] = () -> C8INST_00DN();
+        _0x0Instructions[0xD5] = () -> C8INST_00DN();
+        _0x0Instructions[0xD6] = () -> C8INST_00DN();
+        _0x0Instructions[0xD7] = () -> C8INST_00DN();
+        _0x0Instructions[0xD8] = () -> C8INST_00DN();
+        _0x0Instructions[0xD9] = () -> C8INST_00DN();
+        _0x0Instructions[0xDA] = () -> C8INST_00DN();
+        _0x0Instructions[0xDB] = () -> C8INST_00DN();
+        _0x0Instructions[0xDC] = () -> C8INST_00DN();
+        _0x0Instructions[0xDD] = () -> C8INST_00DN();
+        _0x0Instructions[0xDE] = () -> C8INST_00DN();
+        _0x0Instructions[0xDF] = () -> C8INST_00DN();
+       
        _0x0Instructions[0xE0] = () -> C8INST_00E0();
        _0x0Instructions[0xEE] = () -> C8INST_00EE(); 
        _0x0Instructions[0xFB] = () -> C8INST_00FB(); 
@@ -188,6 +209,11 @@ public class Chip8SOC{
        _0x0Instructions[0xFE] = () -> C8INST_00FE(); 
        _0x0Instructions[0xFF] = () -> C8INST_00FF(); 
 
+       _0x5Instructions = new Instruction[0x4];
+       _0x5Instructions[0x0] = () -> C8INST_5XY0();
+       _0x5Instructions[0x1] = () -> C8INST_UNKNOWN();
+       _0x5Instructions[0x2] = () -> C8INST_5XY2();
+       _0x5Instructions[0x3] = () -> C8INST_5XY3();
        
        _0x8Instructions = new Instruction[0xF];
        for(i = 0; i < _0x8Instructions.length ;i++){
@@ -221,6 +247,9 @@ public class Chip8SOC{
        for(i = 0; i < _0xFInstructions.length ;i++){
           _0xFInstructions[i] = () -> C8INST_UNKNOWN();
        }
+       _0xFInstructions[0x00] = () -> C8INST_F000_NNNN();
+       _0xFInstructions[0x01] = () -> C8INST_FN01();
+       _0xFInstructions[0x02] = () -> C8INST_F002();
        _0xFInstructions[0x07] = () -> C8INST_FX07();
        _0xFInstructions[0x15] = () -> C8INST_FX15();
        _0xFInstructions[0x18] = () -> C8INST_FX18();
@@ -229,6 +258,7 @@ public class Chip8SOC{
        _0xFInstructions[0x29] = () -> C8INST_FX29();
        _0xFInstructions[0x30] = () -> C8INST_FX30();
        _0xFInstructions[0x33] = () -> C8INST_FX33();
+       _0xFInstructions[0x3A] = () -> C8INST_FX3A();
        _0xFInstructions[0x55] = () -> C8INST_FX55();
        _0xFInstructions[0x65] = () -> C8INST_FX65();
        _0xFInstructions[0x75] = () -> C8INST_FX75();
@@ -239,10 +269,15 @@ public class Chip8SOC{
     }
     
     public void chip8Init(){
-        int crc32Checksum = 0;
+        crc32Checksum = 0;
         hires = false;
         v = new int[16];
-        mem = new int[4096];
+        if(currentMachine == MachineType.XO_CHIP){
+            mem = new int[65536];
+        }else{
+            mem = new int[4096];
+        }
+        plane = 1;
         graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
@@ -463,6 +498,17 @@ public class Chip8SOC{
         }
         pc+=2;
     }
+    
+    private void C8INST_00DN(){
+        int height = opcode & 0xF;
+        var bufSize = this.hires ? (128 * 64) : (64 * 32);
+
+        for (var z = 0; z < bufSize; z++) {
+            this.graphics[z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? this.graphics[z + (DISPLAY_WIDTH * height)] : 0;
+        }
+
+        pc += 2;
+    }
     //00E0: Clear Screen
     private void C8INST_00E0(){
         for (int x = 0; x < graphics.length; x++) {
@@ -538,12 +584,28 @@ public class Chip8SOC{
         } else
             pc += 2;
     }
+    
+    private void C8INSTSET_5000(){
+        _0x0Instructions[(opcode & 0xF)].execute();
+    }
     //0x5XY0 skip next instruction if VX == VY
     private void C8INST_5XY0(){
         if (v[X] == v[Y]) {
             pc += 4;
         } else
             pc += 2;
+    }
+    private void C8INST_5XY2(){
+        for(int i = X; i <= Y; i++){
+            mem[I + i] = v[i];
+        }
+        pc += 2;
+    }
+    private void C8INST_5XY3(){
+        for(int i = X; i <= Y; i++){
+            v[i] = mem[I + i];
+        }
+        pc += 2;
     }
     //0x6XNN set Vx to NN
     private void C8INST_6XNN(){
@@ -686,11 +748,11 @@ public class Chip8SOC{
                     }
                     //check if pixel in current sprite row is on
                     if (currPixel != 0) {
-                        if (graphics[targetPixel] == 1) {
+                        if (graphics[targetPixel] >= 1) {
                             this.graphics[targetPixel] = 0;
                             this.v[0xF] = 0x1;
                         } else {
-                            graphics[targetPixel] ^= 1;
+                            graphics[targetPixel] ^= plane;
                         }
                     }
                 }
@@ -731,11 +793,11 @@ public class Chip8SOC{
                 }
                 //check if pixel in current sprite row is on
                 if (currPixel != 0) {
-                    if (graphics[targetPixel] == 1) {
+                    if (graphics[targetPixel] >= 1) {
                         this.graphics[targetPixel] = 0;
                         this.v[0xF] = 0x1;
                     } else {
-                        graphics[targetPixel] ^= 1;
+                        graphics[targetPixel] ^= plane;
                     }
                 }
             }
@@ -767,6 +829,26 @@ public class Chip8SOC{
     private void C8INSTSET_F000(){
         _0xFInstructions[(opcode & 0xFF)].execute();
     }
+    
+    private void C8INST_F000_NNNN(){
+        int NNNN = ((mem[pc+3] << 8 | mem[pc+4]));
+        I = NNNN;
+        pc+=4;
+    }
+    
+    private void C8INST_FN01(){
+        plane = X & 0x3;
+        pc+=2;
+    }
+    
+    private void C8INST_F002(){
+        System.out.println("F002 is stubbed out for now");
+        pc+=2;
+    }
+    private void C8INST_FX3A(){
+        System.out.println("FX3A is stubbed out for now");
+        pc+=2;
+    }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){
         v[X] = (dT & 0xFF);
@@ -793,20 +875,19 @@ public class Chip8SOC{
             if (I > 0xFFF) {
                 v[0xF] = 1;
             }
-        } else {
-            //Original Behaviour of the COSMAC VIP
-            I += v[X] & 0xFFF;
+        } else {  
+            if (currentMachine == MachineType.XO_CHIP) {
+                I += v[X] & 0xFFFF;
+            } else {
+                //Original Behaviour of the COSMAC VIP
+                I += v[X] & 0xFFF;
+            }
         }
         pc += 2;
     }
     //FX0A: Stops program execution until a key is pressed.
     private void C8INST_FX0A(){
-        //for (byte key = 0; key < keyPad.length; key++) {
-            //if (keyPad[key]) {
-            //    v[X] = (key & 0xFF);
-            //    pc += 2;
-            //}
-        //}
+
         waitState = true; waitReg = X;
     }
     

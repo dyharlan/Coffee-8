@@ -49,13 +49,22 @@ public enum MachineType {
 //     vBlankQuirks = false;
 //     IOverflowQuirks = true;
 //     jumpQuirks = true;
-    SUPERCHIP_1_1("Super-Chip 1.1",64,32,new boolean[]{false,true,false,true,true,false,true,true});
-
+    SUPERCHIP_1_1("Super-Chip 1.1",64,32,new boolean[]{false,true,false,true,true,false,true,true}),
+    
+//XO-Chip settings
+//     vfOrderQuirks = false;
+//     shiftQuirks = false;
+//     logicQuirks = false;
+//     loadStoreQuirks = false;
+//     clipQuirks = false;
+//     vBlankQuirks = false;
+//     IOverflowQuirks = false;
+//     jumpQuirks = false;
+    XO_CHIP("XO-Chip",64,32,new boolean[]{false,false,false,false,false,false,false,false});
     private final String MACHINE_NAME;
     private final int DISPLAY_WIDTH;
     private final int DISPLAY_HEIGHT;
     private final boolean[] MACHINE_QUIRKS;
-
 
     public String getMachineName() {
         return MACHINE_NAME;

@@ -50,8 +50,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     protected int LOWRES_SCALE_FACTOR;
     private int panelX;
     private int panelY;
-    private Color backgroundColor;
-    private Color foregroundColor;
+    private Color plane0Color;
+    private Color plane1Color;
+    private Color plane2Color;
+    private Color plane3Color;
+    
     File rom;
     MachineType m;
     
@@ -71,6 +74,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 private ButtonGroup machineGroup;
                 private JRadioButtonMenuItem cosmacVIP;
                 private JRadioButtonMenuItem sChip1_1;
+                private JRadioButtonMenuItem xoChip;
                 private ActionListener machineChangeListener;
             private JMenuItem scalingManager;
             private JMenuItem cycleManager;
@@ -99,13 +103,25 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         lowResViewWidth = IMGWIDTH * SCALE_FACTOR;
         lowResViewHeight = IMGHEIGHT * SCALE_FACTOR;
         chip8CPU = new Chip8SOC(true, m);
-        if(chip8CPU.getCurrentMachine() == MachineType.COSMAC_VIP){
-            cosmacVIP.setSelected(true);
-        }else if(chip8CPU.getCurrentMachine() == MachineType.SUPERCHIP_1_1){
-            sChip1_1.setSelected(true);
-        }
-        backgroundColor = Color.ORANGE;
-        foregroundColor = Color.BLUE;
+        
+        if (chip8CPU.getCurrentMachine() != null)
+            switch (chip8CPU.getCurrentMachine()) {
+                case COSMAC_VIP:
+                    cosmacVIP.setSelected(true);
+                    break;
+                case SUPERCHIP_1_1:
+                    sChip1_1.setSelected(true);
+                    break;
+                case XO_CHIP:
+                    xoChip.setSelected(true);
+                    break;
+                default:
+                    break;
+            }
+        plane0Color = Color.ORANGE;
+        plane1Color = Color.BLUE;
+        plane2Color = Color.RED;
+        plane3Color = Color.MAGENTA;
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
@@ -120,13 +136,32 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                frameBuffer.setColor(foregroundColor);
-                                frameBuffer.fillRect(x, y, 1, 1);
-
-                            } else {
-                                frameBuffer.setColor(backgroundColor);
-                                frameBuffer.fillRect(x, y, 1, 1);
+//                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
+//                                frameBuffer.setColor(plane1Color);
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//
+//                            } else {
+//                                frameBuffer.setColor(plane0Color);
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//                            }
+                            
+                            switch(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]){
+                                case 0:
+                                    frameBuffer.setColor(plane0Color);
+                                    frameBuffer.fillRect(x, y, 1, 1);
+                                break;
+                                case 1:
+                                    frameBuffer.setColor(plane1Color);
+                                    frameBuffer.fillRect(x, y, 1, 1);
+                                break;
+                                case 2:
+                                    frameBuffer.setColor(plane2Color);
+                                    frameBuffer.fillRect(x, y, 1, 1);
+                                break;
+                                case 3:
+                                    frameBuffer.setColor(plane3Color);
+                                    frameBuffer.fillRect(x, y, 1, 1);
+                                break;
                             }
                         }
                     }
@@ -185,10 +220,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             machineGroup = new ButtonGroup();
             cosmacVIP = new JRadioButtonMenuItem("COSMAC VIP");
             sChip1_1 = new JRadioButtonMenuItem("Superchip 1.1");
+            xoChip = new JRadioButtonMenuItem("XO-Chip");
             machineGroup.add(cosmacVIP);
             machineGroup.add(sChip1_1);
+            machineGroup.add(xoChip);
             machineTypeMenu.add(cosmacVIP);
             machineTypeMenu.add(sChip1_1);
+             machineTypeMenu.add(xoChip);
 
             machineChangeListener = (e) -> {
                 if(cosmacVIP.isSelected()){                      
@@ -211,10 +249,21 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         m = MachineType.SUPERCHIP_1_1;
                         chip8CPU.setCurrentMachine(m);
                     }
+                }else if(xoChip.isSelected()){
+                    if(romStatus && rom != null){
+                            m = MachineType.XO_CHIP;
+                            chip8CPU.setCurrentMachine(m);
+                            
+                            loadROM(rom);
+                    }else{
+                        m = MachineType.XO_CHIP;
+                        chip8CPU.setCurrentMachine(m);
+                    }
                 }
             };
             cosmacVIP.addActionListener(machineChangeListener);
             sChip1_1.addActionListener(machineChangeListener);
+            xoChip.addActionListener(machineChangeListener);
         pauseToggle = new JCheckBoxMenuItem("Pause Emulation");
         pauseToggle.addActionListener((e) -> {
             if (romStatus && pauseToggle.isSelected()) {
@@ -250,8 +299,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         });
         backgroundColorManager = new JMenuItem("Set Background Color");
         backgroundColorManager.addActionListener((e) -> {
-            ColorManager cm = new ColorManager(f,backgroundColor);
-            backgroundColor = cm.getColor();
+            ColorManager cm = new ColorManager(f,plane0Color);
+            plane0Color = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
                    gamePanel.repaint();
             }
@@ -259,8 +308,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         });
         foregroundColorManager = new JMenuItem("Set Foreground Color");
         foregroundColorManager.addActionListener((e) -> {
-            ColorManager cm = new ColorManager(f,foregroundColor);
-            foregroundColor = cm.getColor();
+            ColorManager cm = new ColorManager(f,plane1Color);
+            plane1Color = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
                    gamePanel.repaint();
             }

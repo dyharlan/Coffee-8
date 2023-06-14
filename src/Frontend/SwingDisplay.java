@@ -95,7 +95,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         SCALE_FACTOR = 20;
         LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
         buildPanel();
-        m = MachineType.XO_CHIP;
+        m = MachineType.COSMAC_VIP;
         
         
         hiResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
@@ -377,7 +377,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         while (isRunning) {
 
-            for (int i = 0; i < chip8CPU.getCycles(); i++) {
+            for (int i = 0; i < chip8CPU.getCycles() && !chip8CPU.getWaitState(); i++) {
                 chip8CPU.cpuExec();
             }
 

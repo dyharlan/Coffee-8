@@ -248,7 +248,7 @@ public class Chip8SOC{
           _0xFInstructions[i] = () -> C8INST_UNKNOWN();
        }
        _0xFInstructions[0x00] = () -> C8INST_F000_NNNN();
-       _0xFInstructions[0x01] = () -> C8INST_FN01();
+       _0xFInstructions[0x01] = () -> C8INST_FX01();
        _0xFInstructions[0x02] = () -> C8INST_F002();
        _0xFInstructions[0x07] = () -> C8INST_FX07();
        _0xFInstructions[0x15] = () -> C8INST_FX15();
@@ -311,13 +311,13 @@ public class Chip8SOC{
                 offset += 0x1;
             }
             crc32Checksum = crc32.getValue();
-//            for (int i = 0; i < 0x900; i++) {
-//                if (i % 10 == 0 && i != 0) {
-//                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
-//                    System.out.print("\n");
-//                }
-//                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
-//            }
+            for (int i = 0; i < 0x900; i++) {
+                if (i % 10 == 0 && i != 0) {
+                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
+                   System.out.print("\n");
+                }
+                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
+            }
             in.close();
             romStatus = true;
         }catch(FileNotFoundException fnfe){
@@ -383,8 +383,10 @@ public class Chip8SOC{
         switch (interruptState) {
             case 0:
                 interruptState = 1;
+                pc -= 2;
                 return true;
             case 1:
+                pc -= 2;
                 return true;
             default:
                 interruptState = 0;
@@ -463,6 +465,7 @@ public class Chip8SOC{
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
         System.out.println(Integer.toHexString(opcode));
+        
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
@@ -470,12 +473,20 @@ public class Chip8SOC{
         //System.out.println(Integer.toHexString(mem[pc+1]));
         //decode
         //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
+        pc+=2;
         c8Instructions[(opcode & 0xF000) >> 12].execute();
-
+        
         
         
     }
-   
+    public void skipInstruction(){
+        int nextOpcode = (mem[pc] << 8 | mem[pc+1]);
+        if(nextOpcode == 0xF000){
+            pc+= 4;
+        }else{
+            pc+= 2;
+        }
+    }
     /*
     * Array of interfaces.
     * this is called under cpuExec() where the index is derived by
@@ -498,7 +509,6 @@ public class Chip8SOC{
         for (var z = graphics.length - 1; z >= 0; z--) {
             graphics[z] = (z >= DISPLAY_WIDTH * height) ? graphics[z - (DISPLAY_WIDTH * height)] : 0;
         }
-        pc+=2;
     }
     //00CN: Scroll display N pixels up; in low resolution mode, N/2 pixels
     private void C8INST_00DN(){
@@ -510,19 +520,16 @@ public class Chip8SOC{
             this.graphics[z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? this.graphics[z + (DISPLAY_WIDTH * height)] : 0;
         }
 
-        pc += 2;
     }
     //00E0: Clear Screen
     private void C8INST_00E0(){
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
-        pc += 2;
     }
     //00EE: Returns from a subroutine on top of the stack. 
     private void C8INST_00EE(){
         pc = cst.pop();
-        pc += 2;
     }
     //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
@@ -532,7 +539,6 @@ public class Chip8SOC{
                 graphics[y + x] = (x > 3) ? graphics[y + x - 4] : 0;
             }
         }
-        pc+=2;
     }
     //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
@@ -542,7 +548,6 @@ public class Chip8SOC{
                 graphics[y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[y + x + 4] : 0;
             }
         }
-        pc+=2;
     }
     //00FD: Exit interpreter
     private void C8INST_00FD(){
@@ -554,7 +559,6 @@ public class Chip8SOC{
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
-        pc+=2;
     }
     //enable hi-res
     private void C8INST_00FF(){
@@ -562,7 +566,6 @@ public class Chip8SOC{
         for (int x = 0; x < graphics.length; x++) {
             graphics[x] = 0;
         }
-        pc+=2;
     }
     //0x1NNN jump to address NNN
     private void C8INST_1NNN(){
@@ -576,49 +579,61 @@ public class Chip8SOC{
     //0x3XNN skip next instruction if VX == NN
     private void C8INST_3XNN(){
         if (v[X] == (opcode & 0x00FF)) {
-            pc += 4;
-        } else
-            pc += 2;
+            skipInstruction();
+        }
     }
     //0x4XNN skip next instruction if VX != NN
     private void C8INST_4XNN(){
         if (v[X] != (opcode & 0x00FF)) {
-            pc += 4;
-        } else
-            pc += 2;
+            skipInstruction();
+        } 
     }
-    
     private void C8INSTSET_5000(){
         _0x5Instructions[(opcode & 0xF)].execute();
     }
     //0x5XY0 skip next instruction if VX == VY
     private void C8INST_5XY0(){
         if (v[X] == v[Y]) {
-            pc += 4;
-        } else
-            pc += 2;
+            skipInstruction();
+        }
     }
     private void C8INST_5XY2(){
-        for(int i = X; i <= Y; i++){
-            mem[I + i] = v[i];
+        int dist = Math.abs(X - Y);
+        if (X < Y) {
+            for (var z = 0; z <= dist; z++) {
+                this.v[X + z] = this.mem[I + z];
+            }
+        } else {
+            for (var z = 0; z <= dist; z++) {
+                this.v[X - z] = this.mem[I + z];
+            }
         }
-        pc += 2;
+//        for(int i = X; i <= Y; i++){
+//            mem[I + i] = v[i];
+//        }
     }
     private void C8INST_5XY3(){
-        for(int i = X; i <= Y; i++){
-            v[i] = mem[I + i];
+         int dist = Math.abs(X - Y);
+        if (X < Y) {
+            for (var z = 0; z <= dist; z++) {
+                this.v[X + z] = this.mem[this.I + z];
+            }
+        } else {
+            for (var z = 0; z <= dist; z++) {
+                this.v[X - z] = this.mem[this.I + z];
+            }
         }
-        pc += 2;
+//        for(int i = X; i <= Y; i++){
+//            v[i] = mem[I + i];
+//        }
     }
     //0x6XNN set Vx to NN
     private void C8INST_6XNN(){
         v[X] = (opcode & 0x00FF) & 0xFF;
-        pc += 2;
     }
     //0x7XNN add NN to Vx w/o changing borrow flag
     private void C8INST_7XNN(){
         v[X] = (v[X] +(opcode & 0x00FF)) & 0xFF;
-        pc += 2;
     }
     //Execute instructions that have 0x8 as their prefix
     private void C8INSTSET_8000(){
@@ -627,7 +642,6 @@ public class Chip8SOC{
     //0x8XY0 set the value of Vx to Vy
     private void C8INST_8XY0(){
         v[X] = (v[Y] & 0xFF);
-        pc += 2;
     }
     //0x8XY1 set Vx to (Vx | Vy)
     private void C8INST_8XY1(){
@@ -635,7 +649,6 @@ public class Chip8SOC{
         if (logicQuirks) {
             v[0xF] = 0;
         }
-        pc += 2;
     }
     //0x8XY2 set Vx to (Vx & Vy)
     private void C8INST_8XY2(){
@@ -643,7 +656,6 @@ public class Chip8SOC{
         if (logicQuirks) {
             v[0xF] = 0;
         }
-        pc += 2;
     }
     //0x8XY3 set Vx to (Vx ^ Vy)
     private void C8INST_8XY3(){
@@ -651,38 +663,32 @@ public class Chip8SOC{
         if (logicQuirks) {
             v[0xF] = 0;
         }
-        pc += 2; 
     }
     //0x8XY4 add Vy to Vx. VF is set to 1 if there's a carry, 0 otherwise.
     private void C8INST_8XY4(){
         int sum = (v[X] + v[Y]);
         v[X] = sum & 0xFF;
         writeCarry(X, sum, (sum > 0xFF));
-        pc += 2;
     }
     //0x8XY5 subtract Vy from Vx. VF is 0 if subtrahend is smaller than minuend.
     private void C8INST_8XY5(){
         int diff1 = (v[X] - v[Y]);
         v[X] = diff1 & 0xFF;
         writeCarry(X, diff1, (diff1 >= 0x0));
-        pc += 2;
     }
     //0x8XY6 stores the LSB of VX in VF and shifts VX to the right by 1
     private void C8INST_8XY6(){
         if (shiftQuirks) {
             Y = X;
         }
-
         int set = v[Y] >> 1;
         writeCarry(X, set, (v[Y] & 0x1) == 0x1);
-        pc += 2;
     }
     //0x8XY7 subtract Vx from Vy. VF is 0 if subtrahend is smaller than minuend.
     private void C8INST_8XY7(){
         int diff2 = (v[Y] - v[X]);
         v[X] = diff2 & 0xFF;
         writeCarry(X, diff2, (diff2 >= 0x0));
-        pc += 2;
     }
     //0x8XYE stores the MSB of VX in VF and shifts VX to the left by 1
     private void C8INST_8XYE(){
@@ -691,32 +697,28 @@ public class Chip8SOC{
         }
         int set2 = v[Y] << 1;
         writeCarry(X, set2, ((v[Y] >> 7) & 0x1) == 0x1);
-        pc += 2;
     }
     //0x9XY0 skip next instruction if VX != VY 
     private void C8INST_9XY0(){
         if (v[X] != v[Y]) {
-            pc += 4;
-        } else
-            pc += 2;
+            skipInstruction();
+        }
     }
     //0xANNN set index register to the value of NNN
     private void C8INST_ANNN() {
         I = (opcode & 0x0FFF);
-        pc += 2;
     }
     //0xBNNN Jumps to the address NNN plus cpu->v0
     private void C8INST_BNNN() {
         if(jumpQuirks){
-            pc = ((opcode & 0x0FFF) + v[X]) & 0xFFFF;
+            pc = ((opcode & 0x0FFF) + v[X]);
         }else{
-            pc = ((opcode & 0x0FFF) + v[0x0]) & 0xFFFF;
+            pc = ((opcode & 0x0FFF) + v[0x0]);
         }
     }
     //0xCXNN generates a random number, binary ANDs it with NN, and stores it in Vx.
     private void C8INST_CXNN() {
         v[X] = (rand.nextInt(0x100) & (opcode & 0x00FF)) & 0xFF;
-        pc += 2;
     }
     //Only reason why this is an instruction subset is because of superchip.
     private void C8INSTSET_DXY(){
@@ -727,9 +729,6 @@ public class Chip8SOC{
         if(currentMachine == MachineType.COSMAC_VIP)
             C8INST_DXYN();
         else {
-            if (WaitForInterrupt()) {
-                return;
-            }
             int x = v[X];
             int y = v[Y];
             v[0xF] = 0;
@@ -756,11 +755,11 @@ public class Chip8SOC{
 
                         //check if pixel in current sprite row is on
                         if (currPixel != 0) {
-                            graphics[targetPixel] ^= plane;
-                            if (v[0xF] == 0) {
-                                if (graphics[targetPixel] >= 1 & plane == 0) {
-                                    this.v[0xF] = 0x1;
-                                }
+                            if (graphics[targetPixel] >= 1) {
+                                this.graphics[targetPixel] = 0;
+                                this.v[0xF] = 0x1;
+                            } else {
+                                graphics[targetPixel] ^= plane;
                             }
                         }
                     }
@@ -769,8 +768,6 @@ public class Chip8SOC{
             }
 
         }
-        
-        pc += 2;
     } 
     /*
     * DXYN derived from Octo
@@ -808,20 +805,20 @@ public class Chip8SOC{
 
                     //check if pixel in current sprite row is on
                     if (currPixel != 0) {
-                        graphics[targetPixel] ^= plane;
-                        if (v[0xF] == 0) {
-                            if (graphics[targetPixel] >= 1 & plane == 0) {
-                                this.v[0xF] = 0x1;
-                            }
+                        if (graphics[targetPixel] >= 1) {
+                            this.graphics[targetPixel] = 0;
+                            this.v[0xF] = 0x1;
+                        } else {
+                            graphics[targetPixel] ^= plane;
                         }
                     }
                 }
+               
             }
+            
             i+=n;
         }
         
-        
-        pc += 2;
     }
     //Execute instructions that start with 0xE as their prefix
     private void C8INSTSET_E000(){
@@ -830,17 +827,13 @@ public class Chip8SOC{
     //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
     private void C8INST_EX9E(){
         if (keyPad[v[X]]) {
-            pc += 4;
-        } else {
-            pc += 2;
+            skipInstruction();
         }
     }
     //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
     private void C8INST_EXA1(){
         if (!keyPad[v[X]]) {
-            pc += 4;
-        } else {
-            pc += 2;
+            skipInstruction();
         }
     }
     //Execute instructions that start with 0xF as their prefix
@@ -849,39 +842,33 @@ public class Chip8SOC{
     }
     
     private void C8INST_F000_NNNN(){
-        int NNNN = ((mem[pc+2] << 8 | mem[pc+3])) & 0xFFFF;
+        int NNNN = (mem[pc] << 8 | mem[pc+1]);
         System.out.println("16bit addr: " + Integer.toHexString(NNNN));
         I = NNNN;
-        pc+=4;
+        pc+=2;
     }
     
-    private void C8INST_FN01(){
+    private void C8INST_FX01(){
         plane = X & 0x3;
-        pc+=2;
     }
     
     private void C8INST_F002(){
         System.out.println("F002 is stubbed out for now");
-        pc+=2;
     }
     private void C8INST_FX3A(){
         System.out.println("FX3A is stubbed out for now");
-        pc+=2;
     }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){
         v[X] = (dT & 0xFF);
-        pc+=2;
     }
     //FX15: set the delay timer to the value in vX
     private void C8INST_FX15(){
         dT = (v[X] & 0xFF);
-        pc+=2;
     }
     //FX18: set the sound timer to the value in vX
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
-        pc+=2;
     }
     //FX1E: Add the value of VX to the register index
     //IF IOverflowQuirks is on:
@@ -898,12 +885,11 @@ public class Chip8SOC{
             //Original Behaviour of the COSMAC VIP
             I += v[X] & 0xFFFF;
         }
-        pc += 2;
     }
     //FX0A: Stops program execution until a key is pressed.
     private void C8INST_FX0A(){
-
         waitState = true; waitReg = X;
+        
     }
     
     /*
@@ -912,7 +898,7 @@ public class Chip8SOC{
     
     public void sendKeyStroke(int keyValue){
         v[waitReg] = keyValue;
-        pc+=2;
+        
     }
     
     public int getWaitReg() {
@@ -935,12 +921,10 @@ public class Chip8SOC{
     //FX29: Point index register to font in memory
     private void C8INST_FX29(){
         I = ((v[X]*5) +  0x50);
-        pc +=2;
     }
     //FX30: Point I to 10-byte font sprite for digit VX (only digits 0-9)
     private void C8INST_FX30(){
         I = ((v[X]*10) +  0xA0);
-        pc +=2;
     }
     //FX33: Get number from vX and
     //store hundreds digit in memory point by I
@@ -951,7 +935,6 @@ public class Chip8SOC{
         mem[I] = ((num / 100) % 10);//hundreds
         mem[I + 1] = ((num / 10) % 10);//tens
         mem[I + 2] = ((num % 10));//ones
-        pc += 2;
     }
     //FX55: store the values of registers v0 to vi, where i is the ith register to use
     //in successive memory locations
@@ -962,7 +945,6 @@ public class Chip8SOC{
         if (!loadStoreQuirks) {
             I = (I + X + 1) & 0xFFFF;
         }
-        pc += 2;
     }
     //FX65: store the values of successive memory locations from 0 to i, where i is the ith memory location
     //in i registers from v0 to vi
@@ -973,7 +955,6 @@ public class Chip8SOC{
         if (!loadStoreQuirks) {
             I = (I + X + 1) & 0xFFFF;
         }
-        pc += 2; 
     }
     //FX75: Store V0..VX in RPL user flags (X <= 7)
     private void C8INST_FX75(){
@@ -1000,8 +981,6 @@ public class Chip8SOC{
         }catch(IOException ioe){
             ioe.printStackTrace();
         }
-        
-        pc += 2; 
     }
     //FX85: Read V0..VX from RPL user flags (X <= 7)
     private void C8INST_FX85(){
@@ -1016,8 +995,6 @@ public class Chip8SOC{
                 ioe.printStackTrace();
             }
         }
-         
-        pc += 2; 
     }
     
 }

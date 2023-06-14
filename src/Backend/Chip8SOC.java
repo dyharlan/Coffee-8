@@ -601,11 +601,11 @@ public class Chip8SOC{
         int dist = Math.abs(X - Y);
         if (X < Y) {
             for (var z = 0; z <= dist; z++) {
-                this.v[X + z] = this.mem[I + z];
+                mem[I + z] = v[X + z];
             }
         } else {
             for (var z = 0; z <= dist; z++) {
-                this.v[X - z] = this.mem[I + z];
+                mem[I + z] = v[X - z];
             }
         }
 //        for(int i = X; i <= Y; i++){
@@ -616,11 +616,11 @@ public class Chip8SOC{
          int dist = Math.abs(X - Y);
         if (X < Y) {
             for (var z = 0; z <= dist; z++) {
-                this.v[X + z] = this.mem[this.I + z];
+                this.v[X + z] = mem[I + z];
             }
         } else {
             for (var z = 0; z <= dist; z++) {
-                this.v[X - z] = this.mem[this.I + z];
+                this.v[X - z] = mem[I + z];
             }
         }
 //        for(int i = X; i <= Y; i++){

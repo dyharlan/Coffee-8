@@ -95,7 +95,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         SCALE_FACTOR = 20;
         LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
         buildPanel();
-        m = MachineType.SUPERCHIP_1_1;
+        m = MachineType.XO_CHIP;
         
         
         hiResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
@@ -136,33 +136,39 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-//                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-//                                frameBuffer.setColor(plane1Color);
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//
-//                            } else {
-//                                frameBuffer.setColor(plane0Color);
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//                            }
-                            
-                            switch(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]){
-                                case 0:
-                                    frameBuffer.setColor(plane0Color);
-                                    frameBuffer.fillRect(x, y, 1, 1);
-                                break;
-                                case 1:
-                                    frameBuffer.setColor(plane1Color);
-                                    frameBuffer.fillRect(x, y, 1, 1);
-                                break;
-                                case 2:
-                                    frameBuffer.setColor(plane2Color);
-                                    frameBuffer.fillRect(x, y, 1, 1);
-                                break;
-                                case 3:
-                                    frameBuffer.setColor(plane3Color);
-                                    frameBuffer.fillRect(x, y, 1, 1);
-                                break;
+                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
+                                frameBuffer.setColor(plane1Color);
+                                frameBuffer.fillRect(x, y, 1, 1);
+
+                            } else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
+                                frameBuffer.setColor(plane0Color);
+                                frameBuffer.fillRect(x, y, 1, 1);
+                            }else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 2) {
+                                frameBuffer.setColor(plane2Color);
+                                frameBuffer.fillRect(x, y, 1, 1);
+                            }else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 3) {
+                                frameBuffer.setColor(plane3Color);
+                                frameBuffer.fillRect(x, y, 1, 1);
                             }
+//                            System.out.println(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]);
+//                            switch(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]){
+//                                case 0:
+//                                    frameBuffer.setColor(plane0Color);
+//                                    frameBuffer.fillRect(x, y, 1, 1);
+//                                break;
+//                                case 1:
+//                                    frameBuffer.setColor(plane1Color);
+//                                    frameBuffer.fillRect(x, y, 1, 1);
+//                                break;
+//                                case 2:
+//                                    frameBuffer.setColor(plane2Color);
+//                                    frameBuffer.fillRect(x, y, 1, 1);
+//                                break;
+//                                case 3:
+//                                    frameBuffer.setColor(plane3Color);
+//                                    frameBuffer.fillRect(x, y, 1, 1);
+//                                break;
+//                            }
                         }
                     }
                 }

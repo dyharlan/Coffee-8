@@ -458,10 +458,11 @@ public class Chip8SOC{
     }
     //cpu cycle
     public void cpuExec() {
+        //System.out.println(plane);
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        //System.out.println(Integer.toHexString(opcode));
+        System.out.println(Integer.toHexString(opcode));
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
@@ -492,14 +493,16 @@ public class Chip8SOC{
     }
     //00CN: Scroll display N pixels down; in low resolution mode, N/2 pixels
     private void C8INST_00CN(){
+        System.out.println("scroll down");
         int height = opcode & 0xF;
         for (var z = graphics.length - 1; z >= 0; z--) {
             graphics[z] = (z >= DISPLAY_WIDTH * height) ? graphics[z - (DISPLAY_WIDTH * height)] : 0;
         }
         pc+=2;
     }
-    
+    //00CN: Scroll display N pixels up; in low resolution mode, N/2 pixels
     private void C8INST_00DN(){
+        System.out.println("scroll up");
         int height = opcode & 0xF;
         var bufSize = this.hires ? (128 * 64) : (64 * 32);
 
@@ -586,7 +589,7 @@ public class Chip8SOC{
     }
     
     private void C8INSTSET_5000(){
-        _0x0Instructions[(opcode & 0xF)].execute();
+        _0x5Instructions[(opcode & 0xF)].execute();
     }
     //0x5XY0 skip next instruction if VX == VY
     private void C8INST_5XY0(){
@@ -733,30 +736,38 @@ public class Chip8SOC{
             int i = I;
             int currPixel = 0;
             int targetPixel = 0;
-            for (byte yLine = 0; yLine < 16; yLine++) {
-
-                for (byte xLine = 0; xLine < 16; xLine++) {
-                    currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
-                    targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
-                    if (clipQuirks) {
-                        if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
-                            currPixel = 0;
+            for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+                if ((this.plane & (currBitPlane + 1)) == 0) {
+                    continue;
+                }
+                for (byte yLine = 0; yLine < 16; yLine++) {
+                    for (byte xLine = 0; xLine < 16; xLine++) {
+                        currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
+                        targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                        
+                        if (clipQuirks) {
+                            if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+                                currPixel = 0;
+                            }
                         }
-                    }
-                    if (currPixel == 0) {
-                        continue;
-                    }
-                    //check if pixel in current sprite row is on
-                    if (currPixel != 0) {
-                        if (graphics[targetPixel] >= 1) {
-                            this.graphics[targetPixel] = 0;
-                            this.v[0xF] = 0x1;
-                        } else {
+                        if (currPixel == 0) {
+                            continue;
+                        }
+
+                        //check if pixel in current sprite row is on
+                        if (currPixel != 0) {
                             graphics[targetPixel] ^= plane;
+                            if (v[0xF] == 0) {
+                                if (graphics[targetPixel] >= 1 & plane == 0) {
+                                    this.v[0xF] = 0x1;
+                                }
+                            }
                         }
                     }
                 }
+                i += 32;
             }
+
         }
         
         pc += 2;
@@ -778,30 +789,37 @@ public class Chip8SOC{
         int i = I;
         int currPixel = 0;
         int targetPixel = 0;
-        for (byte yLine = 0; yLine < n; yLine++) {
-
-            for (byte xLine = 0; xLine < 8; xLine++) {
-                currPixel = ((mem[i + yLine] >> (7 - xLine)) & 0x1);
-                targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
-                if (clipQuirks) {
-                    if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
-                        currPixel = 0;
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (byte yLine = 0; yLine < n; yLine++) {
+                for (byte xLine = 0; xLine < 8; xLine++) {
+                    currPixel = ((mem[i + yLine] >> (7 - xLine)) & 0x1);
+                    targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                    if (clipQuirks) {
+                        if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+                            currPixel = 0;
+                        }
                     }
-                }
-                if (currPixel == 0) { 
-                    continue; 
-                }
-                //check if pixel in current sprite row is on
-                if (currPixel != 0) {
-                    if (graphics[targetPixel] >= 1) {
-                        this.graphics[targetPixel] = 0;
-                        this.v[0xF] = 0x1;
-                    } else {
+                    if (currPixel == 0) {
+                        continue;
+                    }
+
+                    //check if pixel in current sprite row is on
+                    if (currPixel != 0) {
                         graphics[targetPixel] ^= plane;
+                        if (v[0xF] == 0) {
+                            if (graphics[targetPixel] >= 1 & plane == 0) {
+                                this.v[0xF] = 0x1;
+                            }
+                        }
                     }
                 }
             }
+            i+=n;
         }
+        
         
         pc += 2;
     }
@@ -831,7 +849,8 @@ public class Chip8SOC{
     }
     
     private void C8INST_F000_NNNN(){
-        int NNNN = ((mem[pc+3] << 8 | mem[pc+4]));
+        int NNNN = ((mem[pc+2] << 8 | mem[pc+3])) & 0xFFFF;
+        System.out.println("16bit addr: " + Integer.toHexString(NNNN));
         I = NNNN;
         pc+=4;
     }
@@ -875,13 +894,9 @@ public class Chip8SOC{
             if (I > 0xFFF) {
                 v[0xF] = 1;
             }
-        } else {  
-            if (currentMachine == MachineType.XO_CHIP) {
-                I += v[X] & 0xFFFF;
-            } else {
-                //Original Behaviour of the COSMAC VIP
-                I += v[X] & 0xFFF;
-            }
+        } else {
+            //Original Behaviour of the COSMAC VIP
+            I += v[X] & 0xFFFF;
         }
         pc += 2;
     }

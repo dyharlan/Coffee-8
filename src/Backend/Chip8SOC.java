@@ -273,9 +273,9 @@ public class Chip8SOC{
         hires = false;
         v = new int[16];
         if(currentMachine == MachineType.XO_CHIP){
-            mem = new int[65536];
+            mem = new int[0x100000];
         }else{
-            mem = new int[4096];
+            mem = new int[0x1000];
         }
         plane = 1;
         graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
@@ -311,13 +311,13 @@ public class Chip8SOC{
                 offset += 0x1;
             }
             crc32Checksum = crc32.getValue();
-            for (int i = 0; i < 0x900; i++) {
-                if (i % 10 == 0 && i != 0) {
-                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
-                   System.out.print("\n");
-                }
-                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
-            }
+//            for (int i = 0; i < 0x900; i++) {
+//                if (i % 10 == 0 && i != 0) {
+//                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
+//                   System.out.print("\n");
+//                }
+//                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
+//            }
             in.close();
             romStatus = true;
         }catch(FileNotFoundException fnfe){
@@ -920,9 +920,11 @@ public class Chip8SOC{
             if (I > 0xFFF) {
                 v[0xF] = 1;
             }
-        } else {
-            //Original Behaviour of the COSMAC VIP
+        } else if(currentMachine == MachineType.XO_CHIP) {
             I += v[X] & 0xFFFF;
+        }else {
+            //Original Behaviour of the COSMAC VIP
+            I += v[X] & 0xFFF;
         }
     }
     //FX0A: Stops program execution until a key is pressed.

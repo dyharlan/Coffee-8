@@ -520,7 +520,7 @@ public class Chip8SOC{
     }
     //00CN: Scroll display N pixels down; in low resolution mode, N/2 pixels
     private void C8INST_00CN(){
-        System.out.println("scroll down");
+        //System.out.println("scroll down");
         int height = opcode & 0xF;
         for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
             if ((plane & (currBitPlane + 1)) == 0) {
@@ -533,7 +533,7 @@ public class Chip8SOC{
     }
     //00CN: Scroll display N pixels up; in low resolution mode, N/2 pixels
     private void C8INST_00DN(){
-        System.out.println("scroll up");
+        //System.out.println("scroll up");
         int height = opcode & 0xF;
         var bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
         for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {

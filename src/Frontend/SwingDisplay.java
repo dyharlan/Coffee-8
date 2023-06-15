@@ -380,15 +380,22 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     @Override
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
+        double frameTime = 1000/60;
+        long last = System.currentTimeMillis();
+        double origin = last+frameTime/2;
+        
         while (isRunning) {
             synchronized (chip8CPU) {
-                for (int i = 0; i < chip8CPU.getCycles() && !chip8CPU.getWaitState(); i++) {
-                    chip8CPU.cpuExec();
+                long diff = System.currentTimeMillis() - last;
+                last+=diff;
+                for (long k = 0; origin < last - frameTime && k < 2; origin += frameTime, k++) {
+                    for (int currCycles = 0; currCycles < chip8CPU.getCycles() && !chip8CPU.getWaitState(); currCycles++) {
+                        chip8CPU.cpuExec();
+                    }
+                    chip8CPU.updateTimers();
                 }
-
-                chip8CPU.updateTimers();
                 try {
-                    cpuCycleThread.sleep(17);
+                    cpuCycleThread.sleep((int)frameTime);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
@@ -399,6 +406,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             
             gamePanel.repaint();
         }
+        
+
     }
         @Override
         public void keyPressed(KeyEvent e){

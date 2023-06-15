@@ -38,7 +38,7 @@ public enum MachineType {
 //     IOverflowQuirks = true;
 //     jumpQuirks = false;
 
-    COSMAC_VIP("COSMAC VIP",64,32,new boolean[]{false,false,true,false,true,true,true,false}),
+    COSMAC_VIP("COSMAC VIP",64,32, 20,new boolean[]{false,false,true,false,true,true,true,false}),
     
 //SuperChip 1.1 settings
 //     vfOrderQuirks = false;
@@ -49,7 +49,7 @@ public enum MachineType {
 //     vBlankQuirks = false;
 //     IOverflowQuirks = true;
 //     jumpQuirks = true;
-    SUPERCHIP_1_1("Super-Chip 1.1",64,32,new boolean[]{false,true,false,true,true,false,true,true}),
+    SUPERCHIP_1_1("Super-Chip 1.1",64,32, 50,new boolean[]{false,true,false,true,true,false,true,true}),
     
 //XO-Chip settings
 //     vfOrderQuirks = false;
@@ -60,12 +60,14 @@ public enum MachineType {
 //     vBlankQuirks = false;
 //     IOverflowQuirks = false;
 //     jumpQuirks = false;
-    XO_CHIP("XO-Chip",64,32,new boolean[]{false,false,false,false,false,false,false,false});
+    XO_CHIP("XO-Chip",64,32, 200,new boolean[]{false,false,false,false,false,false,false,false});
     private final String MACHINE_NAME;
     private final int DISPLAY_WIDTH;
     private final int DISPLAY_HEIGHT;
     private final boolean[] MACHINE_QUIRKS;
+    private final int cycles;
 
+   
     public String getMachineName() {
         return MACHINE_NAME;
     }
@@ -77,15 +79,20 @@ public enum MachineType {
     public int getDisplayHeight() {
         return DISPLAY_HEIGHT;
     }
-
+    
+    public int getCycles() {
+        return cycles;
+    }
+    
     public boolean getQuirks(int i) {
         return MACHINE_QUIRKS[i];
     }
     
-    MachineType(String machineName,int displayW, int displayH, boolean quirks[]){
+    MachineType(String machineName,int displayW, int displayH, int cycles,boolean quirks[]){
         this.MACHINE_NAME = machineName;
         DISPLAY_WIDTH = displayW;
         DISPLAY_HEIGHT = displayH;
+        this.cycles = cycles;
         this.MACHINE_QUIRKS = quirks;
     }
     

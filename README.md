@@ -27,9 +27,9 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 ## Todo
 - Implement saving user settings
 - Implement toggleable quirks
-- Implement XO-Chip
+- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. See ``xo-chip`` branch.
 - Implement debugging capabilities
-- Properly implement FX75/85
+- ~~Properly implement FX75/85~~ Done
 
 ## Acknowledgements
 - [michaelarnauts' chip8 emulator](https://github.com/michaelarnauts/chip8-java) - derived coffee-8's cpu and sound code.

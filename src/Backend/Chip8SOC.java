@@ -797,7 +797,7 @@ public class Chip8SOC{
         int i = I;
         int currPixel = 0;
         int targetPixel = 0;
-         if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
+        if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
              for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
                  if ((plane & (currBitPlane + 1)) == 0) {
                      continue;
@@ -827,7 +827,7 @@ public class Chip8SOC{
                          }
                      }
                  }
-                 i += 32;
+                i += 32;
              }
          } else {
              for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
@@ -860,7 +860,7 @@ public class Chip8SOC{
 
                  }
 
-                 i += n;
+                i += n;
              }
          }
 
@@ -1032,13 +1032,21 @@ public class Chip8SOC{
     //FX85: Read V0..VX from RPL user flags (X <= 7)
     private void C8INST_FX85(){
         File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
+        
         if (f.exists()) {
+            //copy the flags first to a temporary array before writing it to memory.
+            ArrayList<Integer> temp = new ArrayList<>();
             try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))) {
                 for (int n = 0;in.available() > 0; n++) {
-                    v[n] = in.readInt() & 0xFF;
+                   temp.add(in.readInt() & 0xFF);
+                }
+                for(int i = 0; i < temp.size(); i++){
+                    v[i] = in.readInt() & 0xFF;
                 }
                 in.close();
-            } catch (IOException ioe) {
+            } catch(EOFException eofe){
+                System.err.println("Invalid/broken flags file. It will not be loaded into memory.");
+            }catch (IOException ioe) {
                 ioe.printStackTrace();
             }
         }

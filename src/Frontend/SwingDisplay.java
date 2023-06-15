@@ -51,10 +51,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     private int panelX;
     private int panelY;
     private Color[] planeColors;
-    private Color plane0Color;
-    private Color plane1Color;
-    private Color plane2Color;
-    private Color plane3Color;
     
     File rom;
     MachineType m;
@@ -138,23 +134,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                            int plane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
-                            
+                            int plane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;                            
                             frameBuffer.setColor(planeColors[plane]);
                             frameBuffer.fillRect(x, y, 1, 1);
-//                            if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
-//                                
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
-//                                frameBuffer.setColor(plane1Color);
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-//                                frameBuffer.setColor(plane2Color);
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-//                                frameBuffer.setColor(plane3Color);
-//                                frameBuffer.fillRect(x, y, 1, 1);
-//                            }
 
                         }
                     }
@@ -194,10 +176,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             }
             int returnVal = chooser.showOpenDialog(f);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-
                 rom = chooser.getSelectedFile();
                 loadROM(rom);
-
             }
         });
         exitSwitch = new JMenuItem("Exit");
@@ -226,7 +206,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     if(romStatus && rom != null){          
                             m = MachineType.COSMAC_VIP;
                             chip8CPU.setCurrentMachine(m);
-                            
                             loadROM(rom);
                     }else{
                        m = MachineType.COSMAC_VIP; 
@@ -236,7 +215,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     if(romStatus && rom != null){
                             m = MachineType.SUPERCHIP_1_1;
                             chip8CPU.setCurrentMachine(m);
-                            
                             loadROM(rom);
                     }else{
                         m = MachineType.SUPERCHIP_1_1;
@@ -246,7 +224,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     if(romStatus && rom != null){
                             m = MachineType.XO_CHIP;
                             chip8CPU.setCurrentMachine(m);
-                            
                             loadROM(rom);
                     }else{
                         m = MachineType.XO_CHIP;
@@ -292,8 +269,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         });
         backgroundColorManager = new JMenuItem("Set Background Color");
         backgroundColorManager.addActionListener((e) -> {
-            ColorManager cm = new ColorManager(f,plane0Color);
-            plane0Color = cm.getColor();
+            ColorManager cm = new ColorManager(f,planeColors[0]);
+            planeColors[0] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
                    gamePanel.repaint();
             }
@@ -301,8 +278,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         });
         foregroundColorManager = new JMenuItem("Set Foreground Color");
         foregroundColorManager.addActionListener((e) -> {
-            ColorManager cm = new ColorManager(f,plane1Color);
-            plane1Color = cm.getColor();
+            ColorManager cm = new ColorManager(f,planeColors[1]);
+            planeColors[1] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
                    gamePanel.repaint();
             }

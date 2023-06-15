@@ -114,6 +114,8 @@ public class ScalingManager {
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            System.out.println(s.chip8CPU.getMachineWidth());
+            System.out.println(s.chip8CPU.getMachineHeight());
             Object source = e.getSource();
             if (source == upButton) {
                 newScalingMultiplier += 2;

@@ -67,7 +67,7 @@ public class Chip8SOC{
     private int dT; //8-bit delay timer
     private int sT; //sound timer
     private int[] v; //cpu registers
-    public int[] graphics; //screen grid??
+    public int[][] graphics; //screen grid??
     public boolean[] keyPad; 
     private int interruptState;
     private int[] mem; //4kb of ram
@@ -278,7 +278,7 @@ public class Chip8SOC{
             mem = new int[4096];
         }
         plane = 1;
-        graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+        graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
@@ -288,7 +288,7 @@ public class Chip8SOC{
         pc = 0x200;
         opcode = 0;
         I = 0;
-        cst = new pStack(12);
+        cst = new pStack(64);
         X = 0;
         Y = 0;
         interruptState = 0;
@@ -360,13 +360,13 @@ public class Chip8SOC{
             hires = true;
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
-            graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+            graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
             
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
-            graphics = new int[DISPLAY_WIDTH*DISPLAY_HEIGHT];
+            graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
 
         }
     }    
@@ -464,18 +464,34 @@ public class Chip8SOC{
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
-        System.out.println(Integer.toHexString(opcode));
+        //System.out.println(Integer.toHexString(opcode));
         
         X = ((opcode & 0x0F00) >> 8) & 0xF;
         //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
+        
         //System.out.println(Integer.toHexString(mem[pc]));
         //System.out.println(Integer.toHexString(mem[pc+1]));
         //decode
         //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
         pc+=2;
         c8Instructions[(opcode & 0xF000) >> 12].execute();
-        
+//        System.out.println("Current value of v[0]: " + v[0]);
+//        System.out.println("Current value of v[1]: " + v[1]);
+//        System.out.println("Current value of v[2]: " + v[2]);
+//        System.out.println("Current value of v[3]: " + v[3]);
+//        System.out.println("Current value of v[4]: " + v[4]);
+//        System.out.println("Current value of v[5]: " + v[5]);
+//        System.out.println("Current value of v[6]: " + v[6]);
+//        System.out.println("Current value of v[7]: " + v[7]);
+//        System.out.println("Current value of v[8]: " + v[8]);
+//        System.out.println("Current value of v[9]: " + v[9]);
+//        System.out.println("Current value of v[10]: " + v[0xA]);
+//        System.out.println("Current value of v[11]: " + v[0xB]);
+//        System.out.println("Current value of v[12]: " + v[0xC]);
+//        System.out.println("Current value of v[13]: " + v[0xD]);
+//        System.out.println("Current value of v[14]: " + v[0xE]);
+//        System.out.println("Current value of v[15]: " + v[0xF]);
         
         
     }
@@ -506,25 +522,38 @@ public class Chip8SOC{
     private void C8INST_00CN(){
         System.out.println("scroll down");
         int height = opcode & 0xF;
-        for (var z = graphics.length - 1; z >= 0; z--) {
-            graphics[z] = (z >= DISPLAY_WIDTH * height) ? graphics[z - (DISPLAY_WIDTH * height)] : 0;
+        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (var z = graphics[currBitPlane].length - 1; z >= 0; z--) {
+                graphics[currBitPlane][z] = (z >= DISPLAY_WIDTH * height) ? graphics[currBitPlane][z - (DISPLAY_WIDTH * height)] : 0;
+            }
         }
     }
     //00CN: Scroll display N pixels up; in low resolution mode, N/2 pixels
     private void C8INST_00DN(){
         System.out.println("scroll up");
         int height = opcode & 0xF;
-        var bufSize = this.hires ? (128 * 64) : (64 * 32);
-
-        for (var z = 0; z < bufSize; z++) {
-            this.graphics[z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? this.graphics[z + (DISPLAY_WIDTH * height)] : 0;
+        var bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
+        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (var z = 0; z < bufSize; z++) {
+                this.graphics[currBitPlane][z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? this.graphics[currBitPlane][z + (DISPLAY_WIDTH * height)] : 0;
+            }
         }
-
     }
     //00E0: Clear Screen
     private void C8INST_00E0(){
-        for (int x = 0; x < graphics.length; x++) {
-            graphics[x] = 0;
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (int z = 0; z < this.graphics[currBitPlane].length; z++) {
+                this.graphics[currBitPlane][z] = 0;
+            }
         }
     }
     //00EE: Returns from a subroutine on top of the stack. 
@@ -533,21 +562,30 @@ public class Chip8SOC{
     }
     //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
-
-        for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
-            for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
-                graphics[y + x] = (x > 3) ? graphics[y + x - 4] : 0;
+        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+                for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
+                    graphics[currBitPlane][y + x] = (x > 3) ? graphics[currBitPlane][y + x - 4] : 0;
+                }
             }
         }
     }
     //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
-
-        for (int y = 0; y < graphics.length; y += DISPLAY_WIDTH) {
-            for (int x = 0; x < DISPLAY_WIDTH; x++) {
-                graphics[y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[y + x + 4] : 0;
+        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+            if ((this.plane & (currBitPlane + 1)) == 0) {
+                continue;
+            }
+            for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+                for (int x = 0; x < DISPLAY_WIDTH; x++) {
+                    graphics[currBitPlane][y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[currBitPlane][y + x + 4] : 0;
+                }
             }
         }
+       
     }
     //00FD: Exit interpreter
     private void C8INST_00FD(){
@@ -557,14 +595,16 @@ public class Chip8SOC{
     private void C8INST_00FE(){
         setHiRes(false);
         for (int x = 0; x < graphics.length; x++) {
-            graphics[x] = 0;
+            graphics[0][x] = 0;
+            graphics[1][x] = 0;
         }
     }
     //enable hi-res
     private void C8INST_00FF(){
         setHiRes(true);
         for (int x = 0; x < graphics.length; x++) {
-            graphics[x] = 0;
+            graphics[0][x] = 0;
+            graphics[1][x] = 0;
         }
     }
     //0x1NNN jump to address NNN
@@ -601,11 +641,11 @@ public class Chip8SOC{
         int dist = Math.abs(X - Y);
         if (X < Y) {
             for (var z = 0; z <= dist; z++) {
-                mem[I + z] = v[X + z];
+                mem[I + z] = v[X + z] & 0xFF;
             }
         } else {
             for (var z = 0; z <= dist; z++) {
-                mem[I + z] = v[X - z];
+                mem[I + z] = v[X - z] & 0xFF;
             }
         }
 //        for(int i = X; i <= Y; i++){
@@ -616,11 +656,11 @@ public class Chip8SOC{
          int dist = Math.abs(X - Y);
         if (X < Y) {
             for (var z = 0; z <= dist; z++) {
-                this.v[X + z] = mem[I + z];
+                this.v[X + z] = mem[I + z] & 0xFF;
             }
         } else {
             for (var z = 0; z <= dist; z++) {
-                this.v[X - z] = mem[I + z];
+                this.v[X - z] = mem[I + z] & 0xFF;
             }
         }
 //        for(int i = X; i <= Y; i++){
@@ -629,7 +669,7 @@ public class Chip8SOC{
     }
     //0x6XNN set Vx to NN
     private void C8INST_6XNN(){
-        v[X] = (opcode & 0x00FF) & 0xFF;
+        v[X] = (opcode & 0xFF);
     }
     //0x7XNN add NN to Vx w/o changing borrow flag
     private void C8INST_7XNN(){
@@ -755,11 +795,11 @@ public class Chip8SOC{
 
                         //check if pixel in current sprite row is on
                         if (currPixel != 0) {
-                            if (graphics[targetPixel] >= 1) {
-                                this.graphics[targetPixel] = 0;
+                            if (graphics[currBitPlane][targetPixel] == 1) {
+                                this.graphics[currBitPlane][targetPixel] = 0;
                                 this.v[0xF] = 0x1;
                             } else {
-                                graphics[targetPixel] ^= plane;
+                                graphics[currBitPlane][targetPixel] ^= 1;
                             }
                         }
                     }
@@ -775,7 +815,7 @@ public class Chip8SOC{
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
     */
-    private void C8INST_DXYN() {
+     private void C8INST_DXYN() {
         if (WaitForInterrupt()) {
             return;
         }
@@ -805,11 +845,11 @@ public class Chip8SOC{
 
                     //check if pixel in current sprite row is on
                     if (currPixel != 0) {
-                        if (graphics[targetPixel] >= 1) {
-                            this.graphics[targetPixel] = 0;
+                        if (graphics[currBitPlane][targetPixel] == 1) {
+                            this.graphics[currBitPlane][targetPixel] = 0;
                             this.v[0xF] = 0x1;
                         } else {
-                            graphics[targetPixel] ^= plane;
+                            graphics[currBitPlane][targetPixel] ^= 1;
                         }
                     }
                 }
@@ -826,13 +866,13 @@ public class Chip8SOC{
     } 
     //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
     private void C8INST_EX9E(){
-        if (keyPad[v[X]]) {
+        if (keyPad[v[X] & 0xF]) {
             skipInstruction();
         }
     }
     //EXA1 Skip one instruction when key is not pressed. But since pc is incremented here, we skip two.
     private void C8INST_EXA1(){
-        if (!keyPad[v[X]]) {
+        if (!keyPad[v[X] & 0xF]) {
             skipInstruction();
         }
     }
@@ -843,7 +883,6 @@ public class Chip8SOC{
     
     private void C8INST_F000_NNNN(){
         int NNNN = (mem[pc] << 8 | mem[pc+1]);
-        System.out.println("16bit addr: " + Integer.toHexString(NNNN));
         I = NNNN;
         pc+=2;
     }
@@ -986,9 +1025,9 @@ public class Chip8SOC{
     private void C8INST_FX85(){
         File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
         if (f.exists()) {
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)));) {
-                for (int n = 0; (n <= X) || in.available() > 0; n++) {
-                    v[n] = in.readInt();
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))) {
+                for (int n = 0;in.available() > 0; n++) {
+                    v[n] = in.readInt() & 0xFF;
                 }
                 in.close();
             } catch (IOException ioe) {

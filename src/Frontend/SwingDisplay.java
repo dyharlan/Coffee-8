@@ -183,8 +183,17 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             }
             int returnVal = chooser.showOpenDialog(f);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
-                rom = chooser.getSelectedFile();
-                loadROM(rom);
+                File tempRom = chooser.getSelectedFile();
+                if (m == MachineType.COSMAC_VIP && tempRom.length() > 3232L) {
+                    JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
+                } else if (m == MachineType.SUPERCHIP_1_1 && tempRom.length() > 3583L) {
+                    JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+                } else if (m == MachineType.XO_CHIP && tempRom.length() > 65024L) {
+                    JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+                }else{
+                    loadROM(tempRom);
+                }
+                
             }
         });
         exitSwitch = new JMenuItem("Exit");
@@ -331,15 +340,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu.add(soundToggle);
     }
     public void loadROM(File rom) {
+
         try {
             synchronized(chip8CPU){
                 romStatus = chip8CPU.loadROM(rom);
             }
             if (romStatus) {
+                this.rom = rom;
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
                 }
-                 SwingUtilities.invokeLater(() -> {
+
+                SwingUtilities.invokeLater(() -> {
                      startEmulation();
                 });
             } else {

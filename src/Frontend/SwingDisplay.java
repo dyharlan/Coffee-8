@@ -40,14 +40,18 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class SwingDisplay extends KeyAdapter implements Runnable {
+    //resolution of the buffered image
     protected final int IMGWIDTH = 128;
     protected final int IMGHEIGHT = 64;
+    //resolution of the buffered image * scaling factor
     protected int hiResViewWidth;
     protected int hiResViewHeight; 
     protected int lowResViewWidth;
     protected int lowResViewHeight; 
-    protected int SCALE_FACTOR;
+    //scaling factor for both low and hires mode
     protected int LOWRES_SCALE_FACTOR;
+    protected int HIRES_SCALE_FACTOR;
+    //panel dimensions
     private int panelX;
     private int panelY;
     private Color[] planeColors;
@@ -78,8 +82,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             private JMenuItem resetSwitch;
             private JCheckBoxMenuItem pauseToggle;
             private JCheckBoxMenuItem soundToggle;
-            private JMenuItem backgroundColorManager;
-            private JMenuItem foregroundColorManager;
+            private JMenu colorManagerMenu;
+                private JMenuItem backgroundColorManager;
+                private JMenuItem foregroundColorManager;
+                private JMenuItem plane2ColorManager;
+                private JMenuItem plane3ColorManager;
     public JPanel gamePanel;
     
 
@@ -89,16 +96,16 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        SCALE_FACTOR = 20;
-        LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
+        LOWRES_SCALE_FACTOR = 20;
+        HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
         buildPanel();
         m = MachineType.XO_CHIP;
         
         
-        hiResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
-        hiResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
-        lowResViewWidth = IMGWIDTH * SCALE_FACTOR;
-        lowResViewHeight = IMGHEIGHT * SCALE_FACTOR;
+        hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
+        hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
+        lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
+        lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
         chip8CPU = new Chip8SOC(true, m);
         
         if (chip8CPU.getCurrentMachine() != null)
@@ -123,8 +130,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
-        panelX = chip8CPU.getMachineWidth() * SCALE_FACTOR;
-        panelY = chip8CPU.getMachineHeight() * SCALE_FACTOR;
+        panelX = chip8CPU.getMachineWidth() * LOWRES_SCALE_FACTOR;
+        panelY = chip8CPU.getMachineHeight() * LOWRES_SCALE_FACTOR;
         gamePanel = new JPanel() {
             @Override
             public void paint(Graphics g) {
@@ -267,7 +274,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 loadROM(rom);
             }
         });
-        backgroundColorManager = new JMenuItem("Set Background Color");
+        colorManagerMenu = new JMenu("Colors");
+        backgroundColorManager = new JMenuItem("Set Background Color (XO-Chip Plane 0)");
         backgroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[0]);
             planeColors[0] = cm.getColor();
@@ -276,10 +284,26 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             }
 
         });
-        foregroundColorManager = new JMenuItem("Set Foreground Color");
+        foregroundColorManager = new JMenuItem("Set Foreground Color (XO-Chip Plane 1)");
         foregroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[1]);
             planeColors[1] = cm.getColor();
+            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+                   gamePanel.repaint();
+            }
+        });
+        plane2ColorManager = new JMenuItem("Set XO-Chip Plane 2 Color");
+        plane2ColorManager.addActionListener((e) -> {
+            ColorManager cm = new ColorManager(f,planeColors[2]);
+            planeColors[2] = cm.getColor();
+            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+                   gamePanel.repaint();
+            }
+        });
+        plane3ColorManager = new JMenuItem("Set XO-Chip Plane 3 Color");
+        plane3ColorManager.addActionListener((e) -> {
+            ColorManager cm = new ColorManager(f,planeColors[3]);
+            planeColors[3] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
                    gamePanel.repaint();
             }
@@ -298,8 +322,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu.add(scalingManager);
         emulationMenu.add(cycleManager);
         emulationMenu.add(resetSwitch);
-        emulationMenu.add(backgroundColorManager);
-        emulationMenu.add(foregroundColorManager);
+        emulationMenu.add(colorManagerMenu);
+            colorManagerMenu.add(backgroundColorManager);
+            colorManagerMenu.add(foregroundColorManager);
+            colorManagerMenu.add(plane2ColorManager);
+            colorManagerMenu.add(plane3ColorManager);
         emulationMenu.add(pauseToggle);
         emulationMenu.add(soundToggle);
     }

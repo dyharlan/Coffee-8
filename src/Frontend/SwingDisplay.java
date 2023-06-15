@@ -388,8 +388,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             synchronized (chip8CPU) {
                 long diff = System.currentTimeMillis() - last;
                 last+=diff;
-                for (long k = 0; origin < last - frameTime && k < 2; origin += frameTime, k++) {
-                    for (int currCycles = 0; currCycles < chip8CPU.getCycles() && !chip8CPU.getWaitState(); currCycles++) {
+                for (long i = 0; origin < last - frameTime && i < 2; origin += frameTime, i++) {
+                    for (int j = 0; j < chip8CPU.getCycles() && !chip8CPU.getWaitState(); j++) {
                         chip8CPU.cpuExec();
                     }
                     chip8CPU.updateTimers();

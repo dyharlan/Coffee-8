@@ -95,7 +95,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         SCALE_FACTOR = 20;
         LOWRES_SCALE_FACTOR = SCALE_FACTOR/2;
         buildPanel();
-        m = MachineType.COSMAC_VIP;
+        m = MachineType.XO_CHIP;
         
         
         hiResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
@@ -121,7 +121,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         plane0Color = Color.ORANGE;
         plane1Color = Color.BLUE;
         plane2Color = Color.RED;
-        plane3Color = Color.MAGENTA;
+        plane3Color = new Color(149,129,103);
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
@@ -136,39 +136,20 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                            if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                frameBuffer.setColor(plane1Color);
-                                frameBuffer.fillRect(x, y, 1, 1);
-
-                            } else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
+                            if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
                                 frameBuffer.setColor(plane0Color);
                                 frameBuffer.fillRect(x, y, 1, 1);
-                            }else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 2) {
+                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
+                                frameBuffer.setColor(plane1Color);
+                                frameBuffer.fillRect(x, y, 1, 1);
+                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
                                 frameBuffer.setColor(plane2Color);
                                 frameBuffer.fillRect(x, y, 1, 1);
-                            }else if (chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())] == 3) {
+                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
                                 frameBuffer.setColor(plane3Color);
                                 frameBuffer.fillRect(x, y, 1, 1);
                             }
-//                            System.out.println(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]);
-//                            switch(chip8CPU.graphics[(x) + ((y) * chip8CPU.getMachineWidth())]){
-//                                case 0:
-//                                    frameBuffer.setColor(plane0Color);
-//                                    frameBuffer.fillRect(x, y, 1, 1);
-//                                break;
-//                                case 1:
-//                                    frameBuffer.setColor(plane1Color);
-//                                    frameBuffer.fillRect(x, y, 1, 1);
-//                                break;
-//                                case 2:
-//                                    frameBuffer.setColor(plane2Color);
-//                                    frameBuffer.fillRect(x, y, 1, 1);
-//                                break;
-//                                case 3:
-//                                    frameBuffer.setColor(plane3Color);
-//                                    frameBuffer.fillRect(x, y, 1, 1);
-//                                break;
-//                            }
+
                         }
                     }
                 }
@@ -341,7 +322,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     }
     public void loadROM(File rom) {
         try {
-            romStatus = chip8CPU.loadROM(rom);
+            synchronized(chip8CPU){
+                romStatus = chip8CPU.loadROM(rom);
+            }
             if (romStatus) {
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
@@ -376,20 +359,22 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         while (isRunning) {
+            synchronized (chip8CPU) {
+                for (int i = 0; i < chip8CPU.getCycles() && !chip8CPU.getWaitState(); i++) {
+                    chip8CPU.cpuExec();
+                }
 
-            for (int i = 0; i < chip8CPU.getCycles() && !chip8CPU.getWaitState(); i++) {
-                chip8CPU.cpuExec();
+                chip8CPU.updateTimers();
+                try {
+                    cpuCycleThread.sleep(17);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                if (chip8CPU.getVBLankInterrupt() == 1) {
+                    chip8CPU.setVBLankInterrupt(2);
+                }
             }
-
-            chip8CPU.updateTimers();
-            try {
-                cpuCycleThread.sleep(17);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            if (chip8CPU.getVBLankInterrupt() == 1) {
-                chip8CPU.setVBLankInterrupt(2);
-            }
+            
             gamePanel.repaint();
         }
     }
@@ -620,7 +605,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc3");
+            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc4 (xo-chip branch)");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

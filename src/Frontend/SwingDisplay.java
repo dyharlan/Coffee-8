@@ -50,6 +50,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     protected int LOWRES_SCALE_FACTOR;
     private int panelX;
     private int panelY;
+    private Color[] planeColors;
     private Color plane0Color;
     private Color plane1Color;
     private Color plane2Color;
@@ -118,10 +119,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 default:
                     break;
             }
-        plane0Color = Color.ORANGE;
-        plane1Color = Color.BLUE;
-        plane2Color = Color.RED;
-        plane3Color = new Color(149,129,103);
+        planeColors = new Color[4];
+        planeColors[0] = Color.ORANGE;
+        planeColors[1] = Color.BLUE;
+        planeColors[2] = Color.RED;
+        planeColors[3] = new Color(149,129,103);
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
@@ -132,23 +134,27 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             public void paint(Graphics g) {
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-
+                
                 if (chip8CPU.graphics != null) {
                     for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                         for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                            if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
-                                frameBuffer.setColor(plane0Color);
-                                frameBuffer.fillRect(x, y, 1, 1);
-                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
-                                frameBuffer.setColor(plane1Color);
-                                frameBuffer.fillRect(x, y, 1, 1);
-                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                frameBuffer.setColor(plane2Color);
-                                frameBuffer.fillRect(x, y, 1, 1);
-                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
-                                frameBuffer.setColor(plane3Color);
-                                frameBuffer.fillRect(x, y, 1, 1);
-                            }
+                            int plane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                            
+                            frameBuffer.setColor(planeColors[plane]);
+                            frameBuffer.fillRect(x, y, 1, 1);
+//                            if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
+//                                
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 0) {
+//                                frameBuffer.setColor(plane1Color);
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 0 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
+//                                frameBuffer.setColor(plane2Color);
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//                            }else if (chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())] == 1 && chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] == 1) {
+//                                frameBuffer.setColor(plane3Color);
+//                                frameBuffer.fillRect(x, y, 1, 1);
+//                            }
 
                         }
                     }

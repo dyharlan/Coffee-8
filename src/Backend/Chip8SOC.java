@@ -1041,12 +1041,12 @@ public class Chip8SOC{
                    temp.add(in.readInt() & 0xFF);
                 }
                 for(int i = 0; i < temp.size(); i++){
-                    v[i] = in.readInt() & 0xFF;
+                    v[i] = temp.get(i) & 0xFF;
                 }
                 in.close();
-            } catch(EOFException eofe){
+            }catch(EOFException eofe){
                 System.err.println("Invalid/broken flags file. It will not be loaded into memory.");
-            }catch (IOException ioe) {
+            } catch (IOException ioe) {
                 ioe.printStackTrace();
             }
         }

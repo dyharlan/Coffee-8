@@ -615,7 +615,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         //try{
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc4 (xo-chip branch)");
+            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc5 (xo-chip branch)");
             d.startApp();
             
         //}catch(FileNotFoundException fnfe){

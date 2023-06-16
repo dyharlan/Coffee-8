@@ -1,7 +1,7 @@
 <h1 align="center">Coffee-8</h1>
 <h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
-<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip<a href="footnote-1">*</a></h2>
+<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip<sup>1</sup></h2>
 
 <h3 align="center">
 <img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/>
@@ -27,7 +27,7 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 ## Todo
 - Implement saving user settings
 - Implement toggleable quirks
-- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. <a href="footnote-1">See footnote 1.</a>
+- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. See footnote 1.
 - Implement debugging capabilities
 - ~~Properly implement FX75/85~~ Done
 

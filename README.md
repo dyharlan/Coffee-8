@@ -1,7 +1,7 @@
 <h1 align="center">Coffee-8</h1>
 <h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
-<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Currently simulates both the SuperChip 1.1, and the COSMAC VIP interpreters.</h2>
+<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip<a href="footnote-1">*</a></h2>
 
 <h3 align="center">
 <img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/>
@@ -27,7 +27,7 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 ## Todo
 - Implement saving user settings
 - Implement toggleable quirks
-- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. See ``xo-chip`` branch.
+- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. <a href="footnote-1">See footnote 1.</a>
 - Implement debugging capabilities
 - ~~Properly implement FX75/85~~ Done
 
@@ -47,7 +47,7 @@ Coffee-8 is licensed under the MIT License. See License.md for more details
 Do take note that any form of contributions to this project will fall under the MIT License. With that said, any form of contributions are welcome. 
 As I'm not confident with myself in certain aspects of this app's code.
 
-
-
+## Footnotes
+<p id="footnote-1">1. XO-Chip sound is so damn hard to implement. WIP. Doesn't help that the reference implementation is poorly commented. </p>
 
 

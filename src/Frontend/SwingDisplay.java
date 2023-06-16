@@ -144,7 +144,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                             int plane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;                            
                             frameBuffer.setColor(planeColors[plane]);
                             frameBuffer.fillRect(x, y, 1, 1);
-
                         }
                     }
                 }
@@ -393,6 +392,10 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.cpuExec();
                     }
                     chip8CPU.updateTimers();
+                    chip8CPU.setXOPattern();
+                    //if (m == MachineType.XO_CHIP) {
+                        
+                    //}
                 }
                 try {
                     cpuCycleThread.sleep((int)frameTime);
@@ -405,6 +408,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             }
             
             gamePanel.repaint();
+            
         }
         
 

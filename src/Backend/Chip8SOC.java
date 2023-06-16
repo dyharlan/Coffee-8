@@ -102,12 +102,15 @@ public class Chip8SOC{
         0x3C, 0x7E, 0xC3, 0xC3, 0x7E, 0x7E, 0xC3, 0xC3, 0x7E, 0x3C, // "8"
         0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C // "9"            
     };
+    final int[] defaultPattern = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00}; //pitch: 103
+    int[] pattern;
+    int pitch;
     int X;
     int Y;
     private pStack cst; //16-bit stack
     private Boolean playSound;
     private Boolean hires;
-    ToneGenerator tg;
+    WaveGenerator tg;
     Random rand;
     MachineType currentMachine;
     private Instruction[] c8Instructions;
@@ -269,6 +272,12 @@ public class Chip8SOC{
     }
     
     public void chip8Init(){
+        pitch = 103;
+        pattern = new int[16];
+        for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
+            pattern[i] = defaultPattern[i];
+        }
+        tg.generateSquareWavePattern(pitch, pattern);
         crc32Checksum = 0;
         hires = false;
         v = new int[16];
@@ -329,15 +338,7 @@ public class Chip8SOC{
     }
     
     public void updateTimers(){
-        if(playSound){
-            if (sT > 0) {
-                //System.out.println(sT);
-                tg.playSound();
-            } else {
-                //System.out.println(sT);
-                tg.pauseSound();
-            }
-        }
+        
         if(dT > 0){
             dT--;
         }
@@ -423,7 +424,7 @@ public class Chip8SOC{
         if(tg == null){
             playSound = true;
             try {
-                tg = new ToneGenerator(playSound);
+                tg = new WaveGenerator(playSound, pitch,defaultPattern);
             } catch (LineUnavailableException | UnsupportedAudioFileException | IOException ex) {
                 tg = null;
                 playSound = false;
@@ -898,10 +899,14 @@ public class Chip8SOC{
     }
     
     private void C8INST_F002(){
-        System.out.println("F002 is stubbed out for now");
+        //System.out.println("F002 is stubbed out for now");
+        for(int i = 0; i < pattern.length; i++){
+            pattern[i] = mem[I + i];
+        }
     }
     private void C8INST_FX3A(){
-        System.out.println("FX3A is stubbed out for now");
+        //System.out.println("FX3A is stubbed out for now");
+        pitch = v[X];
     }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){
@@ -964,6 +969,18 @@ public class Chip8SOC{
         this.waitState = waitState;
     }
     
+    public void setXOPattern(){
+        if(playSound){
+            if (sT > 0) {
+                //System.out.println(sT);
+                tg.playSound();
+            } else {
+                //System.out.println(sT);
+                tg.pauseSound();
+            }
+        }
+        tg.generateSquareWavePattern(pitch, pattern);
+    }
     
     //FX29: Point index register to font in memory
     private void C8INST_FX29(){

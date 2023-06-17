@@ -38,7 +38,26 @@ import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
-
+class LastFrame{
+    int[][] prevFrame;
+    Boolean hires;
+    Color[] prevColors;
+    LastFrame(int[][] arr2D, Boolean hires, Color[] colorArr){
+        prevFrame = new int[arr2D.length][];
+        for(int i = 0; i < arr2D.length; i++){
+            int[] temp = arr2D[i];
+            int length = temp.length;
+            prevFrame[i] = new int[length];
+            System.arraycopy(temp, 0, prevFrame[i], 0, length);
+        }
+//        prevFrame = new int[2][];
+//        prevFrame[0] = arr2D[0].clone();
+//        prevFrame[1] = arr2D[1].clone();
+        this.hires = hires;
+        prevColors = new Color[4];
+        System.arraycopy(colorArr, 0, prevColors, 0, prevColors.length);
+    }
+}
 public class SwingDisplay extends KeyAdapter implements Runnable {
     //resolution of the buffered image
     protected final int IMGWIDTH = 128;
@@ -58,7 +77,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     
     File rom;
     MachineType m;
-    
+    private LastFrame last;
     public BufferedImage image;
     public Graphics2D frameBuffer;
     private Boolean romStatus;
@@ -137,17 +156,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             public void paint(Graphics g) {
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-                
-                if (chip8CPU.graphics != null) {
-                    for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
-                        for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                            int plane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;                            
-                            frameBuffer.setColor(planeColors[plane]);
-                            frameBuffer.fillRect(x, y, 1, 1);
-                        }
-                    }
-                }
-
                 if (chip8CPU.getHiRes()) {
                     g2d.drawImage(image, 0, 0, hiResViewWidth, hiResViewHeight, gamePanel);
                 } else {
@@ -288,7 +296,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             ColorManager cm = new ColorManager(f,planeColors[0]);
             planeColors[0] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
-                   gamePanel.repaint();
+                   repaintImage();
             }
 
         });
@@ -297,7 +305,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             ColorManager cm = new ColorManager(f,planeColors[1]);
             planeColors[1] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
-                   gamePanel.repaint();
+                   repaintImage();
             }
         });
         plane2ColorManager = new JMenuItem("Set XO-Chip Plane 2 Color");
@@ -305,7 +313,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             ColorManager cm = new ColorManager(f,planeColors[2]);
             planeColors[2] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
-                   gamePanel.repaint();
+                   repaintImage();
             }
         });
         plane3ColorManager = new JMenuItem("Set XO-Chip Plane 3 Color");
@@ -313,7 +321,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             ColorManager cm = new ColorManager(f,planeColors[3]);
             planeColors[3] = cm.getColor();
             if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
-                   gamePanel.repaint();
+                   repaintImage();
             }
         });
         scalingManager = new JMenuItem("Set Video Scale");
@@ -339,18 +347,22 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu.add(soundToggle);
     }
     public void loadROM(File rom) {
-
+        last = null;
         try {
             synchronized(chip8CPU){
+                
                 romStatus = chip8CPU.loadROM(rom);
             }
             if (romStatus) {
                 this.rom = rom;
+                
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
                 }
 
                 SwingUtilities.invokeLater(() -> {
+                    
+                    
                      startEmulation();
                 });
             } else {
@@ -412,11 +424,66 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }
             }
             
-            gamePanel.repaint();
+            repaintImage();
             
         }
         
 
+    }
+    public Boolean arrayEqual(int[] a, int[] b) {
+        int length = a.length;
+        if (length != b.length) {
+            return false;
+        }
+        for (var i = 0; i < length; i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public Boolean arrayEqual(Color[] a, Color[] b) {
+        int length = a.length;
+        if (length != b.length) {
+            return false;
+        }
+        for (var i = 0; i < length; i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    public void repaintImage(){
+        if(last != null){
+            if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1]) && arrayEqual(last.prevColors,planeColors)){
+                return;
+            }
+            if (last.hires != chip8CPU.getHiRes())
+		last = null; 
+        }
+        int z = 0;
+        int[][] lastPixels = last != null && last.prevFrame != null? last.prevFrame: new int[2][chip8CPU.getMachineWidth() * chip8CPU.getMachineHeight()];
+        if (chip8CPU.graphics != null) {
+            for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
+                for (int x = 0; x < chip8CPU.getMachineWidth(); x++,z++) {
+                    int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                    if (last != null) {
+                        int oldPlane = (lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                        if (oldPlane != newPlane) {
+                            frameBuffer.setColor(planeColors[newPlane]);
+                            frameBuffer.fillRect(x, y, 1, 1);
+                        }
+                    }else{
+                        frameBuffer.setColor(planeColors[newPlane]);
+                        frameBuffer.fillRect(x, y, 1, 1);
+                    }
+                }
+            }
+        }
+        gamePanel.repaint();
+        last = new LastFrame(chip8CPU.graphics, chip8CPU.getHiRes(), planeColors);
     }
         @Override
         public void keyPressed(KeyEvent e){

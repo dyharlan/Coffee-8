@@ -66,7 +66,6 @@ public class WaveGenerator {
        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
        sourceDataLine.open(audioFormat);
-       sourceDataLine.start();
        isPlaying = false;
        isEnabled = sound;
     }

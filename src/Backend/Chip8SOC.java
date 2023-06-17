@@ -109,8 +109,8 @@ public class Chip8SOC{
     private pStack cst; //16-bit stack
     public Boolean playSound;
     private Boolean hires;
-    //public WaveGenerator tg;
-    public XOAudio xo;
+    public WaveGenerator tg;
+    //public XOAudio xo;
     Random rand;
     MachineType currentMachine;
     private Instruction[] c8Instructions;
@@ -278,8 +278,8 @@ public class Chip8SOC{
         for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
             pattern[i] = defaultPattern[i];
         }
-        xo.setPitch(pitch);
-        xo.setBuffer(pattern);
+        tg.setPitch(pitch);
+        tg.setBuffer(pattern);
         //xo.setPitch(pitch);
         //xo.setBuffer(pattern);
         crc32Checksum = 0;
@@ -342,15 +342,7 @@ public class Chip8SOC{
     }
     
     public void updateTimers(){
-        if (playSound) {
-            if (sT > 0) {
-                //xo.setBuffer(pattern);
-                //tg.playSound();
-            } else {
-                //xo.setBuffer(xo.pattern_mute);
-                //tg.pauseSound();
-            }
-        }
+        
         if(dT > 0){
             dT--;
         }
@@ -431,15 +423,15 @@ public class Chip8SOC{
     }
     
     public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
-        if(xo != null && playSound)
+        if(tg != null && playSound)
             return;
-        if(xo == null){
+        if(tg == null){
             playSound = true;
             try {
-                //tg = new WaveGenerator(playSound, pitch, defaultPattern);
-                xo = new XOAudio(48000, 60);
+                tg = new WaveGenerator(playSound, pitch, defaultPattern);
+                //xo = new XOAudio(48000, 60);
             } catch (LineUnavailableException ex) {
-                xo = null;
+                tg = null;
                 playSound = false;
                 throw ex;
             }

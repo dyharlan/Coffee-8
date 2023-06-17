@@ -45,10 +45,10 @@ public class WaveGenerator {
     AudioFormat audioFormat;
     ByteArrayInputStream bais;
     SourceDataLine sourceDataLine;
-    soundThread sThread;
+   
     Boolean isPlaying;
     Boolean isEnabled;
-    
+    float bufferpos = 0;
     byte[] buffer;
     byte[] scaledBuffer;
     static int systemFreq = 48000;
@@ -57,17 +57,18 @@ public class WaveGenerator {
     float pitch;
     public WaveGenerator(Boolean sound,float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
        buffer = new byte[128];
-       scaledBuffer = new byte[512];
+       scaledBuffer = new byte[800];
        this.pitch = pitch;
        this.sampleFreq = 4000;
-       setPitch(pitch);
-       setBuffer(pattern);
-       generateSquareWavePattern();
+       
        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
        sourceDataLine.open(audioFormat);
+       sourceDataLine.start();
        isPlaying = false;
        isEnabled = sound;
+       setPitch(pitch);
+       setBuffer(pattern);
     }
     
     public void setPitch(float value) {
@@ -88,7 +89,7 @@ public class WaveGenerator {
             }
         }
     }
-    public void generateSquareWavePattern(){
+    public void generateSquareWavePattern(int amount){
         //scale the waveform so that it can be played properly on a system with high frequency. 
         //buffer2 will store the scaled waveform given by this formula:
         //buffer2[i] = buffer[(i*(rate/128))/targetFrequency)%buffer_length]
@@ -97,32 +98,45 @@ public class WaveGenerator {
         // rate = 4000*(2^((vx-64)/48)) from here: https://johnearnest.github.io/Octo/docs/XO-ChipSpecification.html
         // it is divided by 128 for mono, or 256 for stereo to get the actual freq of the tone
         // targetFrequency is the frequency you want the sounds to be scaled at. In our case it is 48khz
-        for(int k = 0; k < scaledBuffer.length; k++){
-            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
-        }
-    }
-    class soundThread extends Thread {
-        public void run(){
-            sourceDataLine.start();
-            while(isPlaying){
+//        for(int k = 0; k < scaledBuffer.length; k++){
+//            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
+//        }
 
-                sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
-            }
-            
+        if (scaledBuffer == null) {
+            scaledBuffer = new byte[amount];
         }
-    }
-    public void playSound() {
-        if (isPlaying || !isEnabled) 
-            return;
-        isPlaying = true;
-        sThread = new soundThread();
-        sThread.setPriority(Thread.MAX_PRIORITY);
-        sThread.start();
+        float rate = sampleFreq / systemFreq;
+        for (int k = 0; k < amount; k++) {
+            scaledBuffer[k] = buffer[(int) bufferpos];
+            bufferpos = (bufferpos + rate) % buffer.length;
+        }
+//        for(int k = 0; k < scaledBuffer.length; k++){
+//            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
+//        }
+        if(!sourceDataLine.isActive()){
+            sourceDataLine.start();
+        }
+        sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
+        
     }
     
-    public void pauseSound() {
-        isPlaying = false;
-        sourceDataLine.stop();
+//    public void playSound() {
+//        if (isPlaying || !isEnabled) 
+//            return;
+//        isPlaying = true;
+//        sThread = new soundThread();
+//        sThread.setPriority(Thread.MAX_PRIORITY);
+//        sThread.start();
+//    }
+//    
+//    public void pauseSound() {
+//        isPlaying = false;
+//        sourceDataLine.stop();
+//        sourceDataLine.flush();
+//    }
+    public void stop(){
+        //stop those clicks from happening
         sourceDataLine.flush();
+        //sourceDataLine.stop();
     }
 }

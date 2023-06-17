@@ -405,17 +405,17 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                        
                     }
                     //set pitch
-                    chip8CPU.xo.setPitch(chip8CPU.pitch);
-                    //play sound
                     if (chip8CPU.playSound) {
                         if (chip8CPU.sT > 0) {
-                            chip8CPU.xo.setBuffer(chip8CPU.pattern);
-                        } else {
-                            chip8CPU.xo.setBuffer(chip8CPU.xo.pattern_mute);
+                            chip8CPU.tg.setPitch(chip8CPU.pitch);
+                            //play sound
+                            chip8CPU.tg.setBuffer(chip8CPU.pattern);
+
+                            chip8CPU.tg.generateSquareWavePattern(48000/60);
+                        }else{
+                            chip8CPU.tg.stop();
                         }
                     }
-                    
-                    
                     chip8CPU.updateTimers();
                 }
                 

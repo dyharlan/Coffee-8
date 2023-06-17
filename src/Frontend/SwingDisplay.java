@@ -404,13 +404,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.cpuExec();
                         
                     }
-                    if (chip8CPU.playSound) {
-                        if (chip8CPU.sT > 0) {
-                            chip8CPU.tg.playSound();
-                        } else {
-                            chip8CPU.tg.pauseSound();
-                        }
-                    }
+//                    if (chip8CPU.playSound) {
+//                        if (chip8CPU.sT > 0) {
+//                            chip8CPU.tg.playSound();
+//                        } else {
+//                            chip8CPU.tg.pauseSound();
+//                        }
+//                    }
                     chip8CPU.updateTimers();
                 }
                 
@@ -460,7 +460,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1]) && arrayEqual(last.prevColors,planeColors)){
                 return;
             }
-            if (last.hires != chip8CPU.getHiRes())
+            if (last.hires != chip8CPU.getHiRes() || !arrayEqual(last.prevColors,planeColors))
 		last = null; 
         }
         int z = 0;

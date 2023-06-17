@@ -56,8 +56,8 @@ public class ScalingManager {
                 s.gamePanel.revalidate();
                 s.gamePanel.repaint();
                 if (s.chip8CPU.getHiRes()) {
-                    sizeX = 64 * s.HIRES_SCALE_FACTOR;
-                    sizeY = 32 * s.HIRES_SCALE_FACTOR;
+                    sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                    sizeY = 64 * s.HIRES_SCALE_FACTOR;
                 } else {
                     sizeX = 64 * s.LOWRES_SCALE_FACTOR;
                     sizeY = 32 * s.LOWRES_SCALE_FACTOR;
@@ -125,8 +125,8 @@ public class ScalingManager {
                 s.gamePanel.revalidate();
                 s.gamePanel.repaint();
                 if (s.chip8CPU.getHiRes()) {
-                    sizeX = 64 * s.HIRES_SCALE_FACTOR;
-                    sizeY = 32 * s.HIRES_SCALE_FACTOR;
+                    sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                    sizeY = 64 * s.HIRES_SCALE_FACTOR;
                 } else {
                     sizeX = 64 * s.LOWRES_SCALE_FACTOR;
                     sizeY = 32 * s.LOWRES_SCALE_FACTOR;
@@ -142,8 +142,8 @@ public class ScalingManager {
                     s.gamePanel.revalidate();
                     s.gamePanel.repaint();
                     if (s.chip8CPU.getHiRes()) {
-                        sizeX = 64 * s.HIRES_SCALE_FACTOR;
-                        sizeY = 32 * s.HIRES_SCALE_FACTOR;
+                        sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                        sizeY = 64 * s.HIRES_SCALE_FACTOR;
                     } else {
                         sizeX = 64 * s.LOWRES_SCALE_FACTOR;
                         sizeY = 32 * s.LOWRES_SCALE_FACTOR;
@@ -158,8 +158,8 @@ public class ScalingManager {
                     s.gamePanel.revalidate();
                     s.gamePanel.repaint();
                     if (s.chip8CPU.getHiRes()) {
-                        sizeX = 64 * s.HIRES_SCALE_FACTOR;
-                        sizeY = 32 * s.HIRES_SCALE_FACTOR;
+                        sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                        sizeY = 64 * s.HIRES_SCALE_FACTOR;
                     } else {
                         sizeX = 64 * s.LOWRES_SCALE_FACTOR;
                         sizeY = 32 * s.LOWRES_SCALE_FACTOR;
@@ -176,8 +176,8 @@ public class ScalingManager {
                 s.gamePanel.revalidate();
                 s.gamePanel.repaint();
                 if (s.chip8CPU.getHiRes()) {
-                    sizeX = 64 * s.HIRES_SCALE_FACTOR;
-                    sizeY = 32 * s.HIRES_SCALE_FACTOR;
+                    sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                    sizeY = 64 * s.HIRES_SCALE_FACTOR;
                 } else {
                     sizeX = 64 * s.LOWRES_SCALE_FACTOR;
                     sizeY = 32 * s.LOWRES_SCALE_FACTOR;

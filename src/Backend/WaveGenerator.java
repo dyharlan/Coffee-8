@@ -52,11 +52,17 @@ public class WaveGenerator {
     byte[] buffer;
     byte[] scaledBuffer;
     static int systemFreq = 48000;
+    static float sampleFreq;
     static int channels = 1;
-    public WaveGenerator(Boolean sound,int pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
+    float pitch;
+    public WaveGenerator(Boolean sound,float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
        buffer = new byte[128];
-       scaledBuffer = new byte[32768];
-       generateSquareWavePattern(pitch, pattern);
+       scaledBuffer = new byte[512];
+       this.pitch = pitch;
+       this.sampleFreq = 4000;
+       setPitch(pitch);
+       setBuffer(pattern);
+       generateSquareWavePattern();
        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
        sourceDataLine.open(audioFormat);
@@ -64,27 +70,26 @@ public class WaveGenerator {
        isPlaying = false;
        isEnabled = sound;
     }
-    public void generateSquareWavePattern(float pitch, int[] pattern){
+    
+    public void setPitch(float value) {
+        float exp = ((value-64)/48);
+        float rate = (float) (4000*Math.pow(2, exp));
+        sampleFreq = rate;
+        pitch = value;
+    }
+    
+    public void setBuffer(int[] pattern){
         //create an array given the formula: 8 * 16 = bits in a byte * number of samples (16)
         //create an array that will store a scaled wave form version of the above sound, so it can be played on higher frequencies that a modern system uses. (i.e. 48000hz or 48khz)
         //byte[] buffer2 = new byte[bufferSize];
         //compute the playback rate given a pitch value in the vX register
-        float exp = ((pitch-64)/48);
-        float rate = (float) (4000*Math.pow(2, exp));
-        int j = 0;
-        //Convert the 16 byte pattern to pcm sounds
-        //where each bit in a byte corresponds to max amplitude, and a 0 is no amplitude.
-        //each byte will occupy 8 indeces, hence the formula of 8 * 16
-        for(int i = 0; i < pattern.length; i++){
-            buffer[j++] = (byte)((pattern[i] >> 7 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 6 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 5 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 4 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 3 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 2 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] >> 1 & 0x1) == 1? 255 : 0);
-            buffer[j++] = (byte)((pattern[i] & 0x1) == 1? 255 : 0);
+        for (int i = 0, j = 0; i < pattern.length; i++) {
+            for (byte shift = 7; shift >= 0; shift--) {
+                buffer[j++] = (byte) (((pattern[i] >> shift & 1) != 0) ? 255 : 0);
+            }
         }
+    }
+    public void generateSquareWavePattern(){
         //scale the waveform so that it can be played properly on a system with high frequency. 
         //buffer2 will store the scaled waveform given by this formula:
         //buffer2[i] = buffer[(i*(rate/128))/targetFrequency)%buffer_length]
@@ -94,13 +99,14 @@ public class WaveGenerator {
         // it is divided by 128 for mono, or 256 for stereo to get the actual freq of the tone
         // targetFrequency is the frequency you want the sounds to be scaled at. In our case it is 48khz
         for(int k = 0; k < scaledBuffer.length; k++){
-            scaledBuffer[k] = buffer[(int)((k*rate/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
+            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
         }
     }
     class soundThread extends Thread {
         public void run(){
             sourceDataLine.start();
             while(isPlaying){
+
                 sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
             }
             

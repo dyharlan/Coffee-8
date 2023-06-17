@@ -404,7 +404,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         chip8CPU.cpuExec();
                        
                     }
+                    //set pitch
                     chip8CPU.xo.setPitch(chip8CPU.pitch);
+                    //play sound
                     if (chip8CPU.playSound) {
                         if (chip8CPU.sT > 0) {
                             chip8CPU.xo.setBuffer(chip8CPU.pattern);

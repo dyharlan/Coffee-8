@@ -65,7 +65,7 @@ public class Chip8SOC{
     private int I; //12-bit Index register
     private int opcode;
     private int dT; //8-bit delay timer
-    private int sT; //sound timer
+    public int sT; //sound timer
     private int[] v; //cpu registers
     public int[][] graphics; //screen grid??
     public boolean[] keyPad; 
@@ -103,14 +103,14 @@ public class Chip8SOC{
         0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C // "9"            
     };
     final int[] defaultPattern = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00}; //pitch: 103
-    int[] pattern;
-    int pitch;
+    public int[] pattern;
     int X;
     int Y;
     private pStack cst; //16-bit stack
-    private Boolean playSound;
+    public Boolean playSound;
     private Boolean hires;
-    WaveGenerator tg;
+    //public WaveGenerator tg;
+    public XOAudio xo;
     Random rand;
     MachineType currentMachine;
     private Instruction[] c8Instructions;
@@ -120,6 +120,7 @@ public class Chip8SOC{
     private Instruction[] _0xDInstructions;
     private Instruction[] _0xEInstructions;
     private Instruction[] _0xFInstructions;
+    public float pitch;
     //Default machine is COSMAC VIP
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
         
@@ -272,12 +273,15 @@ public class Chip8SOC{
     }
     
     public void chip8Init(){
-        pitch = 103;
+        pitch = 64;
         pattern = new int[16];
         for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
             pattern[i] = defaultPattern[i];
         }
-        tg.generateSquareWavePattern(pitch, pattern);
+        xo.setPitch(pitch);
+        xo.setBuffer(pattern);
+        //xo.setPitch(pitch);
+        //xo.setBuffer(pattern);
         crc32Checksum = 0;
         hires = false;
         v = new int[16];
@@ -338,14 +342,22 @@ public class Chip8SOC{
     }
     
     public void updateTimers(){
-        
+        if (playSound) {
+            if (sT > 0) {
+                //xo.setBuffer(pattern);
+                //tg.playSound();
+            } else {
+                //xo.setBuffer(xo.pattern_mute);
+                //tg.pauseSound();
+            }
+        }
         if(dT > 0){
             dT--;
         }
         if(sT > 0){
             sT--;
         }
-          
+        
     }
     
     public Boolean getHiRes(){
@@ -419,14 +431,15 @@ public class Chip8SOC{
     }
     
     public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
-        if(tg != null && playSound)
+        if(xo != null && playSound)
             return;
-        if(tg == null){
+        if(xo == null){
             playSound = true;
             try {
-                tg = new WaveGenerator(playSound, pitch,defaultPattern);
-            } catch (LineUnavailableException | UnsupportedAudioFileException | IOException ex) {
-                tg = null;
+                //tg = new WaveGenerator(playSound, pitch, defaultPattern);
+                xo = new XOAudio(48000, 60);
+            } catch (LineUnavailableException ex) {
+                xo = null;
                 playSound = false;
                 throw ex;
             }
@@ -438,13 +451,13 @@ public class Chip8SOC{
         playSound = false;
     }
     
-    public void playSound(){
-        tg.playSound();
-    }
-    
-    public void pauseSound(){
-        tg.pauseSound();
-    }
+//    public void playSound(){
+//        tg.playSound();
+//    }
+//    
+//    public void pauseSound(){
+//        tg.pauseSound();
+//    }
     
     public Boolean isSoundEnabled(){
         return playSound;
@@ -898,11 +911,27 @@ public class Chip8SOC{
         plane = X & 0x3;
     }
     
-    private void C8INST_F002(){
+    private void C8INST_F002() {
         //System.out.println("F002 is stubbed out for now");
-        for(int i = 0; i < pattern.length; i++){
-            pattern[i] = mem[I + i];
-        }
+//        for(int i = 0; i < pattern.length; i++){
+//            pattern[i] = mem[I + i];
+//        }
+        pattern[0] = mem[I + 0];
+        pattern[1] = mem[I + 1];
+        pattern[2] = mem[I + 2];
+        pattern[3] = mem[I + 3];
+        pattern[4] = mem[I + 4];
+        pattern[5] = mem[I + 5];
+        pattern[6] = mem[I + 6];
+        pattern[7] = mem[I + 7];
+        pattern[8] = mem[I + 8];
+        pattern[9] = mem[I + 9];
+        pattern[10] = mem[I + 10];
+        pattern[11] = mem[I + 11];
+        pattern[12] = mem[I + 12];
+        pattern[13] = mem[I + 13];
+        pattern[14] = mem[I + 14];
+        pattern[15] = mem[I + 15];
     }
     private void C8INST_FX3A(){
         //System.out.println("FX3A is stubbed out for now");
@@ -952,7 +981,7 @@ public class Chip8SOC{
         v[waitReg] = keyValue;
         
     }
-    
+     
     public int getWaitReg() {
         return waitReg;
     }
@@ -970,16 +999,8 @@ public class Chip8SOC{
     }
     
     public void setXOPattern(){
-        if(playSound){
-            if (sT > 0) {
-                //System.out.println(sT);
-                tg.playSound();
-            } else {
-                //System.out.println(sT);
-                tg.pauseSound();
-            }
-        }
-        tg.generateSquareWavePattern(pitch, pattern);
+       
+        
     }
     
     //FX29: Point index register to font in memory

@@ -347,7 +347,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu.add(soundToggle);
     }
     public void loadROM(File rom) {
-        last = null;
+        
         try {
             synchronized(chip8CPU){
                 
@@ -361,9 +361,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }
 
                 SwingUtilities.invokeLater(() -> {
-                    
-                    
-                     startEmulation();
+
+                    last = null;
+                    startEmulation();
                 });
             } else {
                 romStatus = false;

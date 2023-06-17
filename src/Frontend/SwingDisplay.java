@@ -130,8 +130,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
-        panelX = chip8CPU.getMachineWidth() * LOWRES_SCALE_FACTOR;
-        panelY = chip8CPU.getMachineHeight() * LOWRES_SCALE_FACTOR;
+        panelX = 64 * LOWRES_SCALE_FACTOR;
+        panelY = 32 * LOWRES_SCALE_FACTOR;
         gamePanel = new JPanel() {
             @Override
             public void paint(Graphics g) {
@@ -372,7 +372,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     }
 
     public void stopEmulation() {
-        chip8CPU.pauseSound();
+        //chip8CPU.pauseSound();
         isRunning = false;
         cpuCycleThread = null;
     }
@@ -390,13 +390,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 for (long i = 0; origin < last - frameTime && i < 2; origin += frameTime, i++) {
                     for (int j = 0; j < chip8CPU.getCycles() && !chip8CPU.getWaitState(); j++) {
                         chip8CPU.cpuExec();
+                        
+                    }
+                    if (chip8CPU.playSound) {
+                        if (chip8CPU.sT > 0) {
+                            chip8CPU.tg.playSound();
+                        } else {
+                            chip8CPU.tg.pauseSound();
+                        }
                     }
                     chip8CPU.updateTimers();
-                    chip8CPU.setXOPattern();
-                    //if (m == MachineType.XO_CHIP) {
-                        
-                    //}
                 }
+                
                 try {
                     cpuCycleThread.sleep((int)frameTime);
                 } catch (InterruptedException ex) {

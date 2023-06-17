@@ -340,9 +340,19 @@ public class Chip8SOC{
         }
         return romStatus;
     }
-    
+    int x = 48000 / 60;
     public void updateTimers(){
-        
+        if (playSound) {
+            if (sT > 0) {
+                tg.setPitch(pitch);
+                //play sound
+                tg.setBuffer(pattern);
+
+                tg.generateSquareWavePattern(x);
+            } else {
+                tg.stop();
+            }
+        }
         if(dT > 0){
             dT--;
         }

@@ -444,7 +444,6 @@ public class Chip8SOC{
             playSound = true;
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
-                //xo = new XOAudio(48000, 60);
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -461,13 +460,6 @@ public class Chip8SOC{
     public void closeSound(){
         tg.close();
     }
-//    public void playSound(){
-//        tg.playSound();
-//    }
-//    
-//    public void pauseSound(){
-//        tg.pauseSound();
-//    }
     
     public Boolean isSoundEnabled(){
         return playSound;
@@ -496,9 +488,11 @@ public class Chip8SOC{
         
         //System.out.println(Integer.toHexString(mem[pc]));
         //System.out.println(Integer.toHexString(mem[pc+1]));
-        //decode
-        //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
+       
+        //increment pc after obtaining opcode and operands
         pc+=2;
+        //decode and execute
+        //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
         c8Instructions[(opcode & 0xF000) >> 12].execute();
 //        System.out.println("Current value of v[0]: " + v[0]);
 //        System.out.println("Current value of v[1]: " + v[1]);
@@ -519,6 +513,7 @@ public class Chip8SOC{
         
         
     }
+    //A universal function for all skip instructions
     public void skipInstruction(){
         int nextOpcode = (mem[pc] << 8 | mem[pc+1]);
         if(nextOpcode == 0xF000){
@@ -661,6 +656,7 @@ public class Chip8SOC{
             skipInstruction();
         }
     }
+    //Save an inclusive range of registers to memory, with the address pointed by the index register I as its starting point
     private void C8INST_5XY2(){
         int dist = Math.abs(X - Y);
         if (X < Y) {
@@ -676,6 +672,7 @@ public class Chip8SOC{
 //            mem[I + i] = v[i];
 //        }
     }
+    //load an inclusive range of registers from memory, with the address pointed by the index register I as its starting point
     private void C8INST_5XY3(){
          int dist = Math.abs(X - Y);
         if (X < Y) {
@@ -807,6 +804,7 @@ public class Chip8SOC{
     * DXY0/DXYN derived from Octo
     * In superchip: draw a 16x16 sprite, otherwise, draw normally
     */
+    
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
     */
@@ -881,7 +879,6 @@ public class Chip8SOC{
                              }
                          }
                      }
-
                  }
 
                 i += n;
@@ -910,13 +907,13 @@ public class Chip8SOC{
     private void C8INSTSET_F000(){
         _0xFInstructions[(opcode & 0xFF)].execute();
     }
-    
+    //F000 NNNN Load the index register I with a 16-bit address
     private void C8INST_F000_NNNN(){
         int NNNN = (mem[pc] << 8 | mem[pc+1]);
         I = NNNN;
         pc+=2;
     }
-    
+    //Set the current plane to draw, where 0 <= X <= 3
     private void C8INST_FX01(){
         plane = X & 0x3;
     }
@@ -943,6 +940,7 @@ public class Chip8SOC{
         pattern[14] = mem[I + 14];
         pattern[15] = mem[I + 15];
     }
+    //FX3A: set the audio playback rate of the beeper using this formula: 4000*2^((vX-64)/48)Hz.
     private void C8INST_FX3A(){
         //System.out.println("FX3A is stubbed out for now");
         pitch = v[X];

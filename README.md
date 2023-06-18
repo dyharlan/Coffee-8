@@ -1,7 +1,7 @@
 <h1 align="center">Coffee-8</h1>
 <h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
-<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip<sup>1</sup></h2>
+<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.</h2>
 
 <h3 align="center">
 <img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/>
@@ -10,7 +10,7 @@
 </h3>
 
 ## Accuracy
-Coffee-8 passes [Timedus'](https://github.com/Timendus/chip8-test-suite) and [metteo's](https://github.com/metteo/chip8-test-rom) Test Suite for the Chip-8 and the Super-Chip.
+Coffee-8 passes [Timedus'](https://github.com/Timendus/chip8-test-suite), and [metteo's](https://github.com/metteo/chip8-test-rom) Test Suite for the Chip-8 and the Super-Chip.
 
 ## Installation
 For now, builds are not available due to some base features missing. You need to compile this on your own.
@@ -27,7 +27,7 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 ## Todo
 - Implement saving user settings
 - Implement toggleable quirks
-- ~~Implement XO-Chip~~ XO-Chip support is 95% done, sound is the only thing missing. See footnote 1.
+- ~~Implement XO-Chip~~ XO-Chip support is now fully functional with sound.
 - Implement debugging capabilities
 - ~~Properly implement FX75/85~~ Done
 
@@ -40,14 +40,12 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 - [BrokenProgrammer's Chip-8 emulator](https://github.com/brokenprogrammer/CHIP-8-Emulator) - for being a reference early in the project.
 - [AlfonsoJLuna's chip8swemu](https://github.com/AlfonsoJLuna/chip8swemu) - for being another early reference in fixing emulation bugs.
 - [The EmuDev Discord](https://discord.com/invite/7nuaqZ2) - Specifically @Gulrak and @Janitor Raus for answering my questions.
+- [kouzeru](https://github.com/Kouzeru) - For the XO-Chip Audio implementation.
 ## License
 Coffee-8 is licensed under the MIT License. See License.md for more details
 
 ## Contributing
 Do take note that any form of contributions to this project will fall under the MIT License. With that said, any form of contributions are welcome. 
 As I'm not confident with myself in certain aspects of this app's code.
-
-## Footnotes
-<p id="footnote-1">1. XO-Chip sound is so damn hard to implement. WIP. Doesn't help that the reference implementation is poorly commented. </p>
 
 

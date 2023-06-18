@@ -40,6 +40,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * the waveform scaling algorithm, and being a tremendous help in getting XO-Chip audio to work.
  */
 public class WaveGenerator {
+    
     AudioInputStream audioStream;
     AudioFormat audioFormat;
     ByteArrayInputStream bais;
@@ -146,7 +147,7 @@ public class WaveGenerator {
         }
         
         if (sourceDataLine.available() < scaledBuffer.length){
-            System.out.println(sourceDataLine.available());
+            //System.out.println(sourceDataLine.available());
             sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);   
             //sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
         }   

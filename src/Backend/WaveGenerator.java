@@ -56,6 +56,12 @@ public class WaveGenerator {
     static float sampleFreq;
     static int channels = 1;
     float pitch;
+    public WaveGenerator(Boolean sound,float pitch, int[] pattern, int systemFreq, int frameRate) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
+        this(sound, pitch, pattern);
+        this.systemFreq = systemFreq;
+        this.frameRate = frameRate;
+    }
+    //defaults at 48khz, 60fps
     public WaveGenerator(Boolean sound,float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
        buffer = new byte[128];
        this.pitch = pitch;
@@ -101,6 +107,9 @@ public class WaveGenerator {
         }
     }
     public void generateSquareWavePattern(int amount){
+        if(!isEnabled){
+            return;
+        }
         //scale the waveform so that it can be played properly on a system with high frequency. 
         //buffer2 will store the scaled waveform given by this formula:
         //buffer2[i] = buffer[(i*(rate/128))/targetFrequency)%buffer_length]

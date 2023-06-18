@@ -38,21 +38,31 @@ import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
+
+/*
+* A class representing the elapsedTimeFromEpoch frame of the display where:
+* prevFrame: contains the pixels that are on from the previous frame. Atm, it is a shallow copy, but works fine with a deep copy as well.
+* hires: if the previous frame is hi-res or not
+* prevColors: the colors in the previous frame
+* Original implementation from: https://github.com/JohnEarnest/Octo/
+*/
 class LastFrame{
     int[][] prevFrame;
     Boolean hires;
     Color[] prevColors;
+    //constructor
     LastFrame(int[][] arr2D, Boolean hires, Color[] colorArr){
         prevFrame = new int[arr2D.length][];
-        for(int i = 0; i < arr2D.length; i++){
-            int[] temp = arr2D[i];
-            int length = temp.length;
-            prevFrame[i] = new int[length];
-            System.arraycopy(temp, 0, prevFrame[i], 0, length);
-        }
-//        prevFrame = new int[2][];
-//        prevFrame[0] = arr2D[0].clone();
-//        prevFrame[1] = arr2D[1].clone();
+//        for(int i = 0; i < arr2D.length; i++){
+//            int[] temp = arr2D[i];
+//            int length = temp.length;
+//            prevFrame[i] = new int[length];
+//            System.arraycopy(temp, 0, prevFrame[i], 0, length);
+//        }
+        //create
+        prevFrame = new int[2][];
+        prevFrame[0] = arr2D[0].clone();
+        prevFrame[1] = arr2D[1].clone();
         this.hires = hires;
         prevColors = new Color[4];
         System.arraycopy(colorArr, 0, prevColors, 0, prevColors.length);
@@ -127,20 +137,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
         chip8CPU = new Chip8SOC(true, m);
         
-        if (chip8CPU.getCurrentMachine() != null)
-            switch (chip8CPU.getCurrentMachine()) {
-                case COSMAC_VIP:
-                    cosmacVIP.setSelected(true);
-                    break;
-                case SUPERCHIP_1_1:
-                    sChip1_1.setSelected(true);
-                    break;
-                case XO_CHIP:
-                    xoChip.setSelected(true);
-                    break;
-                default:
-                    break;
-            }
+        setInitialMachine();
         planeColors = new Color[4];
         planeColors[0] = Color.ORANGE;
         planeColors[1] = Color.BLUE;
@@ -169,7 +166,22 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
        
 
     }
-    
+    public void setInitialMachine(){
+        if (chip8CPU.getCurrentMachine() != null)
+            switch (chip8CPU.getCurrentMachine()) {
+                case COSMAC_VIP:
+                    cosmacVIP.setSelected(true);
+                    break;
+                case SUPERCHIP_1_1:
+                    sChip1_1.setSelected(true);
+                    break;
+                case XO_CHIP:
+                    xoChip.setSelected(true);
+                    break;
+                default:
+                    break;
+            }
+    }
     public void buildPanel() {
         mb = new JMenuBar();
         fileMenu = new JMenu("File");
@@ -179,10 +191,15 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             JFileChooser chooser = new JFileChooser();
             FileNameExtensionFilter c8roms = new FileNameExtensionFilter(
                     "Chip-8 ROM Files", "c8", "ch8");
-            chooser.setFileFilter(c8roms);
+            chooser.addChoosableFileFilter(c8roms);
             FileNameExtensionFilter sc8roms = new FileNameExtensionFilter(
                     "Superchip ROM Files", "sc8");
             chooser.addChoosableFileFilter(sc8roms);
+             FileNameExtensionFilter xoChiproms = new FileNameExtensionFilter(
+                    "XO-Chip ROM Files", "xo8");
+            chooser.addChoosableFileFilter(xoChiproms);
+            
+            
             if (rom == null) {
                 chooser.setCurrentDirectory(new File("."));
             } else {
@@ -191,14 +208,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             int returnVal = chooser.showOpenDialog(f);
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File tempRom = chooser.getSelectedFile();
-                if (m == MachineType.COSMAC_VIP && tempRom.length() > 3232L) {
-                    JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
-                } else if (m == MachineType.SUPERCHIP_1_1 && tempRom.length() > 3583L) {
-                    JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
-                } else if (m == MachineType.XO_CHIP && tempRom.length() > 65024L) {
-                    JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
-                }else{
+                
+                if(checkROMSize(tempRom)){
                     loadROM(tempRom);
+                }else{
+                     JOptionPane.showMessageDialog(null, "Rom is too large for "+ m.getMachineName() +"!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
                 
             }
@@ -226,31 +240,42 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
             machineChangeListener = (e) -> {
                 if(cosmacVIP.isSelected()){                      
-                    if(romStatus && rom != null){          
+                    if (romStatus && rom != null) {
+                        if (!checkROMSize(rom,MachineType.COSMAC_VIP)) { 
+                            machineGroup.clearSelection();
+                            setInitialMachine();
+                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.COSMAC_VIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+
+                        } else {
                             m = MachineType.COSMAC_VIP;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
+                        }
                     }else{
                        m = MachineType.COSMAC_VIP; 
                        chip8CPU.setCurrentMachine(m);
                     }
                 }else if(sChip1_1.isSelected()){
-                    if(romStatus && rom != null){
+                    if (!checkROMSize(rom,MachineType.SUPERCHIP_1_1)) { 
+                            machineGroup.clearSelection();
+                            setInitialMachine();
+                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.SUPERCHIP_1_1.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+
+                        } else {
                             m = MachineType.SUPERCHIP_1_1;
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
-                    }else{
-                        m = MachineType.SUPERCHIP_1_1;
-                        chip8CPU.setCurrentMachine(m);
-                    }
+                        }
                 }else if(xoChip.isSelected()){
-                    if(romStatus && rom != null){
-                            m = MachineType.XO_CHIP;
-                            chip8CPU.setCurrentMachine(m);
-                            loadROM(rom);
-                    }else{
+                    if (!checkROMSize(rom, MachineType.XO_CHIP)) {
+                        machineGroup.clearSelection();
+                        setInitialMachine();
+                        JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+
+                    } else {
                         m = MachineType.XO_CHIP;
                         chip8CPU.setCurrentMachine(m);
+                        loadROM(rom);
                     }
                 }
             };
@@ -346,11 +371,40 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         emulationMenu.add(pauseToggle);
         emulationMenu.add(soundToggle);
     }
+    public Boolean checkROMSize(File rom){
+        Boolean rightSize = true;
+        if (m == MachineType.COSMAC_VIP && rom.length() > 3232L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
+            rightSize = false;
+        } else if (m == MachineType.SUPERCHIP_1_1 && rom.length() > 3583L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+             rightSize = false;
+        } else if (m == MachineType.XO_CHIP && rom.length() > 65024L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+            rightSize = false;
+        }
+        return rightSize;
+    }
+    
+    public Boolean checkROMSize(File rom, MachineType m){
+        Boolean rightSize = true;
+        if (m == MachineType.COSMAC_VIP && rom.length() > 3232L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
+            rightSize = false;
+        } else if (m == MachineType.SUPERCHIP_1_1 && rom.length() > 3583L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+             rightSize = false;
+        } else if (m == MachineType.XO_CHIP && rom.length() > 65024L) {
+            //JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
+            rightSize = false;
+        }
+        return rightSize;
+    }
     public void loadROM(File rom) {
         
         try {
+            //stopEmulation();
             synchronized(chip8CPU){
-                
                 romStatus = chip8CPU.loadROM(rom);
             }
             if (romStatus) {
@@ -361,7 +415,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }
 
                 SwingUtilities.invokeLater(() -> {
-
+                    //clear the elapsedTimeFromEpoch frame each time a new rom is loaded.
                     last = null;
                     startEmulation();
                 });
@@ -384,7 +438,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     }
 
     public void stopEmulation() {
-        //chip8CPU.pauseSound();
         isRunning = false;
         cpuCycleThread = null;
     }
@@ -392,20 +445,23 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         double frameTime = 1000/60;
-        long last = System.currentTimeMillis();
-        double origin = last+frameTime/2;
+        long elapsedTimeFromEpoch = System.currentTimeMillis();
+        double origin = elapsedTimeFromEpoch+frameTime/2;
         
         while (isRunning) {
             synchronized (chip8CPU) {
-                long diff = System.currentTimeMillis() - last;
-                last+=diff;
-                for (long i = 0; origin < last - frameTime && i < 2; origin += frameTime, i++) {
+                long diff = System.currentTimeMillis() - elapsedTimeFromEpoch;
+                elapsedTimeFromEpoch+=diff;
+                for (long i = 0; origin < elapsedTimeFromEpoch - frameTime && i < 2; origin += frameTime, i++) {
                     for (int j = 0; j < chip8CPU.getCycles() && !chip8CPU.getWaitState(); j++) {
-                        chip8CPU.cpuExec();
+                        try{
+                            chip8CPU.cpuExec();
+                        }catch(Exception ex){
+                            ex.printStackTrace();
+                            stopEmulation();
+                        }
                        
                     }
-                    //set pitch
-                    
                     chip8CPU.updateTimers();
                 }
                 
@@ -425,6 +481,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
 
     }
+    
+    //these methods will check if an array is equal. It will exist early if there is an inequality
     public Boolean arrayEqual(int[] a, int[] b) {
         int length = a.length;
         if (length != b.length) {
@@ -450,20 +508,30 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         }
         return true;
     }
+    /*
+    * This function will not refresh the BufferedImage if it hasn't changed.
+    * Original Implementation from: https://github.com/JohnEarnest/Octo/
+    */
     public void repaintImage(){
+        //if there is a last frame
         if(last != null){
+            //check if the previous frame and the previous palette is the same as the current frame in both planes.
             if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1]) && arrayEqual(last.prevColors,planeColors)){
+                //exit early if it is the same.
                 return;
             }
+            //clear last frame if we've switched from hi res to lowres or vice versa. Also clear it if the color palette has changed
             if (last.hires != chip8CPU.getHiRes() || !arrayEqual(last.prevColors,planeColors))
 		last = null; 
         }
-        int z = 0;
+        //store the last frame here. Probably redundant?
         int[][] lastPixels = last != null && last.prevFrame != null? last.prevFrame: new int[2][chip8CPU.getMachineWidth() * chip8CPU.getMachineHeight()];
+        //write the pixels into the BufferedImage
         if (chip8CPU.graphics != null) {
             for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
-                for (int x = 0; x < chip8CPU.getMachineWidth(); x++,z++) {
+                for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
                     int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                    //selectively update each pixel if the last frame exists
                     if (last != null) {
                         int oldPlane = (lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
                         if (oldPlane != newPlane) {
@@ -471,13 +539,16 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                             frameBuffer.fillRect(x, y, 1, 1);
                         }
                     }else{
+                        //full rewrite of the screen
                         frameBuffer.setColor(planeColors[newPlane]);
                         frameBuffer.fillRect(x, y, 1, 1);
                     }
                 }
             }
         }
+        //apply the changes to the gamePanel
         gamePanel.repaint();
+        //Instantiate a class corresponding to the elapsedTimeFromEpoch frame of the chip 8
         last = new LastFrame(chip8CPU.graphics, chip8CPU.getHiRes(), planeColors);
     }
         @Override

@@ -39,6 +39,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 /**
  *
  * @author dyharlan
+ * With special acknowledgement to https://github.com/Kouzeru for creating the idea of the PCM conversion process,
+ * the waveform scaling algorithm, and being a tremendous help in getting XO-Chip audio to work.
  */
 public class WaveGenerator {
     AudioInputStream audioStream;
@@ -70,6 +72,7 @@ public class WaveGenerator {
        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
        sourceDataLine.open(audioFormat);
+       
        sourceDataLine.start();
        isPlaying = false;
        isEnabled = sound;
@@ -125,14 +128,13 @@ public class WaveGenerator {
         if (scaledBuffer == null) {
             scaledBuffer = new byte[amount];
         }
+        //scale the waveform while taking into account the current position of the sample in the buffer
         float rate = sampleFreq / systemFreq;
         for (int k = 0; k < amount; k++) {
             scaledBuffer[k] = buffer[(int) bufferpos];
             bufferpos = (bufferpos + rate) % buffer.length;
         }
-//        for(int k = 0; k < scaledBuffer.length; k++){
-//            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
-//        }
+
         if(!sourceDataLine.isActive()){
             sourceDataLine.start();
         }
@@ -148,16 +150,12 @@ public class WaveGenerator {
         //System.out.println(sourceDataLine.available());
     }
     
-    public int getAvailable(){
-        return sourceDataLine.available();
-    }
-    
     public void close(){
         sourceDataLine.close();
     }
 
     public void stop(){
-        //stop those damn clicks from happening
+        //stop those damn clicks from happening everytime the sound timer is zero
         sourceDataLine.flush();
     }
 }

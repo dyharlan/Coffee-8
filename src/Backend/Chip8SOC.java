@@ -541,11 +541,11 @@ public class Chip8SOC{
     private void C8INST_00CN(){
         //System.out.println("scroll down");
         int height = opcode & 0xF;
-        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
             if ((plane & (currBitPlane + 1)) == 0) {
                 continue;
             }
-            for (var z = graphics[currBitPlane].length - 1; z >= 0; z--) {
+            for (int z = graphics[currBitPlane].length - 1; z >= 0; z--) {
                 graphics[currBitPlane][z] = (z >= DISPLAY_WIDTH * height) ? graphics[currBitPlane][z - (DISPLAY_WIDTH * height)] : 0;
             }
         }
@@ -554,12 +554,12 @@ public class Chip8SOC{
     private void C8INST_00DN(){
         //System.out.println("scroll up");
         int height = opcode & 0xF;
-        var bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
-        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+        int bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
             if ((plane & (currBitPlane + 1)) == 0) {
                 continue;
             }
-            for (var z = 0; z < bufSize; z++) {
+            for (int z = 0; z < bufSize; z++) {
                 graphics[currBitPlane][z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? graphics[currBitPlane][z + (DISPLAY_WIDTH * height)] : 0;
             }
         }
@@ -581,7 +581,7 @@ public class Chip8SOC{
     }
     //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
-        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
             if ((plane & (currBitPlane + 1)) == 0) {
                 continue;
             }
@@ -594,7 +594,7 @@ public class Chip8SOC{
     }
     //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
-        for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
             if ((plane & (currBitPlane + 1)) == 0) {
                 continue;
             }
@@ -660,11 +660,11 @@ public class Chip8SOC{
     private void C8INST_5XY2(){
         int dist = Math.abs(X - Y);
         if (X < Y) {
-            for (var z = 0; z <= dist; z++) {
+            for (int z = 0; z <= dist; z++) {
                 mem[I + z] = v[X + z] & 0xFF;
             }
         } else {
-            for (var z = 0; z <= dist; z++) {
+            for (int z = 0; z <= dist; z++) {
                 mem[I + z] = v[X - z] & 0xFF;
             }
         }
@@ -676,11 +676,11 @@ public class Chip8SOC{
     private void C8INST_5XY3(){
          int dist = Math.abs(X - Y);
         if (X < Y) {
-            for (var z = 0; z <= dist; z++) {
+            for (int z = 0; z <= dist; z++) {
                 v[X + z] = mem[I + z] & 0xFF;
             }
         } else {
-            for (var z = 0; z <= dist; z++) {
+            for (int z = 0; z <= dist; z++) {
                 v[X - z] = mem[I + z] & 0xFF;
             }
         }
@@ -820,7 +820,7 @@ public class Chip8SOC{
         int currPixel = 0;
         int targetPixel = 0;
         if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
-             for (var currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+             for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
                  if ((plane & (currBitPlane + 1)) == 0) {
                      continue;
                  }

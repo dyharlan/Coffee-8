@@ -488,7 +488,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         if (length != b.length) {
             return false;
         }
-        for (var i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             if (a[i] != b[i]) {
                 return false;
             }
@@ -501,7 +501,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         if (length != b.length) {
             return false;
         }
-        for (var i = 0; i < length; i++) {
+        for (int i = 0; i < length; i++) {
             if (a[i] != b[i]) {
                 return false;
             }

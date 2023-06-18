@@ -348,10 +348,8 @@ public class Chip8SOC{
         //System.out.println(tg.getAvailable());
         if (playSound) {
             if (sT > 0) {
-                tg.setPitch(pitch);
-                //play sound
-                tg.setBuffer(pattern);
-
+                
+                
                 tg.generateSquareWavePattern(x);
             } else {
                 tg.stop();
@@ -939,11 +937,13 @@ public class Chip8SOC{
         pattern[13] = mem[I + 13];
         pattern[14] = mem[I + 14];
         pattern[15] = mem[I + 15];
+        tg.setBuffer(pattern);
     }
     //FX3A: set the audio playback rate of the beeper using this formula: 4000*2^((vX-64)/48)Hz.
     private void C8INST_FX3A(){
         //System.out.println("FX3A is stubbed out for now");
         pitch = v[X];
+        tg.setPitch(pitch);
     }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){
@@ -957,6 +957,7 @@ public class Chip8SOC{
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
         if(sT == 0){
+            tg.stop();
             tg.setBufferPos(0f);
         }
     }

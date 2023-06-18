@@ -23,15 +23,12 @@
  */
 package Backend;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.DataLine;
+import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -68,11 +65,16 @@ public class WaveGenerator {
        buffer = new byte[128];
        this.pitch = pitch;
        this.sampleFreq = 4000;
-       
+      
+
        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
        sourceDataLine.open(audioFormat);
-       
+        FloatControl gainControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
+        gainControl.setValue((float)((0.25f * gainControl.getMinimum())));
+        System.out.println(gainControl.getMinimum());
+        System.out.println(gainControl.getValue());
+        System.out.println(gainControl.getMaximum());
        sourceDataLine.start();
        isPlaying = false;
        isEnabled = sound;
@@ -144,10 +146,14 @@ public class WaveGenerator {
         }
         
         if (sourceDataLine.available() < scaledBuffer.length){
-            sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);            
+            System.out.println(sourceDataLine.available());
+            sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);   
+            //sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
         }   
-        else
+        else{
             sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
+        }
+            
         //System.out.println(sourceDataLine.available());
     }
     

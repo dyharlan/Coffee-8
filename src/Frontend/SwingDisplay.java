@@ -198,7 +198,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
              FileNameExtensionFilter xoChiproms = new FileNameExtensionFilter(
                     "XO-Chip ROM Files", "xo8");
             chooser.addChoosableFileFilter(xoChiproms);
-            
+            chooser.setAcceptAllFileFilterUsed(false);
             
             if (rom == null) {
                 chooser.setCurrentDirectory(new File("."));
@@ -776,19 +776,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     }
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException  {
-        
+    
         //try{
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc5 (xo-chip branch)");
-            d.startApp();
-            
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        SwingDisplay d = new SwingDisplay("Coffee-8 1.0rc6");
+        d.startApp();
+
         //}catch(FileNotFoundException fnfe){
-            //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
-            //System.exit(0);
-       // }catch(IOException ioe){
-            //JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-            //System.exit(0);
+        //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
+        //System.exit(0);
+        // }catch(IOException ioe){
+        //JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
+        //System.exit(0);
         //}
-        
     }
 }

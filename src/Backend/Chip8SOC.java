@@ -280,6 +280,7 @@ public class Chip8SOC{
         }
         tg.setPitch(pitch);
         tg.setBuffer(pattern);
+        
         //xo.setPitch(pitch);
         //xo.setBuffer(pattern);
         crc32Checksum = 0;
@@ -298,6 +299,8 @@ public class Chip8SOC{
         }
         dT = 0;
         sT = 0;
+        tg.setBufferPos(0f);
+        tg.stop();
         pc = 0x200;
         opcode = 0;
         I = 0;
@@ -340,8 +343,9 @@ public class Chip8SOC{
         }
         return romStatus;
     }
-    int x = 48000 / 60;
+    int x = tg.systemFreq / tg.frameRate;
     public void updateTimers(){
+        //System.out.println(tg.getAvailable());
         if (playSound) {
             if (sT > 0) {
                 tg.setPitch(pitch);
@@ -351,6 +355,7 @@ public class Chip8SOC{
                 tg.generateSquareWavePattern(x);
             } else {
                 tg.stop();
+                tg.setBufferPos(0f);
             }
         }
         if(dT > 0){
@@ -950,6 +955,9 @@ public class Chip8SOC{
     //FX18: set the sound timer to the value in vX
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
+        if(sT == 0){
+            tg.setBufferPos(0f);
+        }
     }
     //FX1E: Add the value of VX to the register index
     //IF IOverflowQuirks is on:

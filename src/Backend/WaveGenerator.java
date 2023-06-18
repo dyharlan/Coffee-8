@@ -136,6 +136,7 @@ public class WaveGenerator {
         if(!sourceDataLine.isActive()){
             sourceDataLine.start();
         }
+        
         if(sourceDataLine.available() <= 0){
             sourceDataLine.flush();
         }
@@ -144,30 +145,19 @@ public class WaveGenerator {
             sourceDataLine.write(scaledBuffer, 0, (sourceDataLine.available() > scaledBuffer.length? scaledBuffer.length : sourceDataLine.available()));
         else
             sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
-        System.out.println(sourceDataLine.available());
+        //System.out.println(sourceDataLine.available());
     }
     
     public int getAvailable(){
         return sourceDataLine.available();
     }
     
-//    public void playSound() {
-//        if (isPlaying || !isEnabled) 
-//            return;
-//        isPlaying = true;
-//        sThread = new soundThread();
-//        sThread.setPriority(Thread.MAX_PRIORITY);
-//        sThread.start();
-//    }
-//    
-//    public void pauseSound() {
-//        isPlaying = false;
-//        sourceDataLine.stop();
-//        sourceDataLine.flush();
-//    }
+    public void close(){
+        sourceDataLine.close();
+    }
+
     public void stop(){
-        //stop those clicks from happening
+        //stop those damn clicks from happening
         sourceDataLine.flush();
-        //sourceDataLine.stop();
     }
 }

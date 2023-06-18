@@ -685,6 +685,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
+                chip8CPU.closeSound();
                 System.exit(0);
             }
         });

@@ -458,6 +458,9 @@ public class Chip8SOC{
         playSound = false;
     }
     
+    public void closeSound(){
+        tg.close();
+    }
 //    public void playSound(){
 //        tg.playSound();
 //    }

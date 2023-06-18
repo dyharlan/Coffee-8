@@ -299,8 +299,8 @@ public class Chip8SOC{
         }
         dT = 0;
         sT = 0;
-        tg.setBufferPos(0f);
         tg.stop();
+        tg.setBufferPos(0f);
         pc = 0x200;
         opcode = 0;
         I = 0;

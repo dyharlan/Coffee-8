@@ -142,11 +142,15 @@ public class WaveGenerator {
         if(sourceDataLine.available() <= 0){
             sourceDataLine.flush();
         }
-        
-        if (sourceDataLine.available() < scaledBuffer.length)
-            sourceDataLine.write(scaledBuffer, 0, (sourceDataLine.available() > scaledBuffer.length? scaledBuffer.length : sourceDataLine.available()));
-        else
+        if (sourceDataLine.available() >= scaledBuffer.length){
             sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
+                   
+        }else{
+            System.out.println(sourceDataLine.available());
+            //sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);    
+            sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
+        }
+            
         //System.out.println(sourceDataLine.available());
     }
     

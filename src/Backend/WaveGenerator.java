@@ -116,6 +116,10 @@ public class WaveGenerator {
         if(!isEnabled){
             return;
         }
+        
+        if (scaledBuffer == null) {
+            scaledBuffer = new byte[amount];
+        }
         //scale the waveform so that it can be played properly on a system with high frequency. 
         //buffer2 will store the scaled waveform given by this formula:
         //buffer2[i] = buffer[(i*(rate/128))/targetFrequency)%buffer_length]
@@ -128,9 +132,7 @@ public class WaveGenerator {
 //            scaledBuffer[k] = buffer[(int)((k*sampleFreq/(channels == 2? 256 : 128)*buffer.length)/systemFreq)%buffer.length];
 //        }
 
-        if (scaledBuffer == null) {
-            scaledBuffer = new byte[amount];
-        }
+        
         //scale the waveform while taking into account the current position of the sample in the buffer
         float rate = sampleFreq / systemFreq;
         for (int k = 0; k < amount; k++) {

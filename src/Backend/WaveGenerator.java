@@ -52,12 +52,12 @@ public class WaveGenerator {
     byte[] buffer;
     byte[] scaledBuffer;
     static int systemFreq = 48000;
+    static int frameRate = 60;
     static float sampleFreq;
     static int channels = 1;
     float pitch;
     public WaveGenerator(Boolean sound,float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
        buffer = new byte[128];
-       scaledBuffer = new byte[800];
        this.pitch = pitch;
        this.sampleFreq = 4000;
        
@@ -69,6 +69,9 @@ public class WaveGenerator {
        isEnabled = sound;
        setPitch(pitch);
        setBuffer(pattern);
+    }
+    public void setBufferPos(float pos){
+        bufferpos = pos;
     }
     
     public void setPitch(float value) {
@@ -84,9 +87,17 @@ public class WaveGenerator {
         //byte[] buffer2 = new byte[bufferSize];
         //compute the playback rate given a pitch value in the vX register
         for (int i = 0, j = 0; i < pattern.length; i++) {
-            for (byte shift = 7; shift >= 0; shift--) {
-                buffer[j++] = (byte) (((pattern[i] >> shift & 1) != 0) ? 255 : 0);
-            }
+//            for (byte shift = 7; shift >= 0; shift--) {
+//                buffer[j++] = (byte) (((pattern[i] >> shift & 1) != 0) ? 255 : 0);
+//            }
+            buffer[j++] = (byte) ((pattern[i] >> 7 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 6 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 5 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 4 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 3 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 2 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] >> 1 & 0x1) == 1 ? 255 : 0);
+            buffer[j++] = (byte) ((pattern[i] & 0x1) == 1 ? 255 : 0);
         }
     }
     public void generateSquareWavePattern(int amount){
@@ -116,8 +127,19 @@ public class WaveGenerator {
         if(!sourceDataLine.isActive()){
             sourceDataLine.start();
         }
-        sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
+        if(sourceDataLine.available() <= 0){
+            sourceDataLine.flush();
+        }
         
+        if (sourceDataLine.available() < scaledBuffer.length)
+            sourceDataLine.write(scaledBuffer, 0, (sourceDataLine.available() > scaledBuffer.length? scaledBuffer.length : sourceDataLine.available()));
+        else
+            sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
+        System.out.println(sourceDataLine.available());
+    }
+    
+    public int getAvailable(){
+        return sourceDataLine.available();
     }
     
 //    public void playSound() {

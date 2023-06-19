@@ -23,10 +23,8 @@
  */
 package Backend;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
@@ -49,6 +47,7 @@ public class WaveGenerator {
     byte[] buffer;
 
     byte[] scaledBuffer;
+    //byte[] muteBuffer;
     static int systemFreq = 48000;
     static int frameRate = 60;
     static float sampleFreq;
@@ -79,6 +78,11 @@ public class WaveGenerator {
        setPitch(pitch);
        setBuffer(pattern);
        
+//       int amount = systemFreq / frameRate;
+//       muteBuffer = new byte[amount];
+//        for (int k = 0; k < amount; k++) {
+//            muteBuffer[k] = 0x0;
+//        }
        
        
        
@@ -87,6 +91,23 @@ public class WaveGenerator {
     public void setBufferPos(float pos){
         bufferpos = pos;
     }
+    
+//    public void mute(){
+//        if(!isEnabled){
+//            return;
+//        }
+//        if(!sourceDataLine.isRunning()){
+//            sourceDataLine.start();
+//        }
+//        if (sourceDataLine.available() < muteBuffer.length){
+//            //System.out.println(sourceDataLine.available());
+//            sourceDataLine.write(muteBuffer, 0, ((sourceDataLine.available() % muteBuffer.length) + muteBuffer.length) % muteBuffer.length);   
+//            //sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
+//        }   
+//        else{
+//            sourceDataLine.write(muteBuffer, 0, muteBuffer.length);
+//        }
+//    }
     
     public void setPitch(float value) {
         float exp = ((value-64)/48);

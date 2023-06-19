@@ -279,10 +279,6 @@ public class Chip8SOC{
         for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
             pattern[i] = defaultPattern[i];
         }
-        tg.setPitch(pitch);
-        tg.setBuffer(pattern);
-        
-
         crc32Checksum = 0;
         hires = false;
         v = new int[16];
@@ -301,6 +297,8 @@ public class Chip8SOC{
         sT = 0;
         tg.flush();
         tg.setBufferPos(0f);
+        tg.setPitch(pitch);
+        tg.setBuffer(pattern);
         pc = 0x200;
         opcode = 0;
         I = 0;
@@ -349,13 +347,16 @@ public class Chip8SOC{
         System.out.println(tg.getAvailable());
         if (playSound) {
             if (sT > 0) {
+                tg.setPitch(pitch);
+                tg.setBuffer(pattern);
                 tg.playPattern(x);
-            } else {
+            }else{
+                //tg.setBufferPos(0f);
                 tg.stop();
                 if(tg.getAvailable() <= threshold){
                     tg.flush();
+                    tg.setBufferPos(0f);
                 }
-                tg.setBufferPos(0f);
             }
         }
         if(dT > 0){
@@ -445,6 +446,7 @@ public class Chip8SOC{
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
                 threshold = (float)(tg.getBufferSize() * 0.2142857143f);
+                //System.out.println(threshold);
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -940,13 +942,13 @@ public class Chip8SOC{
         pattern[13] = mem[I + 13];
         pattern[14] = mem[I + 14];
         pattern[15] = mem[I + 15];
-        tg.setBuffer(pattern);
+        //tg.setBuffer(pattern);
     }
     //FX3A: set the audio playback rate of the beeper using this formula: 4000*2^((vX-64)/48)Hz.
     private void C8INST_FX3A(){
         //System.out.println("FX3A is stubbed out for now");
         pitch = v[X];
-        tg.setPitch(pitch);
+        //tg.setPitch(pitch);
         
     }
     //FX07: Set vX to the value of the delay timer
@@ -962,7 +964,10 @@ public class Chip8SOC{
         sT = (v[X] & 0xFF);
         if(sT == 0){
             tg.stop();
-            tg.setBufferPos(0f);
+            if(tg.getAvailable() <= threshold){
+                    tg.flush();
+                    tg.setBufferPos(0f);
+            } 
         }
     }
     //FX1E: Add the value of VX to the register index
@@ -1106,4 +1111,7 @@ public class Chip8SOC{
         }
     }
     
+    public int getSoundTimer(){
+        return sT;
+    }
 }

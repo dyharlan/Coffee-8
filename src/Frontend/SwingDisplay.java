@@ -139,10 +139,14 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         setInitialMachine();
         planeColors = new Color[4];
-        planeColors[0] = Color.ORANGE;
-        planeColors[1] = Color.BLUE;
-        planeColors[2] = Color.RED;
-        planeColors[3] = new Color(149,129,103);
+//        planeColors[0] = Color.ORANGE;
+//        planeColors[1] = Color.BLUE;
+//        planeColors[2] = Color.RED;
+//        planeColors[3] = new Color(149,129,103);
+        planeColors[0] = new Color(0,0,0);
+        planeColors[1] = new Color(125,125,125);
+        planeColors[2] = new Color(189,22,29);
+        planeColors[3] = new Color(89,89,89);
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));

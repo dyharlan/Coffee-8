@@ -15,9 +15,9 @@ Coffee-8 passes [Timedus'](https://github.com/Timendus/chip8-test-suite), and [m
 ## Installation
 For now, builds are not available due to some base features missing. You need to compile this on your own.
 
-Compilation is pretty simple. You need at least Netbeans 13, and Java JDK 17 to work. 
+Compilation is pretty simple. You need at least Netbeans 13, and Java JDK 8 to work. It could probably work with anything lower, but it's up to you to figure stuff out that breaks.
 
-Then run ``git clone https://github.com/dyharlan/Coffee-8.git``, open the project on NetBeans, go to Run > Clean and Build Project, and open ``Coffee-8.jar`` inside of the ``Coffee-8/dist`` directory.
+Run ``git clone https://github.com/dyharlan/Coffee-8.git``, open the project on NetBeans, go to Run > Clean and Build Project, and open ``Coffee-8.jar`` inside of the ``Coffee-8/dist`` directory.
 
 You can also just use the command-line by going into the ``Coffee-8/src`` directory and typing:
 ``javac Frontend/*.java``. 
@@ -29,8 +29,11 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 - Implement toggleable quirks
 - ~~Implement XO-Chip~~ XO-Chip support is now fully functional with sound.
 - Implement debugging capabilities
-- ~~Properly implement FX75/85~~ Done
-
+- ~~Properly implement FX75/85~~ Done.
+## Notes about XO-Chip audio
+This was quite possibly the biggest pain in the ass of my entire life so far. 
+Java's SourceDataLine class was one of the worst things I've had the displeasure to deal with. 
+Again, I could not thank [kouzeru](https://github.com/Kouzeru) enough for helping me debug these past 4 days (6/16 to 6/20/23) and get the sound up and running to a good standard. (Clicking issues on long duration sounds will never be solved due to SourceDataLine's limitations.)
 ## Acknowledgements
 - [michaelarnauts' chip8 emulator](https://github.com/michaelarnauts/chip8-java) - derived coffee-8's cpu and sound code.
 - [JohnEarnest's Octo](https://github.com/JohnEarnest/Octo) - a huge help in fixing bugs in the emulator code.
@@ -40,7 +43,7 @@ This will generate class files that you can use by typing ``java Frontend/SwingD
 - [BrokenProgrammer's Chip-8 emulator](https://github.com/brokenprogrammer/CHIP-8-Emulator) - for being a reference early in the project.
 - [AlfonsoJLuna's chip8swemu](https://github.com/AlfonsoJLuna/chip8swemu) - for being another early reference in fixing emulation bugs.
 - [The EmuDev Discord](https://discord.com/invite/7nuaqZ2) - Specifically @Gulrak and @Janitor Raus for answering my questions.
-- [kouzeru](https://github.com/Kouzeru) - For the XO-Chip Audio implementation.
+- [kouzeru](https://github.com/Kouzeru) - For the XO-Chip Audio implementation. 
 ## License
 Coffee-8 is licensed under the MIT License. See License.md for more details
 

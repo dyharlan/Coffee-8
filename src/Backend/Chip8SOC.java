@@ -344,7 +344,7 @@ public class Chip8SOC{
     int x = tg.systemFreq / tg.frameRate;
     
     public void updateTimers(){
-        System.out.println(tg.getAvailable());
+        //System.out.println(tg.getAvailable());
         if (playSound) {
             if (sT > 0) {
                 tg.setPitch(pitch);
@@ -964,10 +964,10 @@ public class Chip8SOC{
         sT = (v[X] & 0xFF);
         if(sT == 0){
             tg.stop();
-            if(tg.getAvailable() <= threshold){
-                    tg.flush();
-                    tg.setBufferPos(0f);
-            } 
+            if (tg.getAvailable() <= threshold) {
+                tg.flush();
+                tg.setBufferPos(0f);
+            }
         }
     }
     //FX1E: Add the value of VX to the register index

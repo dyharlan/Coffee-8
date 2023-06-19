@@ -41,15 +41,13 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  */
 public class WaveGenerator {
     
-    AudioInputStream audioStream;
     AudioFormat audioFormat;
-    ByteArrayInputStream bais;
     SourceDataLine sourceDataLine;
-   
-    Boolean isPlaying;
+    
     Boolean isEnabled;
-    float bufferpos = 0;
+    float bufferpos = 0f;
     byte[] buffer;
+
     byte[] scaledBuffer;
     static int systemFreq = 48000;
     static int frameRate = 60;
@@ -77,10 +75,14 @@ public class WaveGenerator {
         System.out.println(gainControl.getValue());
         System.out.println(gainControl.getMaximum());
        sourceDataLine.start();
-       isPlaying = false;
        isEnabled = sound;
        setPitch(pitch);
        setBuffer(pattern);
+       
+       
+       
+       
+       
     }
     public void setBufferPos(float pos){
         bufferpos = pos;
@@ -112,7 +114,8 @@ public class WaveGenerator {
             buffer[j++] = (byte) ((pattern[i] & 0x1) == 1 ? 255 : 0);
         }
     }
-    public void generateSquareWavePattern(int amount){
+    
+    public void playPattern(int amount){
         if(!isEnabled){
             return;
         }
@@ -140,14 +143,14 @@ public class WaveGenerator {
             bufferpos = (bufferpos + rate) % buffer.length;
         }
 
-        if(!sourceDataLine.isActive()){
+        if(!sourceDataLine.isRunning()){
             sourceDataLine.start();
         }
         
 //        if(sourceDataLine.available() <= 0){
 //            sourceDataLine.flush();
 //        }
-//        System.out.println(sourceDataLine.available());
+        //System.out.println(sourceDataLine.available());
         if (sourceDataLine.available() < scaledBuffer.length){
             //System.out.println(sourceDataLine.available());
             sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);   
@@ -160,12 +163,27 @@ public class WaveGenerator {
         //System.out.println(sourceDataLine.available());
     }
     
+    public void start(){
+        sourceDataLine.start();
+    }
+    public void stop(){
+        sourceDataLine.stop();
+    }
     public void close(){
         sourceDataLine.close();
     }
-
-    public void stop(){
+    public int getAvailable(){
+        return sourceDataLine.available();
+    }
+    public int getBufferSize(){
+        return sourceDataLine.getBufferSize();
+    }
+    public void flush(){
         //stop those damn clicks from happening everytime the sound timer is zero
         sourceDataLine.flush();
+    }
+    public void drain(){
+        //stop those damn clicks from happening everytime the sound timer is zero
+        sourceDataLine.drain();
     }
 }

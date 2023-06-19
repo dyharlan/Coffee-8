@@ -108,6 +108,7 @@ public class Chip8SOC{
     int Y;
     private pStack cst; //16-bit stack
     public Boolean playSound;
+    float threshold;
     private Boolean hires;
     public WaveGenerator tg;
     //public XOAudio xo;
@@ -281,8 +282,7 @@ public class Chip8SOC{
         tg.setPitch(pitch);
         tg.setBuffer(pattern);
         
-        //xo.setPitch(pitch);
-        //xo.setBuffer(pattern);
+
         crc32Checksum = 0;
         hires = false;
         v = new int[16];
@@ -299,7 +299,7 @@ public class Chip8SOC{
         }
         dT = 0;
         sT = 0;
-        tg.stop();
+        tg.flush();
         tg.setBufferPos(0f);
         pc = 0x200;
         opcode = 0;
@@ -344,15 +344,17 @@ public class Chip8SOC{
         return romStatus;
     }
     int x = tg.systemFreq / tg.frameRate;
+    
     public void updateTimers(){
-        //System.out.println(tg.getAvailable());
+        System.out.println(tg.getAvailable());
         if (playSound) {
             if (sT > 0) {
-                
-                
-                tg.generateSquareWavePattern(x);
+                tg.playPattern(x);
             } else {
                 tg.stop();
+                if(tg.getAvailable() <= threshold){
+                    tg.flush();
+                }
                 tg.setBufferPos(0f);
             }
         }
@@ -442,6 +444,7 @@ public class Chip8SOC{
             playSound = true;
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
+                threshold = (float)(tg.getBufferSize() * 0.2142857143f);
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -944,6 +947,7 @@ public class Chip8SOC{
         //System.out.println("FX3A is stubbed out for now");
         pitch = v[X];
         tg.setPitch(pitch);
+        
     }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){

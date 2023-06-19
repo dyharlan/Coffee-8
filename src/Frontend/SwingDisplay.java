@@ -551,68 +551,68 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         //Instantiate a class corresponding to the elapsedTimeFromEpoch frame of the chip 8
         last = new LastFrame(chip8CPU.graphics, chip8CPU.getHiRes(), planeColors);
     }
-        @Override
-        public void keyPressed(KeyEvent e){
-            if(chip8CPU.keyPad == null){
-                return;
-            }
-            int keyCode = e.getKeyCode();
-            switch(keyCode){
-                case KeyEvent.VK_X:
-                    chip8CPU.keyPad[0] = true;
-                    
-                    break;
-                case KeyEvent.VK_1:
-                    chip8CPU.keyPad[1] = true;
-                    
-                    break;
-                case KeyEvent.VK_2:
-                    chip8CPU.keyPad[2] = true;
-                    
-                    break;
-                case KeyEvent.VK_3:
-                    chip8CPU.keyPad[3] = true;
-                    
-                    break;
-                case KeyEvent.VK_Q:
-                    chip8CPU.keyPad[4] = true;
-                    
-                    break;
-                case KeyEvent.VK_W:
-                    chip8CPU.keyPad[5] = true;
-                    
-                    break;
-                case KeyEvent.VK_E:
-                    chip8CPU.keyPad[6] = true;
-                    break;
-                case KeyEvent.VK_A:
-                    chip8CPU.keyPad[7] = true;
-                    break;
-                case KeyEvent.VK_S:
-                    chip8CPU.keyPad[8] = true;
-                    break;
-                case KeyEvent.VK_D:
-                    chip8CPU.keyPad[9] = true;
-                    break;
-                case KeyEvent.VK_Z:
-                    chip8CPU.keyPad[10] = true;
-                    break;
-                case KeyEvent.VK_C:
-                    chip8CPU.keyPad[11] = true;
-                    break;
-                case KeyEvent.VK_4:
-                    chip8CPU.keyPad[12] = true;
-                    break;
-                case KeyEvent.VK_R:
-                    chip8CPU.keyPad[13] = true;
-                    break;
-                case KeyEvent.VK_F:
-                    chip8CPU.keyPad[14] = true;
-                    break;
-                case KeyEvent.VK_V:
-                    chip8CPU.keyPad[15] = true;
-                    break;
-            }
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (chip8CPU.keyPad == null) {
+            return;
+        }
+        int keyCode = e.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.VK_X:
+                chip8CPU.keyPad[0] = true;
+
+                break;
+            case KeyEvent.VK_1:
+                chip8CPU.keyPad[1] = true;
+
+                break;
+            case KeyEvent.VK_2:
+                chip8CPU.keyPad[2] = true;
+
+                break;
+            case KeyEvent.VK_3:
+                chip8CPU.keyPad[3] = true;
+
+                break;
+            case KeyEvent.VK_Q:
+                chip8CPU.keyPad[4] = true;
+
+                break;
+            case KeyEvent.VK_W:
+                chip8CPU.keyPad[5] = true;
+
+                break;
+            case KeyEvent.VK_E:
+                chip8CPU.keyPad[6] = true;
+                break;
+            case KeyEvent.VK_A:
+                chip8CPU.keyPad[7] = true;
+                break;
+            case KeyEvent.VK_S:
+                chip8CPU.keyPad[8] = true;
+                break;
+            case KeyEvent.VK_D:
+                chip8CPU.keyPad[9] = true;
+                break;
+            case KeyEvent.VK_Z:
+                chip8CPU.keyPad[10] = true;
+                break;
+            case KeyEvent.VK_C:
+                chip8CPU.keyPad[11] = true;
+                break;
+            case KeyEvent.VK_4:
+                chip8CPU.keyPad[12] = true;
+                break;
+            case KeyEvent.VK_R:
+                chip8CPU.keyPad[13] = true;
+                break;
+            case KeyEvent.VK_F:
+                chip8CPU.keyPad[14] = true;
+                break;
+            case KeyEvent.VK_V:
+                chip8CPU.keyPad[15] = true;
+                break;
+        }
 //            for(int i = 0;i < chip8CPU.keyPad.length;i++){
 //                System.out.println(chip8CPU.keyPad[i] + "\t");
 //            }

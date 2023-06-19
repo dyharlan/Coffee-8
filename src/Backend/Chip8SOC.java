@@ -46,7 +46,6 @@ interface Instruction {
     public void execute();
 }
 public class Chip8SOC{
-
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
     private long crc32Checksum;
@@ -103,6 +102,7 @@ public class Chip8SOC{
         0x3C, 0x7E, 0xC3, 0xC3, 0x7F, 0x3F, 0x03, 0x03, 0x3E, 0x7C // "9"            
     };
     final int[] defaultPattern = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00}; //pitch: 103
+    final int[] mutePattern = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //pitch: 103
     public int[] pattern;
     int X;
     int Y;
@@ -124,9 +124,7 @@ public class Chip8SOC{
     public float pitch;
     //Default machine is COSMAC VIP
     public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
-        
         rand = new Random();
-        
         playSound = sound;
         hires = false;
         setCurrentMachine(m);
@@ -295,7 +293,6 @@ public class Chip8SOC{
         }
         dT = 0;
         sT = 0;
-        tg.flush();
         tg.setBufferPos(0f);
         tg.setPitch(pitch);
         tg.setBuffer(pattern);
@@ -344,27 +341,38 @@ public class Chip8SOC{
     int x = tg.systemFreq / tg.frameRate;
     
     public void updateTimers(){
-        //System.out.println(tg.getAvailable());
-        if (playSound) {
-            if (sT > 0) {
-                tg.setPitch(pitch);
-                tg.setBuffer(pattern);
-                tg.playPattern(x);
-            }else{
-                //tg.setBufferPos(0f);
-                tg.stop();
-                if(tg.getAvailable() <= threshold){
-                    tg.flush();
-                    tg.setBufferPos(0f);
-                }
-            }
-        }
+        
+        
         if(dT > 0){
             dT--;
         }
         if(sT > 0){
+            tg.setPitch(pitch);
+            tg.setBuffer(pattern);
+            tg.playPattern(x);
             sT--;
+        }else{
+            tg.setBuffer(mutePattern);
+            tg.playPattern(x);
+            tg.setBufferPos(0);
         }
+        
+        
+//        if (playSound) {
+//            if (sT > 0) {
+//                tg.setPitch(pitch);
+//                tg.setBuffer(pattern);
+//                tg.playPattern(x);
+//            }else{
+//                tg.setPitch(pitch);
+//                tg.setBuffer(mutePattern);
+//                tg.setBufferPos(0);
+//                tg.playPattern(x);
+//            }
+//        }
+        
+        
+        
         
     }
     
@@ -445,8 +453,8 @@ public class Chip8SOC{
             playSound = true;
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
-                threshold = (float)(tg.getBufferSize() * 0.2142857143f);
-                //System.out.println(threshold);
+                threshold = (float)(tg.getBufferSize() * 0.6166666667f);
+                System.out.println(threshold);
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -963,11 +971,7 @@ public class Chip8SOC{
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
         if(sT == 0){
-            tg.stop();
-            if (tg.getAvailable() <= threshold) {
-                tg.flush();
-                tg.setBufferPos(0f);
-            }
+            tg.setBufferPos(0f);
         }
     }
     //FX1E: Add the value of VX to the register index

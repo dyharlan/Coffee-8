@@ -26,6 +26,7 @@ package Backend;
 import java.io.IOException;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
@@ -38,6 +39,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
  * the waveform scaling algorithm, and being a tremendous help in getting XO-Chip audio to work.
  */
 public class WaveGenerator {
+    BooleanControl booleanControl;
     
     AudioFormat audioFormat;
     SourceDataLine sourceDataLine;
@@ -45,12 +47,13 @@ public class WaveGenerator {
     Boolean isEnabled;
     float bufferpos = 0f;
     byte[] buffer;
-
+    FloatControl gainControl;
     byte[] scaledBuffer;
-    //byte[] muteBuffer;
+    byte[] muteBuffer;
     static int systemFreq = 48000;
     static int frameRate = 60;
     static float sampleFreq;
+    static int bufferCap = (int)(systemFreq * 0.13f);
     static int channels = 1;
     float pitch;
     public WaveGenerator(Boolean sound,float pitch, int[] pattern, int systemFreq, int frameRate) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
@@ -59,56 +62,36 @@ public class WaveGenerator {
         this.frameRate = frameRate;
     }
     //defaults at 48khz, 60fps
-    public WaveGenerator(Boolean sound,float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException{
-       buffer = new byte[128];
-       this.pitch = pitch;
-       this.sampleFreq = 4000;
-      
-
-       audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
-       sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
-       sourceDataLine.open(audioFormat);
-        FloatControl gainControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
-        gainControl.setValue((float)((0.25f * gainControl.getMinimum())));
+    public WaveGenerator(Boolean sound, float pitch, int[] pattern) throws IOException, LineUnavailableException, UnsupportedAudioFileException {
+        buffer = new byte[128];
+        this.pitch = pitch;
+        this.sampleFreq = 4000;
+        audioFormat = new AudioFormat(systemFreq, 8, channels, false, false);
+        sourceDataLine = AudioSystem.getSourceDataLine(audioFormat);
+        sourceDataLine.open(audioFormat);
+        booleanControl = (BooleanControl) sourceDataLine.getControl(BooleanControl.Type.MUTE);
+        gainControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
+        gainControl.setValue((float) ((0.25f * gainControl.getMinimum())));
         System.out.println(gainControl.getMinimum());
         System.out.println(gainControl.getValue());
         System.out.println(gainControl.getMaximum());
-       sourceDataLine.start();
-       isEnabled = sound;
-       setPitch(pitch);
-       setBuffer(pattern);
-       
-//       int amount = systemFreq / frameRate;
-//       muteBuffer = new byte[amount];
-//        for (int k = 0; k < amount; k++) {
-//            muteBuffer[k] = 0x0;
-//        }
-       
-       
-       
-       
+        sourceDataLine.start();
+        isEnabled = sound;
+        setPitch(pitch);
+        setBuffer(pattern);
+
+        int amount = systemFreq / frameRate;
+        muteBuffer = new byte[amount];
+        for (int k = 0; k < amount; k++) {
+            muteBuffer[k] = 0x0;
+        }
+
     }
     public void setBufferPos(float pos){
         bufferpos = pos;
     }
     
-//    public void mute(){
-//        if(!isEnabled){
-//            return;
-//        }
-//        if(!sourceDataLine.isRunning()){
-//            sourceDataLine.start();
-//        }
-//        if (sourceDataLine.available() < muteBuffer.length){
-//            //System.out.println(sourceDataLine.available());
-//            sourceDataLine.write(muteBuffer, 0, ((sourceDataLine.available() % muteBuffer.length) + muteBuffer.length) % muteBuffer.length);   
-//            //sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
-//        }   
-//        else{
-//            sourceDataLine.write(muteBuffer, 0, muteBuffer.length);
-//        }
-//    }
-    
+
     public void setPitch(float value) {
         float exp = ((value-64)/48);
         float rate = (float) (4000*Math.pow(2, exp));
@@ -137,13 +120,13 @@ public class WaveGenerator {
     }
     
     public void playPattern(int amount){
-        if(!isEnabled){
+        if(!isEnabled || !sourceDataLine.isOpen()){
             return;
         }
         
-        if (scaledBuffer == null) {
+        //if (scaledBuffer == null || scaledBuffer.length != amount) {
             scaledBuffer = new byte[amount];
-        }
+        //}
         //scale the waveform so that it can be played properly on a system with high frequency. 
         //buffer2 will store the scaled waveform given by this formula:
         //buffer2[i] = buffer[(i*(rate/128))/targetFrequency)%buffer_length]
@@ -171,25 +154,14 @@ public class WaveGenerator {
 //        if(sourceDataLine.available() <= 0){
 //            sourceDataLine.flush();
 //        }
-        //System.out.println(sourceDataLine.available());
-        if (sourceDataLine.available() < scaledBuffer.length){
-            //System.out.println(sourceDataLine.available());
-            sourceDataLine.write(scaledBuffer, 0, ((sourceDataLine.available() % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length);   
-            //sourceDataLine.write(scaledBuffer, 0, sourceDataLine.available());    
-        }   
-        else{
-            sourceDataLine.write(scaledBuffer, 0, scaledBuffer.length);
-        }
-            
-        //System.out.println(sourceDataLine.available());
+        
+        int avail = sourceDataLine.available()-(sourceDataLine.getBufferSize()-bufferCap);
+        System.out.println(Math.min(avail,scaledBuffer.length));
+        sourceDataLine.write(scaledBuffer, 0, Math.min(avail,scaledBuffer.length) ); 
+        
     }
     
-    public void start(){
-        sourceDataLine.start();
-    }
-    public void stop(){
-        sourceDataLine.stop();
-    }
+   
     public void close(){
         sourceDataLine.close();
     }
@@ -199,12 +171,18 @@ public class WaveGenerator {
     public int getBufferSize(){
         return sourceDataLine.getBufferSize();
     }
-    public void flush(){
-        //stop those damn clicks from happening everytime the sound timer is zero
-        sourceDataLine.flush();
+    
+    public void mute(){
+        if(booleanControl != null){
+            booleanControl.setValue(true);
+            gainControl.setValue(gainControl.getMinimum());
+        }
     }
-    public void drain(){
-        //stop those damn clicks from happening everytime the sound timer is zero
-        sourceDataLine.drain();
+    
+    public void unmute(){
+        if(booleanControl != null){
+            booleanControl.setValue(false);
+            gainControl.setValue(0.25f * gainControl.getMinimum());
+        }
     }
 }

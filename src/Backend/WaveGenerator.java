@@ -161,7 +161,9 @@ public class WaveGenerator {
         
     }
     
-   
+    public void flush(){
+        sourceDataLine.flush();
+    }
     public void close(){
         sourceDataLine.close();
     }

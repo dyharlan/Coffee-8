@@ -156,7 +156,7 @@ public class WaveGenerator {
 //        }
         
         int avail = sourceDataLine.available()-(sourceDataLine.getBufferSize()-bufferCap);
-        System.out.println(Math.min(avail,scaledBuffer.length));
+        //System.out.println(Math.min(avail,scaledBuffer.length));
         sourceDataLine.write(scaledBuffer, 0, Math.min(avail,scaledBuffer.length) ); 
         
     }

@@ -293,9 +293,11 @@ public class Chip8SOC{
         }
         dT = 0;
         sT = 0;
-        tg.setBufferPos(0f);
-        tg.setPitch(pitch);
-        tg.setBuffer(pattern);
+        if(tg != null){
+            tg.setBufferPos(0f);
+            tg.setPitch(pitch);
+            tg.setBuffer(pattern);
+        }
         pc = 0x200;
         opcode = 0;
         I = 0;
@@ -341,20 +343,23 @@ public class Chip8SOC{
     int x = tg.systemFreq / tg.frameRate;
     
     public void updateTimers(){
-        
-        
+ 
         if(dT > 0){
             dT--;
         }
-        if(sT > 0){
-            tg.setPitch(pitch);
-            tg.setBuffer(pattern);
-            tg.playPattern(x);
+        if (sT > 0) {
+            if (tg != null && playSound) {
+                tg.setPitch(pitch);
+                tg.setBuffer(pattern);
+                tg.playPattern(x);
+            }
             sT--;
-        }else{
-            tg.setBuffer(mutePattern);
-            tg.playPattern(x);
-            tg.setBufferPos(0);
+        } else {
+            if (tg != null && playSound) {
+                tg.setBuffer(mutePattern);
+                tg.playPattern(x);
+                tg.setBufferPos(0);
+            }
         }
         
         
@@ -970,7 +975,7 @@ public class Chip8SOC{
     //FX18: set the sound timer to the value in vX
     private void C8INST_FX18(){
         sT = (v[X] & 0xFF);
-        if(sT == 0){
+        if(sT == 0 && tg != null){
             tg.setBufferPos(0f);
         }
     }

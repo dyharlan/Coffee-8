@@ -123,7 +123,7 @@ public class Chip8SOC{
     private Instruction[] _0xFInstructions;
     public float pitch;
     //Default machine is COSMAC VIP
-    public Chip8SOC(Boolean sound, MachineType m) throws FileNotFoundException, IOException { 
+    public Chip8SOC(Boolean sound, MachineType m) { 
         rand = new Random();
         playSound = sound;
         hires = false;
@@ -132,8 +132,8 @@ public class Chip8SOC{
     }
     
     public void setCurrentMachine(MachineType m){
-        cycles = m.getCycles();
         currentMachine = m;
+        cycles = m.getCycles();
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         vfOrderQuirks = m.getQuirks(0);

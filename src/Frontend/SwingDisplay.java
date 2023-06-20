@@ -117,6 +117,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 private JMenuItem foregroundColorManager;
                 private JMenuItem plane2ColorManager;
                 private JMenuItem plane3ColorManager;
+            private JMenu helpMenu;
+                private JMenuItem aboutEmulator;
     public JPanel gamePanel;
     
 
@@ -126,15 +128,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        
-        
-        
-        
         loadDefaults();
         buildPanel();
         setInitialMachine();
-        
-        
 //        planeColors[0] = Color.ORANGE;
 //        planeColors[1] = Color.BLUE;
 //        planeColors[2] = Color.RED;
@@ -384,6 +380,16 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             colorManagerMenu.add(plane3ColorManager);
         emulationMenu.add(pauseToggle);
         emulationMenu.add(soundToggle);
+        
+        helpMenu = new JMenu("Help");
+        mb.add(helpMenu);
+            aboutEmulator = new JMenuItem("About Coffee-8");
+            aboutEmulator.addActionListener((e) ->{
+                AboutScreen about = new AboutScreen(f);
+                about.showDialog();
+            });
+            helpMenu.add(aboutEmulator);
+            
     }
     public Boolean checkROMSize(File rom){
         Boolean rightSize = true;

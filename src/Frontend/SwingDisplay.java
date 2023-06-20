@@ -83,6 +83,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     //panel dimensions
     private int panelX;
     private int panelY;
+    //array to store colour palette
     private Color[] planeColors;
     
     File rom;
@@ -125,28 +126,20 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        LOWRES_SCALE_FACTOR = 20;
-        HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
+        
+        
+        
+        
+        loadDefaults();
         buildPanel();
-        m = MachineType.XO_CHIP;
-        
-        
-        hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
-        hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
-        lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
-        lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
-        chip8CPU = new Chip8SOC(true, m);
-        
         setInitialMachine();
-        planeColors = new Color[4];
+        
+        
 //        planeColors[0] = Color.ORANGE;
 //        planeColors[1] = Color.BLUE;
 //        planeColors[2] = Color.RED;
 //        planeColors[3] = new Color(149,129,103);
-        planeColors[0] = new Color(0,0,0);
-        planeColors[1] = new Color(66,66,66);
-        planeColors[2] = new Color(237,28,36);
-        planeColors[3] = new Color(0xCC,0xCC,0xCC);
+        
         isRunning = false;
         romStatus = false;
         f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
@@ -169,6 +162,22 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(gamePanel,BorderLayout.CENTER);
        
 
+    }
+    
+    public void loadDefaults(){
+        m = MachineType.XO_CHIP;
+        chip8CPU = new Chip8SOC(true, m);
+        planeColors = new Color[4];
+        planeColors[0] = new Color(0,0,0);
+        planeColors[1] = new Color(66,66,66);
+        planeColors[2] = new Color(237,28,36);
+        planeColors[3] = new Color(0xCC,0xCC,0xCC);
+        LOWRES_SCALE_FACTOR = 20;
+        HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
+        hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
+        hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
+        lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
+        lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
     }
     public void setInitialMachine(){
         if (chip8CPU.getCurrentMachine() != null)
@@ -291,6 +300,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             if (romStatus && pauseToggle.isSelected()) {
                 pauseToggle.setSelected(true);
                 stopEmulation();
+                chip8CPU.tg.flush();
             } else if(romStatus && !pauseToggle.isSelected()) {
                 pauseToggle.setSelected(false);
                 startEmulation();

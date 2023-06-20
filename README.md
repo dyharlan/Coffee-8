@@ -16,7 +16,7 @@
 
 ## Features
 - Accurate Swing-based renderer.
-- 100% pure Java code. No external libraries required.
+- 100% pure Java code. No external libraries required. Tested to work on Linux and Windows.
 - Complete Emulation of the Chip-8, SuperChip 1.1, and the XO-Chip instruction set. 
 - User-modifiable color palette, cycle count, and video size.
 - Backend code (CPU, Sound Generator) can be adopted to work with any java-compatible windowing toolkit. 

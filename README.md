@@ -1,14 +1,18 @@
 <h1 align="center">Coffee-8</h1>
 <h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
-<h2 align="center">A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.</h2>
+<h2 align="center">
+  A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.
+</h2>
 
 <h3 align="center">
-| Chip-8 / SCHIP    | XO-Chip |
-| ---      | ---       |
-|<img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/>|<img alt="Spacefight 2091 by Carsten Soerensen" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Spacefight%202091.PNG" width="420" height="240"/>|
 
-|<img alt="Spacefight 2091 by Carsten Soerensen" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Raycasting%20Demo.PNG" width="420" height="240"/>|<img alt="Bad Apple" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Bad%20Apple%20High%20Quality%20Version.PNG" width="420" height="240"/>|
+Sample Screenshots
+
+|  Chip-8 / SCHIP | XO-Chip |
+| --- | --- |
+|<img alt="Car Race by Klaus von Sengbusch" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Race.jpg" width="420" height="240"/> | <img alt="Raycasting Demo" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Raycasting%20Demo.PNG" width="420" height="240"/> |
+|<img alt="Spacefight 2091 by Carsten Soerensen" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Spacefight%202091.PNG" width="420" height="240"/> | <img alt="Bad Apple" src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/Screenshots/Bad%20Apple%20High%20Quality%20Version.PNG" width="420" height="240"/> |
 
 </h3>
 

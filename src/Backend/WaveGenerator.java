@@ -79,7 +79,7 @@ public class WaveGenerator {
         isEnabled = sound;
         setPitch(pitch);
         setBuffer(pattern);
-
+        System.out.println(sourceDataLine.available()-(sourceDataLine.getBufferSize()-bufferCap));
         int amount = systemFreq / frameRate;
         muteBuffer = new byte[amount];
         for (int k = 0; k < amount; k++) {
@@ -156,8 +156,14 @@ public class WaveGenerator {
 //        }
         
         int avail = sourceDataLine.available()-(sourceDataLine.getBufferSize()-bufferCap);
+        
         //System.out.println(Math.min(avail,scaledBuffer.length));
-        sourceDataLine.write(scaledBuffer, 0, Math.min(avail,scaledBuffer.length) ); 
+        if(avail <= 0){
+             sourceDataLine.write(scaledBuffer, 0, Math.min(0,scaledBuffer.length) ); 
+        }else{
+             sourceDataLine.write(scaledBuffer, 0, Math.min(avail,scaledBuffer.length) ); 
+        }
+       
         
     }
     

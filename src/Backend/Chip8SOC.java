@@ -57,9 +57,9 @@ public class Chip8SOC{
     private Boolean vBlankQuirks;
     private Boolean IOverflowQuirks;
     private Boolean jumpQuirks;
-    private int waitReg;
-    private Boolean waitState;
-    private int cycles;
+    private int waitReg; //which v register should we store the keypress?
+    private Boolean waitState; //is the CPU interrupted? It must be waiting for an input.
+    private int cycles; //cpu cycles every 16.66667ms
     private int pc; //16-bit Program Counter
     private int I; //12-bit Index register
     private int opcode;
@@ -70,7 +70,7 @@ public class Chip8SOC{
     public boolean[] keyPad; 
     private int interruptState;
     private int[] mem; //4kb of ram
-    private int plane;
+    private int plane; //graphics layer to draw on
     private final int[] charSet = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
         0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -103,17 +103,20 @@ public class Chip8SOC{
     };
     final int[] defaultPattern = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00}; //pitch: 103
     final int[] mutePattern = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //pitch: 103
-    public int[] pattern;
-    int X;
-    int Y;
+    public int[] pattern; //what sound should we play?
+    int X; //operand X
+    int Y; //operand Y
     private pStack cst; //16-bit stack
-    public Boolean playSound;
-    float threshold;
-    private Boolean hires;
-    public WaveGenerator tg;
+    public Boolean playSound; //should we play sound?
+    private Boolean hires; //is our computer in hires mode?
+    public WaveGenerator tg; //sound generation device
     //public XOAudio xo;
-    Random rand;
-    MachineType currentMachine;
+    Random rand; //random number generator
+    MachineType currentMachine; //current machine config
+    
+    /*
+    * Arrays containing instruction sets
+    */
     private Instruction[] c8Instructions;
     private Instruction[] _0x0Instructions;
     private Instruction[] _0x5Instructions;
@@ -121,8 +124,9 @@ public class Chip8SOC{
     private Instruction[] _0xDInstructions;
     private Instruction[] _0xEInstructions;
     private Instruction[] _0xFInstructions;
+    //pitch register
     public float pitch;
-    //Default machine is COSMAC VIP
+    //Default machine is XO-Chip
     public Chip8SOC(Boolean sound, MachineType m) { 
         rand = new Random();
         playSound = sound;
@@ -146,6 +150,9 @@ public class Chip8SOC{
         jumpQuirks = m.getQuirks(7);
     }
     
+    /*
+    * Load our interface table with the instructions that we can execute.
+    */
     public void fillInstructionTable(){
         c8Instructions = new Instruction[]{
             () -> C8INSTSET_0000(),
@@ -153,7 +160,6 @@ public class Chip8SOC{
             () -> C8INST_2NNN(),
             () -> C8INST_3XNN(),
             () -> C8INST_4XNN(),
-            //() -> C8INST_5XY0(),
             () -> C8INSTSET_5000(),
             () -> C8INST_6XNN(),
             () -> C8INST_7XNN(),
@@ -270,7 +276,7 @@ public class Chip8SOC{
        
        
     }
-    
+    //Initial state of the machine
     public void chip8Init(){
         pitch = 64;
         pattern = new int[16];
@@ -312,7 +318,6 @@ public class Chip8SOC{
     public boolean loadROM(File rom) throws IOException, FileNotFoundException{
         Boolean romStatus = false;
         try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)))){ 
-            //ByteArrayOutputStream baos = new ByteArrayOutputStream();
             int offset = 0x0;
             int currByte = 0;
             chip8Init();
@@ -360,25 +365,7 @@ public class Chip8SOC{
                 tg.playPattern(x);
                 tg.setBufferPos(0);
             }
-        }
-        
-        
-//        if (playSound) {
-//            if (sT > 0) {
-//                tg.setPitch(pitch);
-//                tg.setBuffer(pattern);
-//                tg.playPattern(x);
-//            }else{
-//                tg.setPitch(pitch);
-//                tg.setBuffer(mutePattern);
-//                tg.setBufferPos(0);
-//                tg.playPattern(x);
-//            }
-//        }
-        
-        
-        
-        
+        }             
     }
     
     public Boolean getHiRes(){
@@ -458,8 +445,6 @@ public class Chip8SOC{
             playSound = true;
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
-                threshold = (float)(tg.getBufferSize() * 0.6166666667f);
-                System.out.println(threshold);
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -481,7 +466,7 @@ public class Chip8SOC{
         return playSound;
     }
     
-    //carry operations for 8xxx series opcodes. Derived from OCTO
+    //carry operations for 8xxx series opcodes. Derived from OCTO.
     public void writeCarry(int dest, int value, boolean flag){
         v[dest] = (value & 0xFF);
         v[0xF] = flag? 1:0;
@@ -497,13 +482,9 @@ public class Chip8SOC{
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
         //System.out.println(Integer.toHexString(opcode));
-        
+        //pre calculate operands X and Y
         X = ((opcode & 0x0F00) >> 8) & 0xF;
-        //System.out.println(X);
         Y = ((opcode & 0x00F0) >> 4) & 0xF;
-        
-        //System.out.println(Integer.toHexString(mem[pc]));
-        //System.out.println(Integer.toHexString(mem[pc+1]));
        
         //increment pc after obtaining opcode and operands
         pc+=2;
@@ -955,14 +936,11 @@ public class Chip8SOC{
         pattern[13] = mem[I + 13];
         pattern[14] = mem[I + 14];
         pattern[15] = mem[I + 15];
-        //tg.setBuffer(pattern);
     }
     //FX3A: set the audio playback rate of the beeper using this formula: 4000*2^((vX-64)/48)Hz.
     private void C8INST_FX3A(){
         //System.out.println("FX3A is stubbed out for now");
-        pitch = v[X];
-        //tg.setPitch(pitch);
-        
+        pitch = v[X];       
     }
     //FX07: Set vX to the value of the delay timer
     private void C8INST_FX07(){

@@ -45,7 +45,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 * It's slow, a resource hog, and worst of all, a big walking race condition.
 * Since reads from the renderer thread aren't synchronized with the main cpu thread.
 */
-public class CPUDebugger{
+public class LanternaDisplay{
     static Chip8SOC chip8CPU;
     static TextColor[] foregroundColors = new TextColor[4];
     static TextColor[] backgroundColors = new TextColor[4];

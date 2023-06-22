@@ -65,6 +65,10 @@ public class ScalingManager {
                 s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
                 s.f.pack();
                 dialog.dispose();
+                s.hiResViewWidth = s.IMGWIDTH * s.HIRES_SCALE_FACTOR;
+                s.hiResViewHeight = s.IMGHEIGHT * s.HIRES_SCALE_FACTOR;
+                s.lowResViewWidth = s.IMGWIDTH * s.LOWRES_SCALE_FACTOR;
+                s.lowResViewHeight = s.IMGHEIGHT * s.LOWRES_SCALE_FACTOR;
             }
         });
         dialog.setLayout(new GridLayout(3,1));

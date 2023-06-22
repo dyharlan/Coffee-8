@@ -45,9 +45,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 * It's slow, a resource hog, and worst of all, a big walking race condition.
 * Since reads from the renderer thread aren't synchronized with the main cpu thread.
 */
-public class CPUDebugger implements Runnable{
+public class CPUDebugger{
     static Chip8SOC chip8CPU;
-    static char[] planeColors = new char[4]; 
     static TextColor[] foregroundColors = new TextColor[4];
     static TextColor[] backgroundColors = new TextColor[4];
     public static void cls() {
@@ -58,24 +57,6 @@ public class CPUDebugger implements Runnable{
         }
     }
     
-    @Override
-    public void run() {
-        while (true) {
-            if (chip8CPU.graphics != null) {
-                System.out.print("\033[H\033[2J");
-                System.out.flush();
-                for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
-                    for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                        int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
-                        //selectively update each pixel if the last frame exists
-                        System.out.printf("%1s", planeColors[newPlane]);
-                    }
-                    System.out.printf("\n");
-                }
-            }
-        }
-    }
-    
     
     public static void main(String[] args) throws IOException, InterruptedException, LineUnavailableException, UnsupportedAudioFileException {
         try {
@@ -83,10 +64,6 @@ public class CPUDebugger implements Runnable{
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        planeColors[0] = '█';
-        planeColors[1] = '░';
-        planeColors[2] = '▒';
-        planeColors[3] = '▓';
         foregroundColors[0] = TextColor.ANSI.BLACK;
         foregroundColors[1] = TextColor.ANSI.RED;
         foregroundColors[2] = TextColor.ANSI.GREEN;
@@ -113,6 +90,8 @@ public class CPUDebugger implements Runnable{
         Screen screen = new DefaultTerminalFactory().setInitialTerminalSize(new TerminalSize(128,64)).createScreen();
         screen.startScreen();
         TextGraphics textGraphics = screen.newTextGraphics();
+        TerminalSize terminalSize;
+        TerminalSize newSize;
         screen.clear();
         Boolean running = true;
         while (running) {
@@ -135,7 +114,10 @@ public class CPUDebugger implements Runnable{
                     chip8CPU.setVBLankInterrupt(2);
                 }
             }
-            
+            newSize = screen.doResizeIfNecessary();
+            if (newSize != null) {
+                terminalSize = newSize;
+            }
             for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                 for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
                     int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;

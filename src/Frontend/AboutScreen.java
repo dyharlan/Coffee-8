@@ -89,6 +89,10 @@ public class AboutScreen {
             });
             panel3.add(okButton);
         aboutDialog.add(panel3, BorderLayout.SOUTH);
+        panel1.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        panel2.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        panel3.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        
         
     }
     

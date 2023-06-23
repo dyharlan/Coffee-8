@@ -2,7 +2,7 @@
 <h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
 
 <h2 align="center">
-  A Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.
+  A Cross-platform Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.
 </h2>
 
 <h3 align="center">
@@ -27,16 +27,16 @@ Coffee-8 passes [Timedus'](https://github.com/Timendus/chip8-test-suite), and [m
 
 ## Installation
 
-For now, builds are not available due to some base features missing. You need to compile this on your own.
+Builds are now available at the [releases](https://github.com/dyharlan/Coffee-8/releases/) page. All you need to do is download the jar file corresponding to the version of your java installation, which can be queried by typing in ``java -version`` on the Command Prompt/Windows Terminal on Windows, and your favorite Terminal Emulator on Mac/Linux.
 
-Compilation is pretty simple. You need at least Netbeans 13, and Java JDK 8 to work. It could probably work with anything lower, but it's up to you to figure stuff out that breaks.
+Compiling Coffee-8 is pretty simple. You need at least Netbeans 13, and Java JDK 8 to work. But the Project is set to JDK 17 by default. It could probably work with anything lower, but it's up to you to figure stuff out that breaks.
 
-Run ``git clone https://github.com/dyharlan/Coffee-8.git``, open the project on NetBeans, go to Run > Clean and Build Project, and open ``Coffee-8.jar`` inside of the ``Coffee-8/dist`` directory.
+Then run ``git clone https://github.com/dyharlan/Coffee-8.git``, open the project on NetBeans, go to Run > Clean and Build Project, and open ``Coffee-8.jar`` inside of the ``Coffee-8/dist`` directory.
 
 You can also just use the command-line by going into the ``Coffee-8/src`` directory and typing:
 ``javac Frontend/*.java``. 
 
-This will generate class files that you can use by typing ``java Frontend/SwingDisplay``.
+This will generate class files that you can use by typing ``java Frontend/Main``.
 
 ## Todo
 
@@ -54,8 +54,8 @@ Again, I could not thank [kouzeru](https://github.com/Kouzeru) enough for helpin
 
 ## Acknowledgements
 
-- [michaelarnauts' chip8 emulator](https://github.com/michaelarnauts/chip8-java) - derived coffee-8's cpu and sound code.
-- [JohnEarnest's Octo](https://github.com/JohnEarnest/Octo) - a huge help in fixing bugs in the emulator code.
+- [michaelarnauts' chip8 emulator](https://github.com/michaelarnauts/chip8-java) - where I initially derived the threading and sound code from.
+- [JohnEarnest's Octo](https://github.com/JohnEarnest/Octo) - a huge help in fixing bugs in the emulator code. Also being helpful in testing for accuracy.
 - [lesharris' Dorito](https://github.com/lesharris/dorito) - the VBlank code used by the COSMAC VIP interpreter.
 - [Tobias V. Langhoff's guide to a Chip8 emulator](https://tobiasvl.github.io/blog/write-a-chip-8-emulator/) - an excellent guide that got me started to creating a Chip-8 emulator
 - [Awesome Chip-8](https://chip-8.github.io/extensions/) - for disambiguating multiple different C8 interpreters

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Frontend;
+package Frontend.Swing;
 import Backend.Chip8SOC;
 import javax.swing.*;
 import java.awt.*;

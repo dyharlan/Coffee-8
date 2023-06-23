@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Frontend;
+package Frontend.Swing;
 /**
  *
  * @author dyharlan
@@ -138,7 +138,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         isRunning = false;
         romStatus = false;
-        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("icon.png")));
+        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png")));
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
         gamePanel = new JPanel() {
@@ -796,19 +796,4 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
     }
 
-    public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException  {
-    
-        //try{
-        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        SwingDisplay d = new SwingDisplay("Coffee-8 1.0");
-        d.startApp();
-
-        //}catch(FileNotFoundException fnfe){
-        //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
-        //System.exit(0);
-        // }catch(IOException ioe){
-        //JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-        //System.exit(0);
-        //}
-    }
 }

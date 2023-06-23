@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Frontend;
+package Frontend.Swing;
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.*;
@@ -52,7 +52,7 @@ public class AboutScreen {
             }
         });
         try{
-            appIcon = ImageIO.read(getClass().getResourceAsStream("icon.png"));
+            appIcon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
             aboutDialog.setIconImage(appIcon);
         }catch(IOException ioe){
             alt = "Coffee-8 Icon Placeholder";

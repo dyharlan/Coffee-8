@@ -477,9 +477,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         try{
                             chip8CPU.cpuExec();
                         }catch(Exception ex){
-                            ex.printStackTrace();
-                            
                             stopEmulation();
+                            JOptionPane.showMessageDialog(f, "An error occured during the execution of the emulated machine and has been halted: " + ex, "Error", JOptionPane.ERROR_MESSAGE); 
+                            break;
                         }
                        
                     }

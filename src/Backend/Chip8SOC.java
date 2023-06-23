@@ -31,6 +31,8 @@ import java.io.*;
 import java.util.zip.CRC32;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
+
+
  /*
     * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
     * they look like this:
@@ -40,6 +42,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
     *
     * Idea from here: https://stackoverflow.com/questions/4280727/java-creating-an-array-of-methods
  */
+
 @FunctionalInterface
 interface Instruction {
 
@@ -528,7 +531,8 @@ public class Chip8SOC{
     
     //this is called if the opcode executed is either unknown or unimplemented
     private void C8INST_UNKNOWN(){
-        System.err.println("Unknown Opcode: " + Integer.toHexString(opcode));
+        throw new IllegalInstructionException("Unknown Opcode: " + Integer.toHexString(opcode));
+        //System.err.println();
     }
     //execute instructions that have 0x0 as their prefix
     private void C8INSTSET_0000(){

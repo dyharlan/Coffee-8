@@ -265,7 +265,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                        chip8CPU.setCurrentMachine(m);
                     }
                 }else if(sChip1_1.isSelected()){
-                    if (!checkROMSize(rom,MachineType.SUPERCHIP_1_1)) { 
+                    if(romStatus && rom != null){
+                        if (!checkROMSize(rom,MachineType.SUPERCHIP_1_1)) { 
                             machineGroup.clearSelection();
                             setInitialMachine();
                             JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.SUPERCHIP_1_1.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -275,17 +276,27 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                             chip8CPU.setCurrentMachine(m);
                             loadROM(rom);
                         }
-                }else if(xoChip.isSelected()){
-                    if (!checkROMSize(rom, MachineType.XO_CHIP)) {
-                        machineGroup.clearSelection();
-                        setInitialMachine();
-                        JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+                    }else{
+                        m = MachineType.SUPERCHIP_1_1;
+                       chip8CPU.setCurrentMachine(m); 
+                    }    
+                }else if (xoChip.isSelected()) {
+                    if (romStatus && rom != null) {
+                        if (!checkROMSize(rom, MachineType.XO_CHIP)) {
+                            machineGroup.clearSelection();
+                            setInitialMachine();
+                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
+                        } else {
+                            m = MachineType.XO_CHIP;
+                            chip8CPU.setCurrentMachine(m);
+                            loadROM(rom);
+                        }
                     } else {
                         m = MachineType.XO_CHIP;
                         chip8CPU.setCurrentMachine(m);
-                        loadROM(rom);
                     }
+
                 }
             };
             cosmacVIP.addActionListener(machineChangeListener);

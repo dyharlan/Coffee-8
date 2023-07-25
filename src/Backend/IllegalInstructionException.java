@@ -24,8 +24,9 @@
 package Backend;
 
 /**
- *
- * @author dyhar
+ * This exception is thrown evertime an illegal Chip-8/Super-Chip/XO-Chip instruction has been invoked
+ * by an application.
+ * @author dyharlan
  */
 public class IllegalInstructionException extends IllegalArgumentException {
     public IllegalInstructionException(String s)

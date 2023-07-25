@@ -290,9 +290,9 @@ public class Chip8SOC{
         hires = false;
         v = new int[16];
         if(currentMachine == MachineType.XO_CHIP){
-            mem = new int[0x100000];
+            mem = new int[0x100000]; //64KB of RAM
         }else{
-            mem = new int[0x1000];
+            mem = new int[0x1000]; //4KB of RAM
         }
         plane = 1;
         graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
@@ -494,22 +494,6 @@ public class Chip8SOC{
         //decode and execute
         //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
         c8Instructions[(opcode & 0xF000) >> 12].execute();
-//        System.out.println("Current value of v[0]: " + v[0]);
-//        System.out.println("Current value of v[1]: " + v[1]);
-//        System.out.println("Current value of v[2]: " + v[2]);
-//        System.out.println("Current value of v[3]: " + v[3]);
-//        System.out.println("Current value of v[4]: " + v[4]);
-//        System.out.println("Current value of v[5]: " + v[5]);
-//        System.out.println("Current value of v[6]: " + v[6]);
-//        System.out.println("Current value of v[7]: " + v[7]);
-//        System.out.println("Current value of v[8]: " + v[8]);
-//        System.out.println("Current value of v[9]: " + v[9]);
-//        System.out.println("Current value of v[10]: " + v[0xA]);
-//        System.out.println("Current value of v[11]: " + v[0xB]);
-//        System.out.println("Current value of v[12]: " + v[0xC]);
-//        System.out.println("Current value of v[13]: " + v[0xD]);
-//        System.out.println("Current value of v[14]: " + v[0xE]);
-//        System.out.println("Current value of v[15]: " + v[0xF]);
         
         
     }
@@ -918,7 +902,7 @@ public class Chip8SOC{
     private void C8INST_FX01(){
         plane = X & 0x3;
     }
-    
+    //Load a 16-byte sound pattern from memory starting at the address pointed by the index register I
     private void C8INST_F002() {
         //System.out.println("F002 is stubbed out for now");
 //        for(int i = 0; i < pattern.length; i++){
@@ -991,7 +975,6 @@ public class Chip8SOC{
     
     public void sendKeyStroke(int keyValue){
         v[waitReg] = keyValue;
-        
     }
      
     public int getWaitReg() {
@@ -1008,11 +991,6 @@ public class Chip8SOC{
 
     public void setWaitState(Boolean waitState) {
         this.waitState = waitState;
-    }
-    
-    public void setXOPattern(){
-       
-        
     }
     
     //FX29: Point index register to font in memory

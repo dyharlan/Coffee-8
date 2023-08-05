@@ -116,7 +116,8 @@ public class Chip8SOC{
     //public XOAudio xo;
     Random rand; //random number generator
     MachineType currentMachine; //current machine config
-    
+    CRC32 crc32;
+    int amount;
     /*
     * Arrays containing instruction sets
     */
@@ -136,6 +137,7 @@ public class Chip8SOC{
         hires = false;
         setCurrentMachine(m);
         fillInstructionTable();
+        crc32 = new CRC32();
     }
     
     public void setCurrentMachine(MachineType m){
@@ -324,7 +326,7 @@ public class Chip8SOC{
             int offset = 0x0;
             int currByte = 0;
             chip8Init();
-            CRC32 crc32 = new CRC32();
+            crc32.reset();
             while (currByte != -1) {
                 currByte = in.read();
                 crc32.update(currByte & 0xFF);
@@ -348,7 +350,7 @@ public class Chip8SOC{
         }
         return romStatus;
     }
-    int x = tg.systemFreq / tg.frameRate;
+    
     
     public void updateTimers(){
  
@@ -359,13 +361,13 @@ public class Chip8SOC{
             if (tg != null && playSound) {
                 tg.setPitch(pitch);
                 tg.setBuffer(pattern);
-                tg.playPattern(x);
+                tg.playPattern(amount);
             }
             sT--;
         } else {
             if (tg != null && playSound) {
                 tg.setBuffer(mutePattern);
-                tg.playPattern(x);
+                tg.playPattern(amount);
                 tg.setBufferPos(0);
             }
         }             
@@ -448,6 +450,7 @@ public class Chip8SOC{
             playSound = true;
             try {
                 tg = new WaveGenerator(playSound, pitch, defaultPattern);
+                amount = tg.systemFreq / tg.frameRate;
             } catch (LineUnavailableException ex) {
                 tg = null;
                 playSound = false;
@@ -462,7 +465,9 @@ public class Chip8SOC{
     }
     
     public void closeSound(){
-        tg.close();
+        if(tg != null){
+            tg.close();
+        }
     }
     
     public Boolean isSoundEnabled(){

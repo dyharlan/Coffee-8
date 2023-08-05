@@ -37,7 +37,7 @@ public class Main {
     
         //try{
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        SwingDisplay d = new SwingDisplay("Coffee-8 1.0");
+        SwingDisplay d = new SwingDisplay("Coffee-8 1.1");
         d.startApp();
 
         //}catch(FileNotFoundException fnfe){

@@ -72,9 +72,6 @@ public class WaveGenerator {
         booleanControl = (BooleanControl) sourceDataLine.getControl(BooleanControl.Type.MUTE);
         gainControl = (FloatControl) sourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
         gainControl.setValue((float) ((0.25f * gainControl.getMinimum())));
-        System.out.println(gainControl.getMinimum());
-        System.out.println(gainControl.getValue());
-        System.out.println(gainControl.getMaximum());
         sourceDataLine.start();
         isEnabled = sound;
         setPitch(pitch);
@@ -151,13 +148,7 @@ public class WaveGenerator {
             sourceDataLine.start();
         }
         
-//        if(sourceDataLine.available() <= 0){
-//            sourceDataLine.flush();
-//        }
-        
         int avail = sourceDataLine.available()-(sourceDataLine.getBufferSize()-bufferCap);
-        
-        //System.out.println(sourceDataLine.available());
         if(avail <= 0){
              sourceDataLine.write(scaledBuffer, 0, Math.min(((avail % scaledBuffer.length) + scaledBuffer.length) % scaledBuffer.length,scaledBuffer.length) ); 
         }else{

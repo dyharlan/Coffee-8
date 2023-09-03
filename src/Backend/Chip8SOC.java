@@ -795,6 +795,7 @@ public class Chip8SOC{
     * In superchip: draw a 16x16 sprite, otherwise, draw normally
     */
     
+    
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
     */
@@ -802,13 +803,16 @@ public class Chip8SOC{
         if (WaitForInterrupt()) {
             return;
         }
+        //Grab the screen coordinate from the vX and vY registers
         int x = v[X];
         int y = v[Y];
+        //grab the pixel height from the Nth nibble of DXYN. Does not apply to DXY0
         int n = (int) (opcode & 0x000F);
         v[0xF] = 0;
         int i = I;
         int currPixel = 0;
         int targetPixel = 0;
+        //DXY0
         if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
              for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
                  if ((plane & (currBitPlane + 1)) == 0) {
@@ -842,14 +846,22 @@ public class Chip8SOC{
                 i += 32;
              }
          } else {
+            //DXYN: draw a sprite that is 8xN in dimensions
+            //Outer loop determines the screen plane to draw on
              for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+                 //Do not draw on the plane if the bitwise AND of the plane register and the current bitplane being iterated + 1 is equal to 0
                  if ((plane & (currBitPlane + 1)) == 0) {
                      continue;
                  }
+                 //iterate on each line of video
                  for (byte yLine = 0; yLine < n; yLine++) {
+                     //iterate on each pixel of the screen and try to check if we want to write on it
                      for (byte xLine = 0; xLine < 8; xLine++) {
+                         //Load a pixel from a specific address in memory pointed by the index register
                          currPixel = ((mem[i + yLine] >> (7 - xLine)) & 0x1);
+                         //Load the target pixel on the screen to draw on
                          targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+                         //Do not draw a sprite that is outside of the display area
                          if (clipQuirks) {
                              if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                                  currPixel = 0;
@@ -865,7 +877,7 @@ public class Chip8SOC{
                                  graphics[currBitPlane][targetPixel] = 0;
                                  v[0xF] = 0x1;
                              } else {
-                                 graphics[currBitPlane][targetPixel] ^= 1;
+                                graphics[currBitPlane][targetPixel] ^= 1;
                              }
                          }
                      }

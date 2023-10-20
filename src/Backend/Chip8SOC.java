@@ -308,10 +308,6 @@ public class Chip8SOC{
         if(graphics == null){
             graphics = new int[2][128*64];
         }else{
-            for (int x = 0; x < graphics.length; x++) {
-                graphics[0][x] = 0;
-                graphics[1][x] = 0;
-            }
             setHiRes(false);
         }
         
@@ -404,19 +400,16 @@ public class Chip8SOC{
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-            for (int x = 0; x < graphics.length; x++) {
-                graphics[0][x] = 0;
-                graphics[1][x] = 0;
-            }
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-            for (int x = 0; x < graphics.length; x++) {
-                graphics[0][x] = 0;
-                graphics[1][x] = 0;
-            }
+        }
+        for (int x = 0; x < graphics.length; x++) {
+                for (int y = 0; y < graphics[x].length; y++) {
+                    graphics[x][y] = 0;
+                }
         }
     }    
     
@@ -626,18 +619,10 @@ public class Chip8SOC{
     //00FE: disable hi-res
     private void C8INST_00FE(){
         setHiRes(false);
-        for (int x = 0; x < graphics.length; x++) {
-            graphics[0][x] = 0;
-            graphics[1][x] = 0;
-        }
     }
     //enable hi-res
     private void C8INST_00FF(){
         setHiRes(true);
-        for (int x = 0; x < graphics.length; x++) {
-            graphics[0][x] = 0;
-            graphics[1][x] = 0;
-        }
     }
     //0x1NNN jump to address NNN
     private void C8INST_1NNN(){

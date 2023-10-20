@@ -404,20 +404,18 @@ public class Chip8SOC{
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-            for(int i = 0;i< graphics.length;i++){
-               for(int j = 0;j< graphics[i].length;j++){
-                   graphics[i][j]=0;
-               }
+            for (int x = 0; x < graphics.length; x++) {
+                graphics[0][x] = 0;
+                graphics[1][x] = 0;
             }
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-            for(int i = 0;i< graphics.length;i++){
-               for(int j = 0;j< graphics[i].length;j++){
-                   graphics[i][j]=0;
-               }
+            for (int x = 0; x < graphics.length; x++) {
+                graphics[0][x] = 0;
+                graphics[1][x] = 0;
             }
         }
     }    

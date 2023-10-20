@@ -284,20 +284,37 @@ public class Chip8SOC{
     //Initial state of the machine
     public void chip8Init(){
         pitch = 64;
-        pattern = new int[16];
+        if(pattern == null){
+            pattern = new int[16];
+        }
         for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
             pattern[i] = defaultPattern[i];
         }
         crc32Checksum = 0;
         hires = false;
-        v = new int[16];
+        if(v == null){
+            v = new int[16];
+        }else{
+            for(int i = 0;i < v.length;i++){
+                v[i] = 0;
+            }
+        }
         if(currentMachine == MachineType.XO_CHIP){
             mem = new int[0x100000]; //64KB of RAM
         }else{
             mem = new int[0x1000]; //4KB of RAM
         }
         plane = 1;
-        graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
+        if(graphics == null){
+            graphics = new int[2][128*64];
+        }else{
+            for (int x = 0; x < graphics.length; x++) {
+                graphics[0][x] = 0;
+                graphics[1][x] = 0;
+            }
+            setHiRes(false);
+        }
+        
         keyPad = new boolean[16];
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
@@ -386,14 +403,22 @@ public class Chip8SOC{
             hires = true;
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
-            graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-            
+            //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
+            for(int i = 0;i< graphics.length;i++){
+               for(int j = 0;j< graphics[i].length;j++){
+                   graphics[i][j]=0;
+               }
+            }
         }else if(!flag){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
-            graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-
+            //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
+            for(int i = 0;i< graphics.length;i++){
+               for(int j = 0;j< graphics[i].length;j++){
+                   graphics[i][j]=0;
+               }
+            }
         }
     }    
     

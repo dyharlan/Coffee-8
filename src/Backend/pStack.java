@@ -72,5 +72,12 @@ public class pStack {
     public void clear() {
         this.top = -1;
     }
+    
+    public void zeroOut(){
+        this.clear();
+        for(int i = 0;i < stackArray.length;i++){
+            stackArray[i] = 0;
+        }
+    }
 
 }

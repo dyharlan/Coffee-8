@@ -118,8 +118,8 @@ public class ScalingManager {
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            System.out.println(64);
-            System.out.println(32);
+            System.out.println(s.chip8CPU.getMachineWidth());
+            System.out.println(s.chip8CPU.getMachineHeight());
             Object source = e.getSource();
             if (source == upButton) {
                 newScalingMultiplier += 2;
@@ -139,7 +139,7 @@ public class ScalingManager {
                 s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
                 s.f.pack();
             } else if (source == downButton) {
-                if (newScalingMultiplier == 2) {
+                if (newScalingMultiplier == 4) {
                     inputField.setText("<html><h4>" + Integer.toString(newScalingMultiplier) + "</h4></html>");
                     s.LOWRES_SCALE_FACTOR = newScalingMultiplier;
                     s.HIRES_SCALE_FACTOR = newScalingMultiplier / 2;

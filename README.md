@@ -1,8 +1,12 @@
 <h1 align="center">Coffee-8</h1>
-<h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon.png"/></h2>
+<h2 align="center"><img src="https://raw.githubusercontent.com/dyharlan/Coffee-8/main/src/Frontend/icon_oj10.png"/></h2>
 
 <h2 align="center">
   A Cross-platform Chip-8 emulator that aims to be Octo compliant in terms of accuracy. Now supports the COSMAC VIP, Super-Chip 1.1, and the XO-Chip.
+</h2>
+
+<h2 align="center">
+  OctoJam 10 is on-going! Good luck to all entrants. Click [here](https://itch.io/jam/octojam-10) to learn more. 
 </h2>
 
 <h3 align="center">

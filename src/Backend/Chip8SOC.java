@@ -325,11 +325,8 @@ public class Chip8SOC{
         pc = 0x200;
         opcode = 0;
         I = 0;
-        if(cst == null){
-            cst = new pStack(64);
-        }else{
-            cst.zeroOut();
-        }
+        cst = new pStack(64);
+        
         X = 0;
         Y = 0;
         interruptState = 0;

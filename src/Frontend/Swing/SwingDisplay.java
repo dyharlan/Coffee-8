@@ -446,8 +446,9 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 }
 
                 SwingUtilities.invokeLater(() -> {
-                    //clear the elapsedTimeFromEpoch frame each time a new rom is loaded.
+                    //clear the last frame each time a new rom is loaded.
                     last = null;
+                    image.flush();
                     startEmulation();
                 });
             } else {
@@ -489,6 +490,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                             chip8CPU.cpuExec();
                         }catch(Exception ex){
                             stopEmulation();
+                            ex.printStackTrace();
                             JOptionPane.showMessageDialog(f, "An error occured during the execution of the emulated machine and has been halted: " + ex, "Error", JOptionPane.ERROR_MESSAGE); 
                             break;
                         }

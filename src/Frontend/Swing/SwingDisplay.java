@@ -90,6 +90,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     MachineType m;
     private LastFrame last;
     public BufferedImage image;
+    public static BufferedImage icon;
     public Graphics2D frameBuffer;
     private Boolean romStatus;
     private Thread cpuCycleThread;
@@ -138,7 +139,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         
         isRunning = false;
         romStatus = false;
-        f.setIconImage(ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png")));
+        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon_oj10.png"));
+        f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
         gamePanel = new JPanel() {
@@ -164,10 +166,16 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         m = MachineType.XO_CHIP;
         chip8CPU = new Chip8SOC(true, m);
         planeColors = new Color[4];
-        planeColors[0] = new Color(0,0,0);
-        planeColors[1] = new Color(0xCC,0xCC,0xCC);
-        planeColors[2] = new Color(237,28,36);
-        planeColors[3] = new Color(66,66,66);
+        //Default Color Scheme
+//        planeColors[0] = new Color(0,0,0);
+//        planeColors[1] = new Color(0xCC,0xCC,0xCC);
+//        planeColors[2] = new Color(237,28,36);
+//        planeColors[3] = new Color(66,66,66);
+        //Octo Classic
+        planeColors[0] = new Color(0x99,0x66,0x00);
+        planeColors[1] = new Color(0xFF,0xCC,0x00);
+        planeColors[2] = new Color(0xFF,0x66,0x00);
+        planeColors[3] = new Color(0x66,0x22,0x00);
         LOWRES_SCALE_FACTOR = 10;
         HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
         hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;

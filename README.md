@@ -6,7 +6,7 @@
 </h2>
 
 <h2 align="center">
-  OctoJam 10 is on-going! Good luck to all entrants. Click [here](https://itch.io/jam/octojam-10) to learn more. 
+  OctoJam 10 is on-going! Good luck to all entrants. Click <a href="https://itch.io/jam/octojam-10">here</a> to learn more. 
 </h2>
 
 <h3 align="center">

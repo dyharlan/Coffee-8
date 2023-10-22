@@ -60,11 +60,13 @@ class LastFrame{
 //            System.arraycopy(temp, 0, prevFrame[i], 0, length);
 //        }
         //create
-        prevFrame = new int[2][];
+        prevFrame = new int[4][];
         prevFrame[0] = arr2D[0].clone();
         prevFrame[1] = arr2D[1].clone();
+        prevFrame[2] = arr2D[2].clone();
+        prevFrame[3] = arr2D[3].clone();
         this.hires = hires;
-        prevColors = new Color[4];
+        prevColors = new Color[16];
         System.arraycopy(colorArr, 0, prevColors, 0, prevColors.length);
     }
 }
@@ -88,6 +90,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     
     File rom;
     MachineType m;
+    //an object representing the last frame of the image
     private LastFrame last;
     public BufferedImage image;
     public static BufferedImage icon;
@@ -124,14 +127,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     
 
     Chip8SOC chip8CPU;
-
-    public SwingDisplay(String verNo) throws IOException {
+    //constructor for default settings
+    public SwingDisplay(String verNo, File configFile) throws IOException {
+        buildPanel();
+        setInitialMachine();
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        loadDefaults();
-        buildPanel();
-        setInitialMachine();
 //        planeColors[0] = Color.ORANGE;
 //        planeColors[1] = Color.BLUE;
 //        planeColors[2] = Color.RED;
@@ -143,6 +145,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
+        //Overriding the paint method of JPanel
         gamePanel = new JPanel() {
             @Override
             public void paint(Graphics g) {
@@ -158,14 +161,47 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         gamePanel.setPreferredSize(new Dimension(panelX, panelY));
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
-       
-
     }
-    
+    public SwingDisplay(String verNo) throws IOException {
+        loadDefaults();
+        buildPanel();
+        setInitialMachine();
+        image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
+        frameBuffer = image.createGraphics();
+        f = new JFrame(verNo);
+//        planeColors[0] = Color.ORANGE;
+//        planeColors[1] = Color.BLUE;
+//        planeColors[2] = Color.RED;
+//        planeColors[3] = new Color(149,129,103);
+        
+        isRunning = false;
+        romStatus = false;
+        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon_oj10.png"));
+        f.setIconImage(icon);
+        panelX = 64 * LOWRES_SCALE_FACTOR;
+        panelY = 32 * LOWRES_SCALE_FACTOR;
+        //Overriding the paint method of JPanel
+        gamePanel = new JPanel() {
+            @Override
+            public void paint(Graphics g) {
+                g2d = (Graphics2D) g;
+                super.paintComponent(g2d);
+                if (chip8CPU.getHiRes()) {
+                    g2d.drawImage(image, 0, 0, hiResViewWidth, hiResViewHeight, gamePanel);
+                } else {
+                    g2d.drawImage(image, 0, 0, lowResViewWidth, lowResViewHeight, gamePanel);
+                }
+            }
+        };
+        gamePanel.setPreferredSize(new Dimension(panelX, panelY));
+        f.add(mb, BorderLayout.NORTH);
+        f.add(gamePanel,BorderLayout.CENTER);
+    }
+    //sets the default dimensions and colour palette of the emulator
     public void loadDefaults(){
         m = MachineType.XO_CHIP;
         chip8CPU = new Chip8SOC(true, m);
-        planeColors = new Color[4];
+        planeColors = new Color[16];
         //Default Color Scheme
 //        planeColors[0] = new Color(0,0,0);
 //        planeColors[1] = new Color(0xCC,0xCC,0xCC);
@@ -176,6 +212,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         planeColors[1] = new Color(0xFF,0xCC,0x00);
         planeColors[2] = new Color(0xFF,0x66,0x00);
         planeColors[3] = new Color(0x66,0x22,0x00);
+        planeColors[4] = new Color(0xBF,0x2A,0xED);
+        planeColors[5] = Color.MAGENTA;
+        planeColors[6] = Color.YELLOW;
+        planeColors[7] = Color.GREEN;
+        planeColors[8] = Color.GRAY;
+        planeColors[9] = new Color(0x4B,0x00,0x82); //INDIGO
+        planeColors[10] = new Color(0xEE,0x82,0xEE); //VIOLET
+        planeColors[11] = new Color(0xAA,0x55,0x00);
+        planeColors[12] = Color.BLACK;
+        planeColors[13] = Color.WHITE;
+        planeColors[14] = new Color(170, 85, 0);
+        planeColors[15] =  Color.RED;
         LOWRES_SCALE_FACTOR = 10;
         HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
         hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
@@ -183,6 +231,53 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
         lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
     }
+    
+    public void loadSettingsFromFile(File configFile) throws IOException{
+        BufferedReader br = new BufferedReader(new FileReader(configFile));
+        String tempStr;
+        String[] tempStrArray;
+        int lines = 0;
+        Boolean machineTypeParsed = false;
+        Boolean firstColorParsed = false;
+        Boolean secondColorParsed = false;
+        Boolean thirdColorParsed = false;
+        Boolean fourthColorParsed = false;
+        Boolean scaleFactorParsed = false;
+        while((tempStr = br.readLine()) != null){
+                //increments line counter by 1
+                lines++;
+                if(tempStr.trim().startsWith("MachineType")){
+                    if(machineTypeParsed){
+                        continue;
+                    }
+                    tempStrArray = tempStr.trim().split("=");
+                    if(tempStrArray.length != 2){
+                        JOptionPane.showMessageDialog(null, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                        m = MachineType.XO_CHIP;
+                    }else{
+                        switch(tempStrArray[1]){
+                            case "cosmac_vip":
+                                m = MachineType.COSMAC_VIP;
+                            break;
+                            case "superchip1.1":
+                                m = MachineType.SUPERCHIP_1_1;
+                            break;
+                            case "xochip":
+                                m = MachineType.XO_CHIP;
+                            break;
+                            default:
+                                m = MachineType.XO_CHIP;
+                                JOptionPane.showMessageDialog(null, "Invalid Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                            break;
+                        }
+                        machineTypeParsed = true;
+                    }
+                }
+                
+                
+        }
+    }
+    //initially sets the machine on first startup
     public void setInitialMachine(){
         if (chip8CPU.getCurrentMachine() != null)
             switch (chip8CPU.getCurrentMachine()) {
@@ -199,6 +294,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     break;
             }
     }
+    
+    //a big ass method that builds all the elements of the top jpanel
     public void buildPanel() {
         mb = new JMenuBar();
         fileMenu = new JMenu("File");
@@ -410,6 +507,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             helpMenu.add(aboutEmulator);
             
     }
+    
+    //checks the romsize if it is appropriate for the selected machine. Does NOT check if it is a valid ROM.
     public Boolean checkROMSize(File rom){
         Boolean rightSize = true;
         if (m == MachineType.COSMAC_VIP && rom.length() > 3232L) {
@@ -439,6 +538,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         }
         return rightSize;
     }
+    
+    //This method loads the selected rom. It is also used when resetting the machine.
     public void loadROM(File rom) {
         
         try {
@@ -456,7 +557,6 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 SwingUtilities.invokeLater(() -> {
                     //clear the last frame each time a new rom is loaded.
                     last = null;
-                    image.flush();
                     startEmulation();
                 });
             } else {
@@ -468,6 +568,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+    //starts the cpu emulation cycle
     public void startEmulation() {
         if (cpuCycleThread == null) {
             isRunning = true;
@@ -476,11 +577,13 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             cpuCycleThread.start();
         }
     }
-
+    
+    //stops the cpu emulation cycle
     public void stopEmulation() {
         isRunning = false;
         cpuCycleThread = null;
     }
+    
     @Override
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
@@ -524,7 +627,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 
     }
     
-    //these methods will check if an array is equal. It will exist early if there is an inequality
+    //these methods will check if an array is equal. It will exit early if there is an inequality
     public Boolean arrayEqual(int[] a, int[] b) {
         int length = a.length;
         if (length != b.length) {
@@ -558,7 +661,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         //if there is a last frame
         if(last != null){
             //check if the previous frame and the previous palette is the same as the current frame in both planes.
-            if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1]) && arrayEqual(last.prevColors,planeColors)){
+            if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1])  && arrayEqual(last.prevFrame[2], chip8CPU.graphics[2])  && arrayEqual(last.prevFrame[3], chip8CPU.graphics[3]) && arrayEqual(last.prevColors,planeColors)){
                 //exit early if it is the same.
                 return;
             }
@@ -567,15 +670,18 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
 		last = null; 
         }
         //store the last frame here. Probably redundant?
-        int[][] lastPixels = last != null && last.prevFrame != null? last.prevFrame: new int[2][chip8CPU.getMachineWidth() * chip8CPU.getMachineHeight()];
+        int[][] lastPixels = last != null && last.prevFrame != null? last.prevFrame: new int[4][chip8CPU.getMachineWidth() * chip8CPU.getMachineHeight()];
         //write the pixels into the BufferedImage
         if (chip8CPU.graphics != null) {
             for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
                 for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
-                    int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                    //int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                    int newPlane = ( chip8CPU.graphics[3][(x) + ((y) * chip8CPU.getMachineWidth())] << 3 | chip8CPU.graphics[2][(x) + ((y) * chip8CPU.getMachineWidth())] << 2 | chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0xF;
+                    //System.out.println(newPlane);
                     //selectively update each pixel if the last frame exists
                     if (last != null) {
-                        int oldPlane = (lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                        //int oldPlane = (lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
+                        int oldPlane = ( lastPixels[3][(x) + ((y) * chip8CPU.getMachineWidth())] << 3 | lastPixels[2][(x) + ((y) * chip8CPU.getMachineWidth())] << 2 | lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0xF;
                         if (oldPlane != newPlane) {
                             frameBuffer.setColor(planeColors[newPlane]);
                             frameBuffer.fillRect(x, y, 1, 1);
@@ -590,7 +696,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         }
         //apply the changes to the gamePanel
         gamePanel.repaint();
-        //Instantiate a class corresponding to the elapsedTimeFromEpoch frame of the chip 8
+        //Instantiate a class corresponding to the last frame of the chip 8
         last = new LastFrame(chip8CPU.graphics, chip8CPU.getHiRes(), planeColors);
     }
     @Override
@@ -655,133 +761,129 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 chip8CPU.keyPad[15] = true;
                 break;
         }
-//            for(int i = 0;i < chip8CPU.keyPad.length;i++){
-//                System.out.println(chip8CPU.keyPad[i] + "\t");
-//            }
-//            System.out.println("");
-        }
+    }
         
-        @Override
-        public void keyReleased(KeyEvent e){
-            if(chip8CPU.keyPad == null){
-                return;
-            }
-            int keyCode = e.getKeyCode();
-            
-            switch(keyCode){
-                case KeyEvent.VK_X:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(0);
-                    }
-                    chip8CPU.keyPad[0] = false;
-                    break;
-                case KeyEvent.VK_1:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(1);
-                    }
-                    chip8CPU.keyPad[1] = false;
-                    break;
-                case KeyEvent.VK_2:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(2);
-                    }
-                    chip8CPU.keyPad[2] = false;
-                    break;
-                case KeyEvent.VK_3:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(3);
-                    }
-                    chip8CPU.keyPad[3] = false;
-                    break;
-                case KeyEvent.VK_Q:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(4);
-                    }
-                    chip8CPU.keyPad[4] = false;
-                    break;
-                case KeyEvent.VK_W:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(5);
-                    }
-                    chip8CPU.keyPad[5] = false;
-                    break;
-                case KeyEvent.VK_E:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(6);
-                    }
-                    chip8CPU.keyPad[6] = false;
-                    break;
-                case KeyEvent.VK_A:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(7);
-                    }
-                    chip8CPU.keyPad[7] = false;
-                    break;
-                case KeyEvent.VK_S:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(8);
-                    }
-                    chip8CPU.keyPad[8] = false;
-                    break;
-                case KeyEvent.VK_D:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(9);
-                    }
-                    chip8CPU.keyPad[9] = false;
-                    break;
-                case KeyEvent.VK_Z:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(10);
-                    }
-                    chip8CPU.keyPad[10] = false;
-                    break;
-                case KeyEvent.VK_C:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(11);
-                    }
-                    chip8CPU.keyPad[11] = false;
-                    break;
-                case KeyEvent.VK_4:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(12);
-                    }
-                    chip8CPU.keyPad[12] = false;
-                    break;
-                case KeyEvent.VK_R:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(13);
-                    }
-                    chip8CPU.keyPad[13] = false;
-                    break;
-                case KeyEvent.VK_F:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(14);
-                    }
-                    chip8CPU.keyPad[14] = false;
-                    break;
-                case KeyEvent.VK_V:
-                    if(chip8CPU.getWaitState()){
-                        chip8CPU.setWaitState(false);
-                        chip8CPU.sendKeyStroke(15);
-                    }
-                    chip8CPU.keyPad[15] = false;
-                    break;
-            }
+       @Override
+    public void keyReleased(KeyEvent e) {
+        if (chip8CPU.keyPad == null) {
+            return;
+        }
+        int keyCode = e.getKeyCode();
+
+        switch (keyCode) {
+            case KeyEvent.VK_X:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(0);
+                }
+                chip8CPU.keyPad[0] = false;
+                break;
+            case KeyEvent.VK_1:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(1);
+                }
+                chip8CPU.keyPad[1] = false;
+                break;
+            case KeyEvent.VK_2:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(2);
+                }
+                chip8CPU.keyPad[2] = false;
+                break;
+            case KeyEvent.VK_3:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(3);
+                }
+                chip8CPU.keyPad[3] = false;
+                break;
+            case KeyEvent.VK_Q:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(4);
+                }
+                chip8CPU.keyPad[4] = false;
+                break;
+            case KeyEvent.VK_W:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(5);
+                }
+                chip8CPU.keyPad[5] = false;
+                break;
+            case KeyEvent.VK_E:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(6);
+                }
+                chip8CPU.keyPad[6] = false;
+                break;
+            case KeyEvent.VK_A:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(7);
+                }
+                chip8CPU.keyPad[7] = false;
+                break;
+            case KeyEvent.VK_S:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(8);
+                }
+                chip8CPU.keyPad[8] = false;
+                break;
+            case KeyEvent.VK_D:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(9);
+                }
+                chip8CPU.keyPad[9] = false;
+                break;
+            case KeyEvent.VK_Z:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(10);
+                }
+                chip8CPU.keyPad[10] = false;
+                break;
+            case KeyEvent.VK_C:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(11);
+                }
+                chip8CPU.keyPad[11] = false;
+                break;
+            case KeyEvent.VK_4:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(12);
+                }
+                chip8CPU.keyPad[12] = false;
+                break;
+            case KeyEvent.VK_R:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(13);
+                }
+                chip8CPU.keyPad[13] = false;
+                break;
+            case KeyEvent.VK_F:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(14);
+                }
+                chip8CPU.keyPad[14] = false;
+                break;
+            case KeyEvent.VK_V:
+                if (chip8CPU.getWaitState()) {
+                    chip8CPU.setWaitState(false);
+                    chip8CPU.sendKeyStroke(15);
+                }
+                chip8CPU.keyPad[15] = false;
+                break;
+        }
 //                       for (int i = 0; i < chip8CPU.keyPad.length; i++) {
 //                System.out.println(chip8CPU.keyPad[i] + "\t");
 //            }

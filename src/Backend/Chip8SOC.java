@@ -306,7 +306,7 @@ public class Chip8SOC{
         }
         plane = 1;
         if(graphics == null){
-            graphics = new int[2][128*64];
+            graphics = new int[4][128*64];
         }else{
             setHiRes(false);
         }
@@ -548,8 +548,8 @@ public class Chip8SOC{
     private void C8INST_00CN(){
         //System.out.println("scroll down");
         int height = opcode & 0xF;
-        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-            if ((plane & (currBitPlane + 1)) == 0) {
+        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+            if ((plane & (1 << currBitPlane)) == 0) {
                 continue;
             }
             for (int z = graphics[currBitPlane].length - 1; z >= 0; z--) {
@@ -562,8 +562,8 @@ public class Chip8SOC{
         //System.out.println("scroll up");
         int height = opcode & 0xF;
         int bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
-        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-            if ((plane & (currBitPlane + 1)) == 0) {
+        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+            if ((plane & (1 << currBitPlane)) == 0) {
                 continue;
             }
             for (int z = 0; z < bufSize; z++) {
@@ -573,8 +573,8 @@ public class Chip8SOC{
     }
     //00E0: Clear Screen
     private void C8INST_00E0(){
-        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-            if ((plane & (currBitPlane + 1)) == 0) {
+        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+            if ((plane & (1 << currBitPlane)) == 0) {
                 continue;
             }
             for (int z = 0; z < graphics[currBitPlane].length; z++) {
@@ -588,8 +588,8 @@ public class Chip8SOC{
     }
     //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
-        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-            if ((plane & (currBitPlane + 1)) == 0) {
+        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+            if ((plane & (1 << currBitPlane)) == 0) {
                 continue;
             }
             for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
@@ -601,8 +601,8 @@ public class Chip8SOC{
     }
     //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
-        for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-            if ((plane & (currBitPlane + 1)) == 0) {
+        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+            if ((plane & (1 << currBitPlane)) == 0) {
                 continue;
             }
             for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
@@ -823,8 +823,8 @@ public class Chip8SOC{
         int targetPixel = 0;
         //DXY0
         if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
-             for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
-                 if ((plane & (currBitPlane + 1)) == 0) {
+             for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+                 if ((plane & (1 << currBitPlane)) == 0) {
                      continue;
                  }
                  for (byte yLine = 0; yLine < 16; yLine++) {
@@ -857,9 +857,9 @@ public class Chip8SOC{
          } else {
             //DXYN: draw a sprite that is 8xN in dimensions
             //Outer loop determines the screen plane to draw on
-             for (int currBitPlane = 0; currBitPlane < 2; currBitPlane++) {
+             for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
                  //Do not draw on the plane if the bitwise AND of the plane register and the current bitplane being iterated + 1 is equal to 0
-                 if ((plane & (currBitPlane + 1)) == 0) {
+                 if ((plane & (1 << currBitPlane)) == 0) {
                      continue;
                  }
                  //iterate on each line of video
@@ -924,9 +924,9 @@ public class Chip8SOC{
         I = NNNN;
         pc+=2;
     }
-    //Set the current plane to draw, where 0 <= X <= 3
+    //Set the current plane to draw, where 0 <= X <= F
     private void C8INST_FX01(){
-        plane = X & 0x3;
+        plane = X & 0xF;
     }
     //Load a 16-byte sound pattern from memory starting at the address pointed by the index register I
     private void C8INST_F002() {

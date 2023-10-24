@@ -34,6 +34,7 @@ import javax.swing.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.Arrays;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -70,7 +71,7 @@ class LastFrame{
         System.arraycopy(colorArr, 0, prevColors, 0, prevColors.length);
     }
 }
-public class SwingDisplay extends KeyAdapter implements Runnable {
+public final class SwingDisplay extends KeyAdapter implements Runnable {
     //resolution of the buffered image
     protected final int IMGWIDTH = 128;
     protected final int IMGHEIGHT = 64;
@@ -124,11 +125,14 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             private JMenu helpMenu;
                 private JMenuItem aboutEmulator;
     public JPanel gamePanel;
-    
-
+    private boolean loadedFromConfigFile;
     Chip8SOC chip8CPU;
     //constructor for default settings
     public SwingDisplay(String verNo, File configFile) throws IOException {
+        this();
+        
+        loadSettingsFromFile(configFile);
+        loadedFromConfigFile = true;
         buildPanel();
         setInitialMachine();
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
@@ -162,8 +166,35 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
     }
+    public SwingDisplay(){
+         //Default Color Scheme
+//        planeColors[0] = new Color(0,0,0);
+//        planeColors[1] = new Color(0xCC,0xCC,0xCC);
+//        planeColors[2] = new Color(237,28,36);
+//        planeColors[3] = new Color(66,66,66);
+        //Octo Classic
+        planeColors = new Color[16];
+        planeColors[0] = new Color(0x99,0x66,0x00);
+        planeColors[1] = new Color(0xFF,0xCC,0x00);
+        planeColors[2] = new Color(0xFF,0x66,0x00);
+        planeColors[3] = new Color(0x66,0x22,0x00);
+        planeColors[4] = new Color(0xBF,0x2A,0xED);
+        planeColors[5] = Color.MAGENTA;
+        planeColors[6] = Color.YELLOW;
+        planeColors[7] = Color.GREEN;
+        planeColors[8] = Color.GRAY;
+        planeColors[9] = new Color(0x4B,0x00,0x82); //INDIGO
+        planeColors[10] = new Color(0xEE,0x82,0xEE); //VIOLET
+        planeColors[11] = new Color(0xAA,0x55,0x00);
+        planeColors[12] = Color.BLACK;
+        planeColors[13] = Color.WHITE;
+        planeColors[14] = Color.BLUE;
+        planeColors[15] =  Color.RED;
+    }
     public SwingDisplay(String verNo) throws IOException {
+        this();
         loadDefaults();
+        loadedFromConfigFile = false;
         buildPanel();
         setInitialMachine();
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
@@ -201,29 +232,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
     public void loadDefaults(){
         m = MachineType.XO_CHIP;
         chip8CPU = new Chip8SOC(true, m);
-        planeColors = new Color[16];
-        //Default Color Scheme
-//        planeColors[0] = new Color(0,0,0);
-//        planeColors[1] = new Color(0xCC,0xCC,0xCC);
-//        planeColors[2] = new Color(237,28,36);
-//        planeColors[3] = new Color(66,66,66);
-        //Octo Classic
-        planeColors[0] = new Color(0x99,0x66,0x00);
-        planeColors[1] = new Color(0xFF,0xCC,0x00);
-        planeColors[2] = new Color(0xFF,0x66,0x00);
-        planeColors[3] = new Color(0x66,0x22,0x00);
-        planeColors[4] = new Color(0xBF,0x2A,0xED);
-        planeColors[5] = Color.MAGENTA;
-        planeColors[6] = Color.YELLOW;
-        planeColors[7] = Color.GREEN;
-        planeColors[8] = Color.GRAY;
-        planeColors[9] = new Color(0x4B,0x00,0x82); //INDIGO
-        planeColors[10] = new Color(0xEE,0x82,0xEE); //VIOLET
-        planeColors[11] = new Color(0xAA,0x55,0x00);
-        planeColors[12] = Color.BLACK;
-        planeColors[13] = Color.WHITE;
-        planeColors[14] = Color.BLUE;
-        planeColors[15] =  Color.RED;
+        
         LOWRES_SCALE_FACTOR = 10;
         HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
         hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
@@ -232,16 +241,15 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
     }
     
-    public void loadSettingsFromFile(File configFile) throws IOException{
+    public void loadSettingsFromFile(File configFile) throws IllegalArgumentException, IOException{
         BufferedReader br = new BufferedReader(new FileReader(configFile));
         String tempStr;
         String[] tempStrArray;
         int lines = 0;
+        int currentlySelectedColor = 0;
         Boolean machineTypeParsed = false;
-        Boolean firstColorParsed = false;
-        Boolean secondColorParsed = false;
-        Boolean thirdColorParsed = false;
-        Boolean fourthColorParsed = false;
+        Boolean[] parsedColors = new Boolean[16];
+        Arrays.fill(parsedColors, false);
         Boolean scaleFactorParsed = false;
         while((tempStr = br.readLine()) != null){
                 //increments line counter by 1
@@ -252,8 +260,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     }
                     tempStrArray = tempStr.trim().split("=");
                     if(tempStrArray.length != 2){
-                        JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
-                        m = MachineType.XO_CHIP;
+                        //JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                         throw new IllegalArgumentException("No Machine Type entered, please enter a value and try again.");
                     }else{
                         switch(tempStrArray[1]){
                             case "cosmac_vip":
@@ -266,16 +274,67 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                                 m = MachineType.XO_CHIP;
                             break;
                             default:
-                                m = MachineType.XO_CHIP;
-                                JOptionPane.showMessageDialog(f, "Invalid Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
-                            break;
+                                throw new IllegalArgumentException("Invalid Machine Type entered, please enter either cosmac_vip, superchip1.1, or xochip and try again.");
+                                //JOptionPane.showMessageDialog(f, "Invalid Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
                         }
-                        machineTypeParsed = true;
+                        
+                    }
+                    chip8CPU = new Chip8SOC(true, m);
+                    machineTypeParsed = true;
+                }else if (tempStr.trim().startsWith("Color" + Integer.toString(currentlySelectedColor)) && (currentlySelectedColor < 16)) {
+                if (parsedColors[currentlySelectedColor]) {
+                    continue;
+                }
+                tempStrArray = tempStr.trim().split("=");
+                if (tempStrArray.length != 2) {
+                    //JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                    throw new IllegalArgumentException("No color value set for No. " + currentlySelectedColor + ", please enter a value and try again.");
+                } else {
+                    //needs padding in the beginning to autoconvert to string
+                    try {
+                        int R = Integer.parseInt("" + tempStrArray[1].charAt(1) + tempStrArray[1].charAt(2), 16);
+                        int G = Integer.parseInt("" + tempStrArray[1].charAt(3) + tempStrArray[1].charAt(4), 16);
+                        int B = Integer.parseInt("" + tempStrArray[1].charAt(5) + tempStrArray[1].charAt(6), 16);
+                        planeColors[currentlySelectedColor] = new Color(R, G, B);
+                    } catch (NumberFormatException nfe) {
+                        throw nfe;
                     }
                 }
-                
-                
+                parsedColors[currentlySelectedColor] = true;
+                currentlySelectedColor++; 
+            } else if (tempStr.trim().startsWith("ScaleFactor")) {
+                if (scaleFactorParsed) {
+                    continue;
+                }
+                tempStrArray = tempStr.trim().split("=");
+                if (tempStrArray.length != 2) {
+                    //JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                    throw new IllegalArgumentException("No scale factor parsed. please enter a value and try again.");
+                } else {
+                    try{
+                        int givenScaleFactor = Integer.parseInt(tempStrArray[1]);
+                        if((givenScaleFactor % 2) == 0){
+                            LOWRES_SCALE_FACTOR = givenScaleFactor;
+                        }else{
+                            throw new IllegalArgumentException("Scale value should be divisible by 2.");
+                        }
+                    }catch(NumberFormatException nfe){
+                        throw nfe;
+                    }catch(IllegalArgumentException iae){
+                        throw iae;
+                    }
+                }
+                HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
+                hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
+                hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
+                lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
+                lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
+                scaleFactorParsed = true;
+            }                       
         }
+    }
+    private void saveSettingsToFile() {
+        //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
     //initially sets the machine on first startup
     public void setInitialMachine(){
@@ -333,6 +392,8 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         });
         exitSwitch = new JMenuItem("Exit");
         exitSwitch.addActionListener((e) -> {
+            chip8CPU.closeSound();
+            saveSettingsToFile();
             System.exit(0);
         });
         fileMenu.add(loadROM);
@@ -901,6 +962,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
             @Override
             public void windowClosing(WindowEvent e) {
                 chip8CPU.closeSound();
+                saveSettingsToFile();
                 System.exit(0);
             }
         });
@@ -914,9 +976,12 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         } else {
             soundToggle.setSelected(false);
         }
+        
         f.setVisible(true);
         
 
     }
+
+    
 
 }

@@ -24,10 +24,10 @@
 package Frontend;
 
 import Frontend.Swing.SwingDisplay;
-import java.io.IOException;
+import java.io.*;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
-
+import javax.swing.JOptionPane;
 /**
  *
  * @author dyhar
@@ -37,9 +37,25 @@ public class Main {
     
         //try{
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        SwingDisplay d = new SwingDisplay("Coffee-8 1.2.0 OctoJam 10 edition");
-        d.startApp();
-
+        SwingDisplay d = null;
+        File configFile = new File("config.cfg");
+        if(!configFile.exists()){
+            configFile.getParentFile().mkdirs();
+            configFile.createNewFile();
+            d = new SwingDisplay("Coffee-8 1.2.0 OctoJam 10 edition");
+        }else{
+            try{
+                d = new SwingDisplay("Coffee-8 1.2.0 OctoJam 10 edition", configFile);
+            }catch(Exception ex){
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "An error occured while starting Coffee-8! " + ex, "Error starting app", JOptionPane.ERROR_MESSAGE);
+                System.exit(0);
+            }
+            d.startApp();
+        }
+        
+        
+        
         //}catch(FileNotFoundException fnfe){
         //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
         //System.exit(0);

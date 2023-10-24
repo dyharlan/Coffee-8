@@ -41,7 +41,7 @@ public class pStack {
 
     public void push(int num) {
         if (top >= stackArray.length - 1) {
-            System.err.println("Stack Overflow");
+            throw new IllegalStateException("Stack Overflow");
         } else {
             top++;
             stackArray[top] = num;

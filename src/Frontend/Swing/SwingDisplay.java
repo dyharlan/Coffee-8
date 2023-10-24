@@ -222,7 +222,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         planeColors[11] = new Color(0xAA,0x55,0x00);
         planeColors[12] = Color.BLACK;
         planeColors[13] = Color.WHITE;
-        planeColors[14] = new Color(170, 85, 0);
+        planeColors[14] = Color.BLUE;
         planeColors[15] =  Color.RED;
         LOWRES_SCALE_FACTOR = 10;
         HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;

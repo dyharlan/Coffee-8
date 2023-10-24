@@ -252,7 +252,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     }
                     tempStrArray = tempStr.trim().split("=");
                     if(tempStrArray.length != 2){
-                        JOptionPane.showMessageDialog(null, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
                         m = MachineType.XO_CHIP;
                     }else{
                         switch(tempStrArray[1]){
@@ -267,7 +267,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                             break;
                             default:
                                 m = MachineType.XO_CHIP;
-                                JOptionPane.showMessageDialog(null, "Invalid Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(f, "Invalid Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
                             break;
                         }
                         machineTypeParsed = true;
@@ -326,7 +326,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 if(checkROMSize(tempRom)){
                     loadROM(tempRom);
                 }else{
-                     JOptionPane.showMessageDialog(null, "Rom is too large for "+ m.getMachineName() +"!", "Error", JOptionPane.ERROR_MESSAGE);
+                     JOptionPane.showMessageDialog(f, "Rom is too large for "+ m.getMachineName() +"!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
                 
             }
@@ -358,7 +358,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         if (!checkROMSize(rom,MachineType.COSMAC_VIP)) { 
                             machineGroup.clearSelection();
                             setInitialMachine();
-                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.COSMAC_VIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.COSMAC_VIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
                             m = MachineType.COSMAC_VIP;
@@ -374,7 +374,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         if (!checkROMSize(rom,MachineType.SUPERCHIP_1_1)) { 
                             machineGroup.clearSelection();
                             setInitialMachine();
-                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.SUPERCHIP_1_1.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.SUPERCHIP_1_1.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
                             m = MachineType.SUPERCHIP_1_1;
@@ -390,7 +390,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                         if (!checkROMSize(rom, MachineType.XO_CHIP)) {
                             machineGroup.clearSelection();
                             setInitialMachine();
-                            JOptionPane.showMessageDialog(null, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
+                            JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
                             m = MachineType.XO_CHIP;
@@ -431,7 +431,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                     chip8CPU.enableSound();
                 } catch (LineUnavailableException | UnsupportedAudioFileException | IOException se) {
                     soundToggle.setSelected(false);
-                    JOptionPane.showMessageDialog(null, "An Error Occured when Initializing the sound system. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(f, "An Error Occured when Initializing the sound system. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -561,11 +561,11 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
                 });
             } else {
                 romStatus = false;
-                JOptionPane.showMessageDialog(null, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(f, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } catch (IOException ioe) {
             romStatus = false;
-            JOptionPane.showMessageDialog(null, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(f, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
     //starts the cpu emulation cycle
@@ -907,7 +907,7 @@ public class SwingDisplay extends KeyAdapter implements Runnable {
         try{
             chip8CPU.enableSound();
         }catch(LineUnavailableException|UnsupportedAudioFileException |IOException se ){
-           JOptionPane.showMessageDialog(null, "An Error Occured When Initializing the Sound System. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
+           JOptionPane.showMessageDialog(f, "An Error Occured When Initializing the Sound System. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
         }
         if (chip8CPU.isSoundEnabled()) {
             soundToggle.setSelected(true);

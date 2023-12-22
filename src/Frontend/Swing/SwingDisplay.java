@@ -385,7 +385,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         }
         int index = 0;
         for(Color c : planeColors){
-            pr.println("Color" + index + "=#" + Integer.toHexString(c.getRGB()));
+            pr.println("Color" + index + "=#" + String.format("%06x", c.getRGB() & 0xFFFFFF));
             index++;
         }
         pr.println("ScaleFactor="+LOWRES_SCALE_FACTOR);

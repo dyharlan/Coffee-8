@@ -37,44 +37,16 @@ import javax.swing.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.zip.CRC32;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-/*
-* A class representing the last frame of the display where:
-* prevFrame: contains the pixels that are on from the previous frame. Atm, it is a shallow copy, but works fine with a deep copy as well.
-* hires: if the previous frame is hi-res or not
-* prevColors: the colors in the previous frame
-* Original implementation from: https://github.com/JohnEarnest/Octo/
-*/
-class LastFrame{
-    int[][] prevFrame;
-    Boolean hires;
-    Color[] prevColors;
-    //constructor
-    LastFrame(int[][] arr2D, Boolean hires, Color[] colorArr){
-        prevFrame = new int[arr2D.length][];
-//        for(int i = 0; i < arr2D.length; i++){
-//            int[] temp = arr2D[i];
-//            int length = temp.length;
-//            prevFrame[i] = new int[length];
-//            System.arraycopy(temp, 0, prevFrame[i], 0, length);
-//        }
-        //create
-        prevFrame = new int[4][];
-        prevFrame[0] = arr2D[0].clone();
-        prevFrame[1] = arr2D[1].clone();
-        prevFrame[2] = arr2D[2].clone();
-        prevFrame[3] = arr2D[3].clone();
-        this.hires = hires;
-        prevColors = new Color[16];
-        System.arraycopy(colorArr, 0, prevColors, 0, prevColors.length);
-    }
-}
-public final class SwingDisplay extends KeyAdapter implements Runnable {
+
+public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListener {
     //resolution of the buffered image
     protected final int IMGWIDTH = 128;
     protected final int IMGHEIGHT = 64;
@@ -93,9 +65,8 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
     private Color[] planeColors;
     
     File rom;
-    MachineType m;
+    //MachineType m;
     //an object representing the last frame of the image
-    private LastFrame last;
     public BufferedImage image;
     public static BufferedImage icon;
     public Graphics2D frameBuffer;
@@ -129,7 +100,8 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                 private JMenuItem aboutEmulator;
     public JPanel gamePanel;
     private boolean loadedFromConfigFile;
-    Chip8SOC chip8CPU;
+    CRC32 crc32;
+
     //constructor for default settings
     public SwingDisplay(String verNo, File configFile) throws IOException {
         this();
@@ -157,7 +129,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             public void paint(Graphics g) {
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-                if (chip8CPU.getHiRes()) {
+                if (getHiRes()) {
                     g2d.drawImage(image, 0, 0, hiResViewWidth, hiResViewHeight, gamePanel);
                 } else {
                     g2d.drawImage(image, 0, 0, lowResViewWidth, lowResViewHeight, gamePanel);
@@ -169,6 +141,15 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(gamePanel,BorderLayout.CENTER);
     }
     public SwingDisplay(){
+        super(true);
+        super.setCurrentMachine(MachineType.XO_CHIP); 
+        super.setCycles(200);
+        LOWRES_SCALE_FACTOR = 10;
+        HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
+        hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
+        hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
+        lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
+        lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
          //Default Color Scheme
 //        planeColors[0] = new Color(0,0,0);
 //        planeColors[1] = new Color(0xCC,0xCC,0xCC);
@@ -226,10 +207,10 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         planeColors[13] = new Color(0xFF55FF);
         planeColors[14] = new Color(0xFFFF55);
         planeColors[15] =  new Color(0xFFFFFF);
+        crc32 = new CRC32();
     }
     public SwingDisplay(String verNo) throws IOException {
         this();
-        loadDefaults();
         loadedFromConfigFile = false;
         buildPanel();
         setInitialMachine();
@@ -253,7 +234,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             public void paint(Graphics g) {
                 g2d = (Graphics2D) g;
                 super.paintComponent(g2d);
-                if (chip8CPU.getHiRes()) {
+                if (getHiRes()) {
                     g2d.drawImage(image, 0, 0, hiResViewWidth, hiResViewHeight, gamePanel);
                 } else {
                     g2d.drawImage(image, 0, 0, lowResViewWidth, lowResViewHeight, gamePanel);
@@ -264,18 +245,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         f.add(mb, BorderLayout.NORTH);
         f.add(gamePanel,BorderLayout.CENTER);
     }
-    //sets the default dimensions and colour palette of the emulator
-    public void loadDefaults(){
-        m = MachineType.XO_CHIP;
-        chip8CPU = new Chip8SOC(true, m);
-        
-        LOWRES_SCALE_FACTOR = 10;
-        HIRES_SCALE_FACTOR = LOWRES_SCALE_FACTOR/2;
-        hiResViewWidth = IMGWIDTH * HIRES_SCALE_FACTOR;
-        hiResViewHeight = IMGHEIGHT * HIRES_SCALE_FACTOR;
-        lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
-        lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
-    }
+
     
     public void loadSettingsFromFile(File configFile) throws IllegalArgumentException, IOException{
         BufferedReader br = new BufferedReader(new FileReader(configFile));
@@ -287,6 +257,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         Boolean[] parsedColors = new Boolean[16];
         Arrays.fill(parsedColors, false);
         Boolean scaleFactorParsed = false;
+        Boolean cycleCountParsed = false;
         while((tempStr = br.readLine()) != null){
                 //increments line counter by 1
                 lines++;
@@ -301,13 +272,13 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                     }else{
                         switch(tempStrArray[1]){
                             case "cosmac_vip":
-                                m = MachineType.COSMAC_VIP;
+                                super.setCurrentMachine(MachineType.COSMAC_VIP);
                             break;
                             case "superchip1.1":
-                                m = MachineType.SUPERCHIP_1_1;
+                                super.setCurrentMachine(MachineType.SUPERCHIP_1_1);
                             break;
                             case "xochip":
-                                m = MachineType.XO_CHIP;
+                                super.setCurrentMachine(MachineType.XO_CHIP);
                             break;
                             default:
                                 throw new IllegalArgumentException("Invalid Machine Type entered, please enter either cosmac_vip, superchip1.1, or xochip and try again.");
@@ -315,7 +286,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                         }
                         
                     }
-                    chip8CPU = new Chip8SOC(true, m);
+                    //chip8CPU = new Chip8SOC(true, m);
                     machineTypeParsed = true;
                 }else if (tempStr.trim().startsWith("Color" + Integer.toString(currentlySelectedColor)) && (currentlySelectedColor < 16)) {
                 if (parsedColors[currentlySelectedColor]) {
@@ -363,13 +334,29 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                 lowResViewWidth = IMGWIDTH * LOWRES_SCALE_FACTOR;
                 lowResViewHeight = IMGHEIGHT * LOWRES_SCALE_FACTOR;
                 scaleFactorParsed = true;
-            }                       
+            } else if (tempStr.trim().startsWith("CycleCount")){
+                if(cycleCountParsed){
+                    continue;
+                }
+                tempStrArray = tempStr.trim().split("=");
+                if(tempStrArray.length == 2){
+                    try{
+                        setCycles(Integer.parseInt(tempStrArray[1]));
+                    }catch(NumberFormatException nfe){
+                        JOptionPane.showMessageDialog(f, "Invalid value for cycle count, defaulting to 200.", "Warning!", JOptionPane.QUESTION_MESSAGE);
+                    }catch(IllegalArgumentException iae){
+                        JOptionPane.showMessageDialog(f, "Cycle count should be greater than or equal to 0, defaulting to 200.", "Warning!", JOptionPane.QUESTION_MESSAGE);
+                    }
+                }
+                cycleCountParsed = true;
+                
+            }              
         }
     }
     private void saveSettingsToFile(File configFile) throws IOException{
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
         PrintWriter pr = new PrintWriter(new FileWriter(configFile));
-        switch(m){
+        switch(super.getCurrentMachine()){
             case COSMAC_VIP:
                     pr.println("MachineType=cosmac_vip");
                     break;
@@ -389,13 +376,14 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             index++;
         }
         pr.println("ScaleFactor="+LOWRES_SCALE_FACTOR);
+        pr.println("CycleCount="+getCycles());
         pr.close();
         
     }
     //initially sets the machine on first startup
     public void setInitialMachine(){
-        if (chip8CPU.getCurrentMachine() != null)
-            switch (chip8CPU.getCurrentMachine()) {
+        if (super.getCurrentMachine() != null)
+            switch (super.getCurrentMachine()) {
                 case COSMAC_VIP:
                     cosmacVIP.setSelected(true);
                     break;
@@ -441,14 +429,14 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                 if(checkROMSize(tempRom)){
                     loadROM(tempRom);
                 }else{
-                     JOptionPane.showMessageDialog(f, "Rom is too large for "+ m.getMachineName() +"!", "Error", JOptionPane.ERROR_MESSAGE);
+                     JOptionPane.showMessageDialog(f, "Rom is too large for "+ super.getCurrentMachine().getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
                 }
                 
             }
         });
         exitSwitch = new JMenuItem("Exit");
         exitSwitch.addActionListener((e) -> {
-            chip8CPU.closeSound();
+            super.closeSound();
             try{
                 saveSettingsToFile(new File("config.cfg"));
             }catch(IOException ioe){
@@ -482,13 +470,13 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                             JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.COSMAC_VIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
-                            m = MachineType.COSMAC_VIP;
-                            chip8CPU.setCurrentMachine(m);
+                            MachineType m = MachineType.COSMAC_VIP;
+                            super.setCurrentMachine(m);
                             loadROM(rom);
                         }
                     }else{
-                       m = MachineType.COSMAC_VIP; 
-                       chip8CPU.setCurrentMachine(m);
+                       MachineType m = MachineType.COSMAC_VIP; 
+                       super.setCurrentMachine(m);
                     }
                 }else if(sChip1_1.isSelected()){
                     if(romStatus && rom != null){
@@ -498,13 +486,13 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                             JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.SUPERCHIP_1_1.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
-                            m = MachineType.SUPERCHIP_1_1;
-                            chip8CPU.setCurrentMachine(m);
+                            MachineType m = MachineType.SUPERCHIP_1_1;
+                            super.setCurrentMachine(m);
                             loadROM(rom);
                         }
                     }else{
-                        m = MachineType.SUPERCHIP_1_1;
-                       chip8CPU.setCurrentMachine(m); 
+                        MachineType m = MachineType.SUPERCHIP_1_1;
+                        super.setCurrentMachine(m); 
                     }    
                 }else if (xoChip.isSelected()) {
                     if (romStatus && rom != null) {
@@ -514,13 +502,13 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                             JOptionPane.showMessageDialog(f, "Rom is too large for " + MachineType.XO_CHIP.getMachineName() + "!", "Error", JOptionPane.ERROR_MESSAGE);
 
                         } else {
-                            m = MachineType.XO_CHIP;
-                            chip8CPU.setCurrentMachine(m);
+                            MachineType m = MachineType.XO_CHIP;
+                            super.setCurrentMachine(m);
                             loadROM(rom);
                         }
                     } else {
-                        m = MachineType.XO_CHIP;
-                        chip8CPU.setCurrentMachine(m);
+                        MachineType m = MachineType.XO_CHIP;
+                        super.setCurrentMachine(m);
                     }
 
                 }
@@ -533,7 +521,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             if (romStatus && pauseToggle.isSelected()) {
                 pauseToggle.setSelected(true);
                 stopEmulation();
-                chip8CPU.tg.flush();
+                super.tg.flush();
             } else if(romStatus && !pauseToggle.isSelected()) {
                 pauseToggle.setSelected(false);
                 startEmulation();
@@ -546,10 +534,10 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         
         soundToggle.addActionListener((e) -> {
             if (!soundToggle.isSelected()) {
-                chip8CPU.disableSound();
+                super.disableSound();
             } else {
                 try {
-                    chip8CPU.enableSound();
+                    super.enableSound();
                 } catch (LineUnavailableException | UnsupportedAudioFileException | IOException se) {
                     soundToggle.setSelected(false);
                     JOptionPane.showMessageDialog(f, "An Error Occured when Initializing the sound system. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE);
@@ -567,7 +555,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         backgroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[0]);
             planeColors[0] = cm.getColor();
-            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+            if (super.graphics != null && pauseToggle.isSelected()) {
                    repaintImage();
             }
 
@@ -576,7 +564,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         foregroundColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[1]);
             planeColors[1] = cm.getColor();
-            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+            if (super.graphics != null && pauseToggle.isSelected()) {
                    repaintImage();
             }
         });
@@ -584,7 +572,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         plane2ColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[2]);
             planeColors[2] = cm.getColor();
-            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+            if (super.graphics != null && pauseToggle.isSelected()) {
                    repaintImage();
             }
         });
@@ -592,7 +580,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         plane3ColorManager.addActionListener((e) -> {
             ColorManager cm = new ColorManager(f,planeColors[3]);
             planeColors[3] = cm.getColor();
-            if (chip8CPU.graphics != null && pauseToggle.isSelected()) {
+            if (super.graphics != null && pauseToggle.isSelected()) {
                    repaintImage();
             }
         });
@@ -603,7 +591,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         });
         cycleManager = new JMenuItem("Set CPU Cycle Count");
         cycleManager.addActionListener((e) -> {
-            CycleManager cyManager = new CycleManager(chip8CPU,f);
+            CycleManager cyManager = new CycleManager(this,f);
             cyManager.showDialog();
         });
         emulationMenu.add(machineTypeMenu);
@@ -632,13 +620,13 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
     //checks the romsize if it is appropriate for the selected machine. Does NOT check if it is a valid ROM.
     public Boolean checkROMSize(File rom){
         Boolean rightSize = true;
-        if (m == MachineType.COSMAC_VIP && rom.length() > 3232L) {
+        if (super.getCurrentMachine() == MachineType.COSMAC_VIP && rom.length() > 3232L) {
             //JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
             rightSize = false;
-        } else if (m == MachineType.SUPERCHIP_1_1 && rom.length() > 3583L) {
+        } else if (super.getCurrentMachine() == MachineType.SUPERCHIP_1_1 && rom.length() > 3583L) {
             //JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
              rightSize = false;
-        } else if (m == MachineType.XO_CHIP && rom.length() > 65024L) {
+        } else if (super.getCurrentMachine() == MachineType.XO_CHIP && rom.length() > 65024L) {
             //JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
             rightSize = false;
         }
@@ -662,22 +650,31 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
     
     //This method loads the selected rom. It is also used when resetting the machine.
     public void loadROM(File rom) {
-        
         try {
-            //stopEmulation();
-            synchronized(chip8CPU){
-                romStatus = chip8CPU.loadROM(rom);
+            synchronized(this){
+                romStatus = false;
+                DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
+                int offset = 0x0;
+                int currByte = 0;
+                chip8Init();
+                crc32.reset();
+                while (currByte != -1) {
+                    currByte = in.read();
+                    crc32.update(currByte & 0xFF);
+                    mem[0x200 + offset] = currByte & 0xFF;
+                    offset += 0x1;
+                }
+                in.close();
+                romStatus = true;
             }
             if (romStatus) {
                 this.rom = rom;
-                
                 if (pauseToggle.isSelected()) {
                     pauseToggle.setSelected(false);
                 }
 
                 SwingUtilities.invokeLater(() -> {
-                    //clear the last frame each time a new rom is loaded.
-                    last = null;
+                    update = true;
                     startEmulation();
                 });
             } else {
@@ -694,7 +691,6 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         if (cpuCycleThread == null) {
             isRunning = true;
             cpuCycleThread = new Thread(this);
-
             cpuCycleThread.start();
         }
     }
@@ -713,31 +709,31 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         double origin = elapsedTimeFromEpoch+frameTime/2;
         
         while (isRunning) {
-            synchronized (chip8CPU) {
+            synchronized (this) {
                 long diff = System.currentTimeMillis() - elapsedTimeFromEpoch;
                 elapsedTimeFromEpoch+=diff;
                 for (long i = 0; origin < elapsedTimeFromEpoch - frameTime && i < 2; origin += frameTime, i++) {
-                    for (int j = 0; j < chip8CPU.getCycles() && !chip8CPU.getWaitState(); j++) {
-                        try{
-                            chip8CPU.cpuExec();
-                        }catch(Exception ex){
+                    for (int j = 0; j < super.getCycles() && !super.getWaitState(); j++) {
+                        if( ((mem[pc] & 0xF0) == 0xD0) && vBlankQuirks && !super.getHiRes() ){
+                            j = this.getCycles();
+                        }
+                        if(!isCpuHalted()){
+                            super.cpuExec();
+                        }else{
                             stopEmulation();
-                            ex.printStackTrace();
-                            JOptionPane.showMessageDialog(f, "An error occured during the execution of the emulated machine and has been halted: " + ex, "Error", JOptionPane.ERROR_MESSAGE); 
+                            if(getCauseOfHalt().trim() != ""){
+                                JOptionPane.showMessageDialog(f, "An error occured dluring the execution of the emulated machine and has been halted: " + getCauseOfHalt(), "Error", JOptionPane.ERROR_MESSAGE); 
+                            }
                             break;
                         }
-                       
                     }
-                    chip8CPU.updateTimers();
+                    super.updateTimers();
                 }
                 
                 try {
                     cpuCycleThread.sleep((int)frameTime);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
-                }
-                if (chip8CPU.getVBLankInterrupt() == 1) {
-                    chip8CPU.setVBLankInterrupt(2);
                 }
             }
             
@@ -776,121 +772,94 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
     * This function will not refresh the BufferedImage if it hasn't changed.
     * Original Implementation from: https://github.com/JohnEarnest/Octo/
     */
-    public void repaintImage(){
-        //if there is a last frame
-        if(last != null){
-            //check if the previous frame and the previous palette is the same as the current frame in both planes.
-            if(arrayEqual(last.prevFrame[0], chip8CPU.graphics[0]) && arrayEqual(last.prevFrame[1], chip8CPU.graphics[1])  && arrayEqual(last.prevFrame[2], chip8CPU.graphics[2])  && arrayEqual(last.prevFrame[3], chip8CPU.graphics[3]) && arrayEqual(last.prevColors,planeColors)){
-                //exit early if it is the same.
-                return;
-            }
-            //clear last frame if we've switched from hi res to lowres or vice versa. Also clear it if the color palette has changed
-            if (last.hires != chip8CPU.getHiRes() || !arrayEqual(last.prevColors,planeColors))
-		last = null; 
+    public void repaintImage() {
+        if (!super.update) {
+            return;
         }
-        //store the last frame here. Probably redundant?
-        int[][] lastPixels = last != null && last.prevFrame != null? last.prevFrame: new int[4][chip8CPU.getMachineWidth() * chip8CPU.getMachineHeight()];
         //write the pixels into the BufferedImage
-        if (chip8CPU.graphics != null) {
-            for (int y = 0; y < chip8CPU.getMachineHeight(); y++) {
-                for (int x = 0; x < chip8CPU.getMachineWidth(); x++) {
+        if (super.graphics != null) {
+            for (int y = 0; y < super.getMachineHeight(); y++) {
+                for (int x = 0; x < super.getMachineWidth(); x++) {
                     //int newPlane = (chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
-                    int newPlane = ( chip8CPU.graphics[3][(x) + ((y) * chip8CPU.getMachineWidth())] << 3 | chip8CPU.graphics[2][(x) + ((y) * chip8CPU.getMachineWidth())] << 2 | chip8CPU.graphics[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | chip8CPU.graphics[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0xF;
-                    //System.out.println(newPlane);
-                    //selectively update each pixel if the last frame exists
-                    if (last != null) {
-                        //int oldPlane = (lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0x3;
-                        int oldPlane = ( lastPixels[3][(x) + ((y) * chip8CPU.getMachineWidth())] << 3 | lastPixels[2][(x) + ((y) * chip8CPU.getMachineWidth())] << 2 | lastPixels[1][(x) + ((y) * chip8CPU.getMachineWidth())] << 1 | lastPixels[0][(x) + ((y) * chip8CPU.getMachineWidth())]) & 0xF;
-                        if (oldPlane != newPlane) {
-                            frameBuffer.setColor(planeColors[newPlane]);
-                            frameBuffer.fillRect(x, y, 1, 1);
-                        }
-                    }else{
-                        //full rewrite of the screen
-                        frameBuffer.setColor(planeColors[newPlane]);
-                        frameBuffer.fillRect(x, y, 1, 1);
-                    }
+                    int newPlane = (super.graphics[3][(x) + ((y) * super.getMachineWidth())] << 3 | super.graphics[2][(x) + ((y) * super.getMachineWidth())] << 2 | super.graphics[1][(x) + ((y) * super.getMachineWidth())] << 1 | super.graphics[0][(x) + ((y) * super.getMachineWidth())]) & 0xF;
+                    //full rewrite of the screen
+                    frameBuffer.setColor(planeColors[newPlane]);
+                    frameBuffer.fillRect(x, y, 1, 1);
                 }
             }
         }
         //apply the changes to the gamePanel
         gamePanel.repaint();
-        //Instantiate a class corresponding to the last frame of the chip 8
-        last = new LastFrame(chip8CPU.graphics, chip8CPU.getHiRes(), planeColors);
+        //tell the emulator that we have successfully updated the framebuffer
+        update = false;
     }
     @Override
     public void keyPressed(KeyEvent e) {
-        if (chip8CPU.keyPad == null) {
+        if (super.keyPad == null) {
             return;
         }
         //System.out.println("pressed a key!");
         int keyCode = e.getKeyCode();
         switch (keyCode) {
-            case KeyEvent.VK_K:
-                if (rom != null) {
-                    loadROM(rom);
-                }
-                break;
             case KeyEvent.VK_X:
-                chip8CPU.keyPad[0] = true;
-
+                super.keyPress(0);
                 break;
             case KeyEvent.VK_1:
-                chip8CPU.keyPad[1] = true;
+                super.keyPress(1);
 
                 break;
             case KeyEvent.VK_2:
-                chip8CPU.keyPad[2] = true;
+                super.keyPress(2);
 
                 break;
             case KeyEvent.VK_3:
-                chip8CPU.keyPad[3] = true;
+                super.keyPress(3);
 
                 break;
             case KeyEvent.VK_Q:
-                chip8CPU.keyPad[4] = true;
+                super.keyPress(4);
 
                 break;
             case KeyEvent.VK_W:
-                chip8CPU.keyPad[5] = true;
+                super.keyPress(5);
 
                 break;
             case KeyEvent.VK_E:
-                chip8CPU.keyPad[6] = true;
+                super.keyPress(6);
                 break;
             case KeyEvent.VK_A:
-                chip8CPU.keyPad[7] = true;
+                super.keyPress(7);
                 break;
             case KeyEvent.VK_S:
-                chip8CPU.keyPad[8] = true;
+                super.keyPress(8);
                 break;
             case KeyEvent.VK_D:
-                chip8CPU.keyPad[9] = true;
+                super.keyPress(9);
                 break;
             case KeyEvent.VK_Z:
-                chip8CPU.keyPad[10] = true;
+                super.keyPress(10);
                 break;
             case KeyEvent.VK_C:
-                chip8CPU.keyPad[11] = true;
+                super.keyPress(11);
                 break;
             case KeyEvent.VK_4:
-                chip8CPU.keyPad[12] = true;
+                super.keyPress(12);
                 break;
             case KeyEvent.VK_R:
-                chip8CPU.keyPad[13] = true;
+                super.keyPress(13);
                 break;
             case KeyEvent.VK_F:
-                chip8CPU.keyPad[14] = true;
+                super.keyPress(14);
                 break;
             case KeyEvent.VK_V:
-                chip8CPU.keyPad[15] = true;
+                super.keyPress(15);
                 break;
         }
     }
         
        @Override
     public void keyReleased(KeyEvent e) {
-        if (chip8CPU.keyPad == null) {
+        if (super.keyPad == null) {
             return;
         }
         //System.out.println("released a key!");
@@ -898,116 +867,52 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
 
         switch (keyCode) {
             case KeyEvent.VK_X:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(0);
-                }
-                chip8CPU.keyPad[0] = false;
+                super.keyRelease(0);
                 break;
             case KeyEvent.VK_1:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(1);
-                }
-                chip8CPU.keyPad[1] = false;
+                super.keyRelease(1);
                 break;
             case KeyEvent.VK_2:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(2);
-                }
-                chip8CPU.keyPad[2] = false;
+                super.keyRelease(2);
                 break;
             case KeyEvent.VK_3:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(3);
-                }
-                chip8CPU.keyPad[3] = false;
+                super.keyRelease(3);
                 break;
             case KeyEvent.VK_Q:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(4);
-                }
-                chip8CPU.keyPad[4] = false;
+                super.keyRelease(4);
                 break;
             case KeyEvent.VK_W:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(5);
-                }
-                chip8CPU.keyPad[5] = false;
+                super.keyRelease(5);
                 break;
             case KeyEvent.VK_E:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(6);
-                }
-                chip8CPU.keyPad[6] = false;
+                super.keyRelease(6);
                 break;
             case KeyEvent.VK_A:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(7);
-                }
-                chip8CPU.keyPad[7] = false;
+                super.keyRelease(7);
                 break;
             case KeyEvent.VK_S:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(8);
-                }
-                chip8CPU.keyPad[8] = false;
+                super.keyRelease(8);
                 break;
             case KeyEvent.VK_D:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(9);
-                }
-                chip8CPU.keyPad[9] = false;
+                super.keyRelease(9);
                 break;
             case KeyEvent.VK_Z:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(10);
-                }
-                chip8CPU.keyPad[10] = false;
+                super.keyRelease(10);
                 break;
             case KeyEvent.VK_C:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(11);
-                }
-                chip8CPU.keyPad[11] = false;
+                super.keyRelease(11);
                 break;
             case KeyEvent.VK_4:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(12);
-                }
-                chip8CPU.keyPad[12] = false;
+                super.keyRelease(12);
                 break;
             case KeyEvent.VK_R:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(13);
-                }
-                chip8CPU.keyPad[13] = false;
+                super.keyRelease(13);
                 break;
             case KeyEvent.VK_F:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(14);
-                }
-                chip8CPU.keyPad[14] = false;
+                super.keyRelease(14);
                 break;
             case KeyEvent.VK_V:
-                if (chip8CPU.getWaitState()) {
-                    chip8CPU.setWaitState(false);
-                    chip8CPU.sendKeyStroke(15);
-                }
-                chip8CPU.keyPad[15] = false;
+                super.keyRelease(15);
                 break;
         }
 //                       for (int i = 0; i < chip8CPU.keyPad.length; i++) {
@@ -1017,7 +922,55 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         }
         
     
+    //FX75: Store V0..VX in RPL user flags (X <= 7)
+    public void C8INST_FX75(){
+//        for(int n = 0;(n < X) || (n <= 7);n++){
+//            flags[n] = v[n];
+//        }
+        File f = new File("SavedFlags/" + crc32.getValue() + ".scflag");
+        
+        try{
+            if (!f.exists()) {
+                f.getParentFile().mkdirs();
+                f.createNewFile();
+            }
+            try ( DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
 
+                for (int n = 0; (n <= X); n++) {
+                    out.writeInt(v[n] & 0xFF);
+                }
+                out.flush();
+                out.close();
+            }catch(IOException ioe){
+                throw ioe;
+            }
+        }catch(IOException ioe){
+            ioe.printStackTrace();
+        }
+    }
+    //FX85: Read V0..VX from RPL user flags (X <= 7)
+    public void C8INST_FX85(){
+        File f = new File("SavedFlags/" + crc32.getValue() + ".scflag");
+        
+        if (f.exists()) {
+            //copy the flags first to a temporary array before writing it to memory.
+            ArrayList<Integer> temp = new ArrayList<>();
+            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))) {
+                for (int n = 0;in.available() > 0; n++) {
+                   temp.add(in.readInt() & 0xFF);
+                }
+                for(int i = 0; i < temp.size(); i++){
+                    v[i] = temp.get(i) & 0xFF;
+                }
+                in.close();
+            }catch(EOFException eofe){
+                System.err.println("Invalid/broken flags file. It will not be loaded into memory.");
+            } catch (IOException ioe) {
+                ioe.printStackTrace();
+            }
+        }
+    }
+    
     public void startApp() throws IOException{
         f.setResizable(false);
         f.pack();
@@ -1026,7 +979,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         f.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                chip8CPU.closeSound();
+                closeSound();
                 try {
                     saveSettingsToFile(new File("config.cfg"));
                 } catch (IOException ioe) {
@@ -1036,11 +989,11 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             }
         });
         try{
-            chip8CPU.enableSound();
+            super.enableSound();
         }catch(LineUnavailableException|UnsupportedAudioFileException |IOException se ){
            JOptionPane.showMessageDialog(f, "An Error Occured When Initializing the Sound System. It will be disabled: " + se, "Error", JOptionPane.ERROR_MESSAGE); 
         }
-        if (chip8CPU.isSoundEnabled()) {
+        if (super.isSoundEnabled()) {
             soundToggle.setSelected(true);
         } else {
             soundToggle.setSelected(false);
@@ -1049,6 +1002,11 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         f.setVisible(true);
         
 
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        
     }
 
     

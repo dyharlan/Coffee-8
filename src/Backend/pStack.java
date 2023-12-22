@@ -41,7 +41,9 @@ public class pStack {
 
     public void push(int num) {
         if (top >= stackArray.length - 1) {
-            throw new IllegalStateException("Stack Overflow");
+            //throw new IllegalStateException("Stack Overflow");
+            System.err.println("Stack Overflow");
+
         } else {
             top++;
             stackArray[top] = num;
@@ -50,7 +52,9 @@ public class pStack {
 
     public int pop() {
         if (this.isEmpty() == true) {
-            throw new IllegalStateException("Stack Underflow");
+            //throw new IllegalStateException("Stack Underflow");
+            System.err.println("Stack Underflow");
+            return -1;
         } else {
             return stackArray[top--];
         }

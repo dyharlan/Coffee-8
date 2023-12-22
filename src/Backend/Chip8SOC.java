@@ -26,14 +26,15 @@ package Backend;
  *
  * @author dyharlan
  */
+
 import java.util.*;
 import java.io.*;
-import java.util.zip.CRC32;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 
- /*
+
+/*
     * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
     * they look like this:
     * public void execute(){
@@ -45,34 +46,35 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 @FunctionalInterface
 interface Instruction {
-
     public void execute();
 }
-public class Chip8SOC{
+public abstract class Chip8SOC{
     private int DISPLAY_WIDTH;
     private int DISPLAY_HEIGHT;
-    private long crc32Checksum;
+    private boolean cpuHalted;
+    private String causeOfHalt;
+    //protected long crc32Checksum;
     private Boolean vfOrderQuirks;
     private Boolean shiftQuirks;
     private Boolean logicQuirks;
     private Boolean loadStoreQuirks;
     private Boolean clipQuirks;
-    private Boolean vBlankQuirks;
+    protected Boolean vBlankQuirks;
     private Boolean IOverflowQuirks;
     private Boolean jumpQuirks;
+    protected Boolean update;
     private int waitReg; //which v register should we store the keypress?
     private Boolean waitState; //is the CPU interrupted? It must be waiting for an input.
     private int cycles; //cpu cycles every 16.66667ms
-    private int pc; //16-bit Program Counter
+    protected int pc; //16-bit Program Counter
     private int I; //12-bit Index register
     private int opcode;
     private int dT; //8-bit delay timer
     public int sT; //sound timer
-    private int[] v; //cpu registers
-    public int[][] graphics; //screen grid??
+    protected int[] v; //cpu registers
+    protected int[][] graphics; //screen grid??
     public boolean[] keyPad; 
-    private int interruptState;
-    private int[] mem; //4kb of ram
+    protected int[] mem; //4kb of ram
     private int plane; //graphics layer to draw on
     private final int[] charSet = {
         0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -107,8 +109,8 @@ public class Chip8SOC{
     final int[] defaultPattern = {0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00}; //pitch: 103
     final int[] mutePattern = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; //pitch: 103
     public int[] pattern; //what sound should we play?
-    int X; //operand X
-    int Y; //operand Y
+    protected int X; //operand X
+    protected int Y; //operand Y
     private pStack cst; //16-bit stack
     public Boolean playSound; //should we play sound?
     private Boolean hires; //is our computer in hires mode?
@@ -116,7 +118,7 @@ public class Chip8SOC{
     //public XOAudio xo;
     Random rand; //random number generator
     MachineType currentMachine; //current machine config
-    CRC32 crc32;
+    //CRC32 crc32;
     int amount;
     /*
     * Arrays containing instruction sets
@@ -126,23 +128,38 @@ public class Chip8SOC{
     private Instruction[] _0x5Instructions;
     private Instruction[] _0x8Instructions;
     private Instruction[] _0xDInstructions;
+    //private Instruction[] _0xDLegacyInstructions;
     private Instruction[] _0xEInstructions;
     private Instruction[] _0xFInstructions;
+
+    //protected ArrayList<Integer> romArray;
     //pitch register
     public float pitch;
     //Default machine is XO-Chip
     public Chip8SOC(Boolean sound, MachineType m) { 
         rand = new Random();
         playSound = sound;
+        causeOfHalt = "";
         hires = false;
         setCurrentMachine(m);
         fillInstructionTable();
-        crc32 = new CRC32();
+        //crc32 = new CRC32();
+        //romArray = new ArrayList<>();
+    }
+
+    public Chip8SOC(Boolean sound) {
+        rand = new Random();
+        playSound = sound;
+        causeOfHalt = "";
+        hires = false;
+        //setCurrentMachine(m);
+        fillInstructionTable();
+        //crc32 = new CRC32();
+        //romArray = new ArrayList<>();
     }
     
     public void setCurrentMachine(MachineType m){
         currentMachine = m;
-        cycles = m.getCycles();
         DISPLAY_WIDTH = m.getDisplayWidth();
         DISPLAY_HEIGHT = m.getDisplayHeight();       
         vfOrderQuirks = m.getQuirks(0);
@@ -198,7 +215,7 @@ public class Chip8SOC{
        _0x0Instructions[0xCD] = () -> C8INST_00CN();
        _0x0Instructions[0xCE] = () -> C8INST_00CN();
        _0x0Instructions[0xCF] = () -> C8INST_00CN();
-       
+
         _0x0Instructions[0xD0] = () -> C8INST_00DN();
         _0x0Instructions[0xD1] = () -> C8INST_00DN();
         _0x0Instructions[0xD2] = () -> C8INST_00DN();
@@ -215,21 +232,21 @@ public class Chip8SOC{
         _0x0Instructions[0xDD] = () -> C8INST_00DN();
         _0x0Instructions[0xDE] = () -> C8INST_00DN();
         _0x0Instructions[0xDF] = () -> C8INST_00DN();
-       
+
        _0x0Instructions[0xE0] = () -> C8INST_00E0();
-       _0x0Instructions[0xEE] = () -> C8INST_00EE(); 
-       _0x0Instructions[0xFB] = () -> C8INST_00FB(); 
-       _0x0Instructions[0xFC] = () -> C8INST_00FC(); 
-       _0x0Instructions[0xFD] = () -> C8INST_00FD(); 
-       _0x0Instructions[0xFE] = () -> C8INST_00FE(); 
-       _0x0Instructions[0xFF] = () -> C8INST_00FF(); 
+       _0x0Instructions[0xEE] = () -> C8INST_00EE();
+       _0x0Instructions[0xFB] = () -> C8INST_00FB();
+       _0x0Instructions[0xFC] = () -> C8INST_00FC();
+       _0x0Instructions[0xFD] = () -> C8INST_00FD();
+       _0x0Instructions[0xFE] = () -> C8INST_00FE();
+       _0x0Instructions[0xFF] = () -> C8INST_00FF();
 
        _0x5Instructions = new Instruction[0x4];
        _0x5Instructions[0x0] = () -> C8INST_5XY0();
        _0x5Instructions[0x1] = () -> C8INST_UNKNOWN();
        _0x5Instructions[0x2] = () -> C8INST_5XY2();
        _0x5Instructions[0x3] = () -> C8INST_5XY3();
-       
+
        _0x8Instructions = new Instruction[0xF];
        for(i = 0; i < _0x8Instructions.length ;i++){
           _0x8Instructions[i] = () -> C8INST_UNKNOWN();
@@ -243,20 +260,25 @@ public class Chip8SOC{
        _0x8Instructions[0x6] = () -> C8INST_8XY6();
        _0x8Instructions[0x7] = () -> C8INST_8XY7();
        _0x8Instructions[0xE] = () -> C8INST_8XYE();
-       
+
        _0xDInstructions = new Instruction[0x10];
        for(i = 0x0; i < _0xDInstructions.length ;i++){
           _0xDInstructions[i] = () -> C8INST_DXYN();
        }
-              
+
+//        _0xDLegacyInstructions = new Instruction[0x10];
+//        for(i = 0x0; i < _0xDLegacyInstructions.length ;i++){
+//            _0xDLegacyInstructions[i] = () -> C8INST_DXYN_LEGACY();
+//        }
+
        _0xEInstructions = new Instruction[0xF];
        for(i = 0; i < _0xEInstructions.length ;i++){
           _0xEInstructions[i] = () -> C8INST_UNKNOWN();
        }
-       
+
        _0xEInstructions[0x1] = () -> C8INST_EXA1();
        _0xEInstructions[0xE] = () -> C8INST_EX9E();
-       
+
        _0xFInstructions = new Instruction[0x86];
        for(i = 0; i < _0xFInstructions.length ;i++){
           _0xFInstructions[i] = () -> C8INST_UNKNOWN();
@@ -277,12 +299,17 @@ public class Chip8SOC{
        _0xFInstructions[0x65] = () -> C8INST_FX65();
        _0xFInstructions[0x75] = () -> C8INST_FX75();
        _0xFInstructions[0x85] = () -> C8INST_FX85();
-       
-       
-       
+
+
+
     }
     //Initial state of the machine
-    public void chip8Init(){
+    protected void chip8Init(){
+        if(!causeOfHalt.trim().equals("")){
+            causeOfHalt = "";
+        }
+        update = false;
+        cpuHalted = false;
         pitch = 64;
         if(pattern == null){
             pattern = new int[16];
@@ -290,14 +317,11 @@ public class Chip8SOC{
         for(int i = 0; i < pattern.length && i < defaultPattern.length;i++){
             pattern[i] = defaultPattern[i];
         }
-        crc32Checksum = 0;
-        hires = false;
+
         if(v == null){
             v = new int[16];
         }else{
-            for(int i = 0;i < v.length;i++){
-                v[i] = 0;
-            }
+            Arrays.fill(v, 0);
         }
         if(currentMachine == MachineType.XO_CHIP){
             mem = new int[0x100000]; //64KB of RAM
@@ -310,8 +334,11 @@ public class Chip8SOC{
         }else{
             setHiRes(false);
         }
-        
-        keyPad = new boolean[16];
+        if(keyPad == null){
+            keyPad = new boolean[16];
+        }else{
+            Arrays.fill(keyPad, false);
+        }
         for(int c = 0;c<charSet.length;c++){
             mem[0x50+c] = (short) charSet[c];
         }
@@ -329,45 +356,76 @@ public class Chip8SOC{
         
         X = 0;
         Y = 0;
-        interruptState = 0;
         waitReg = -1;
         waitState = false;
     }
-    
-    public boolean loadROM(File rom) throws IOException, FileNotFoundException{
-        Boolean romStatus = false;
-        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)))){ 
-            int offset = 0x0;
-            int currByte = 0;
-            chip8Init();
-            crc32.reset();
-            while (currByte != -1) {
-                currByte = in.read();
-                crc32.update(currByte & 0xFF);
-                mem[0x200 + offset] = currByte & 0xFF;
-                offset += 0x1;
-            }
-            crc32Checksum = crc32.getValue();
-//            for (int i = 0; i < 0x900; i++) {
-//                if (i % 10 == 0 && i != 0) {
-//                    System.out.println(Integer.toHexString(0x195 + i).toUpperCase());
-//                   System.out.print("\n");
-//                }
-//                System.out.print(Integer.toHexString(mem[0x195 + i]) + "\t");
+//    public boolean loadROM(File rom){
+//        try{
+//           return loadROM(new FileInputStream(rom));
+//        }catch(Exception ex){
+//            System.out.println(ex);
+//            return false;
+//        }
+//    }
+//
+//    protected void reset(){
+//        if(romArray.isEmpty()){
+//            return;
+//        }
+//        int offset = 0x0;
+//        chip8Init();
+//        //crc32.reset();
+//        //crc32Checksum = 0;
+//        for (int i = 0; i < romArray.size(); i++) {
+//            //crc32.update(romArray.get(i) & 0xFF);
+//            mem[0x200 + offset] = romArray.get(i) & 0xFF;
+//            offset += 0x1;
+//        }
+//        //crc32Checksum = crc32.getValue();
+//        //System.out.println(" Checksum: "+crc32Checksum);
+//
+//    }
+//    public boolean loadROM(InputStream stream) throws IOException{
+//        Boolean romStatus = false;
+//        try (DataInputStream in = new DataInputStream(new BufferedInputStream(stream))){
+//            //int offset = 0x0;
+//            int currByte = 0;
+//            //chip8Init();
+//            crc32.reset();
+//            crc32Checksum = 0;
+//            romArray.clear();
+//            while (currByte != -1) {
+//                currByte = in.read();
+//                crc32.update(currByte & 0xFF);
+//                //mem[0x200 + offset] = currByte & 0xFF;
+//                romArray.add(currByte & 0xFF);
+//                //offset += 0x1;
 //            }
-            in.close();
-            romStatus = true;
-        }catch(FileNotFoundException fnfe){
-            throw fnfe;
-        }catch(IOException ioe){
-            throw ioe;
-        }
-        return romStatus;
-    }
-    
+//            crc32Checksum = crc32.getValue();
+//
+//            in.close();
+//            System.out.println(" Checksum: "+crc32Checksum);
+//            romStatus = true;
+//        } catch(IOException ioe){
+//            throw ioe;
+//        }
+//        return romStatus;
+//    }
+//    protected boolean loadROM(ArrayList<Integer> rom){
+//        boolean status = true;
+//        try{
+//            romArray.clear();
+//            for(int i = 0; i < rom.size(); i++){
+//                romArray.add(rom.get(i));
+//            }
+//        }catch(Exception ex){
+//            ex.printStackTrace();
+//            status = false;
+//        }
+//        return status;
+//    }
     
     public void updateTimers(){
- 
         if(dT > 0){
             dT--;
         }
@@ -386,6 +444,11 @@ public class Chip8SOC{
             }
         }             
     }
+    public void closeSound(){
+        if(tg != null){
+            tg.close();
+        }
+    }
     
     public Boolean getHiRes(){
         return hires;
@@ -396,61 +459,47 @@ public class Chip8SOC{
     }
     
     public void setHiRes(Boolean flag){
-        if(flag){
+//        if(currentMachine == MachineType.SUPERCHIP_1_1_COMPAT){
+//            hires = flag;
+//            DISPLAY_WIDTH = 128;
+//            DISPLAY_HEIGHT = 64;
+//        }else{
+        if(flag == true){
             hires = true;
             DISPLAY_WIDTH = 128;
             DISPLAY_HEIGHT = 64;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
-        }else if(!flag){
+        }else if(flag == false){
             hires = false;
             DISPLAY_WIDTH = 64;
             DISPLAY_HEIGHT = 32;
             //graphics = new int[2][DISPLAY_WIDTH*DISPLAY_HEIGHT];
         }
-        for (int x = 0; x < graphics.length; x++) {
-                for (int y = 0; y < graphics[x].length; y++) {
-                    graphics[x][y] = 0;
-                }
-        }
+        //}
+
+       if(graphics!= null){
+           for (int x = 0; x < graphics.length; x++) {
+               for (int y = 0; y < graphics[x].length; y++) {
+                   graphics[x][y] = 0;
+               }
+           }
+       }
     }    
     
     /*
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
     */
 
-    public Boolean WaitForInterrupt() {
-        if (!vBlankQuirks) {
-            return false;
-        }
 
-        switch (interruptState) {
-            case 0:
-                interruptState = 1;
-                pc -= 2;
-                return true;
-            case 1:
-                pc -= 2;
-                return true;
-            default:
-                interruptState = 0;
-                return false;
-        }
-    }
     //setters and getters for various global variables
     public int getMachineWidth(){
-        return DISPLAY_WIDTH;
+        return hires? 128:64;
     }
     public int getMachineHeight(){
-        return DISPLAY_HEIGHT;
+        return hires? 64:32;
     }
     
-    public void setVBLankInterrupt(int status){
-        interruptState = status;
-    }
-    
-    public int getVBLankInterrupt(){
-        return interruptState;
-    }
+
     
     public void setCycles(int cycleCount){
         cycles = cycleCount;
@@ -460,7 +509,7 @@ public class Chip8SOC{
         return cycles;
     }
     
-    public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
+     public void enableSound() throws IOException, LineUnavailableException, UnsupportedAudioFileException {
         if(tg != null && playSound)
             return;
         if(tg == null){
@@ -481,11 +530,11 @@ public class Chip8SOC{
         playSound = false;
     }
     
-    public void closeSound(){
-        if(tg != null){
-            tg.close();
-        }
-    }
+//    public void closeSound(){
+//        if(tg != null){
+//            tg.close();
+//        }
+//    }
     
     public Boolean isSoundEnabled(){
         return playSound;
@@ -515,8 +564,14 @@ public class Chip8SOC{
         pc+=2;
         //decode and execute
         //get 4th nibble, shift 3 nibbles to the right and use as index in the interface array
-        c8Instructions[(opcode & 0xF000) >> 12].execute();
-        
+
+        int inst = (opcode & 0xF000) >> 12;
+
+        if(inst > c8Instructions.length){
+            C8INST_UNKNOWN();
+        } else {
+            c8Instructions[inst].execute();
+        }
         
     }
     //A universal function for all skip instructions
@@ -537,30 +592,76 @@ public class Chip8SOC{
     
     //this is called if the opcode executed is either unknown or unimplemented
     private void C8INST_UNKNOWN(){
-        throw new IllegalInstructionException("Unknown Opcode: " + Integer.toHexString(opcode));
+        cpuHalted = true;
+        causeOfHalt = "Unknown Opcode: " + Integer.toHexString(opcode);
+        System.err.println(causeOfHalt);
+        //throw new IllegalInstructionException();
         //System.err.println();
     }
+    private void C8INST_UNKNOWN(String causeOfHalt){
+        cpuHalted = true;
+        this.causeOfHalt = causeOfHalt;
+        System.err.println(this.causeOfHalt);
+    }
+
+    public String getCauseOfHalt() {
+        if(cpuHalted)
+            return causeOfHalt;
+        else
+            return "";
+    }
+
+    public void setCauseOfHalt(String causeOfHalt) {
+        this.causeOfHalt = causeOfHalt;
+    }
+
     //execute instructions that have 0x0 as their prefix
     private void C8INSTSET_0000(){
-        _0x0Instructions[(opcode & 0xFF)].execute();
+        int inst = (opcode & 0xFF);
+        if (inst > _0x0Instructions.length){
+            C8INST_UNKNOWN();
+        } else {
+            _0x0Instructions[inst].execute();
+        }
     }
     //00CN: Scroll display N pixels down; in low resolution mode, N/2 pixels
     private void C8INST_00CN(){
         //System.out.println("scroll down");
-        int height = opcode & 0xF;
-        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
-            if ((plane & (1 << currBitPlane)) == 0) {
-                continue;
-            }
-            for (int z = graphics[currBitPlane].length - 1; z >= 0; z--) {
-                graphics[currBitPlane][z] = (z >= DISPLAY_WIDTH * height) ? graphics[currBitPlane][z - (DISPLAY_WIDTH * height)] : 0;
-            }
+        if(currentMachine == MachineType.COSMAC_VIP){
+            C8INST_UNKNOWN(MachineType.COSMAC_VIP.getMachineName() + "Does not support scroll instructions!");
+            return;
         }
+//        if(currentMachine == MachineType.SUPERCHIP_1_1_COMPAT && !hires){
+//            final int height = ((opcode)/2) & 0xF;
+//            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+//                if ((plane & (1 << currBitPlane)) == 0) {
+//                    continue;
+//                }
+//                for (int z = graphics[currBitPlane].length - 1; z >= 0; z--) {
+//                    graphics[currBitPlane][z] = (z >= DISPLAY_WIDTH * height) ? graphics[currBitPlane][z - (DISPLAY_WIDTH * height)] : 0;
+//                }
+//            }
+//        }else{
+            final int height = opcode & 0xF;
+            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+                if ((plane & (1 << currBitPlane)) == 0) {
+                    continue;
+                }
+                for (int z = graphics[currBitPlane].length - 1; z >= 0; z--) {
+                    graphics[currBitPlane][z] = (z >= DISPLAY_WIDTH * height) ? graphics[currBitPlane][z - (DISPLAY_WIDTH * height)] : 0;
+                }
+            }
+        //}
+        update = true;
     }
-    //00CN: Scroll display N pixels up; in low resolution mode, N/2 pixels
+    //00DN: Scroll display N pixels up
     private void C8INST_00DN(){
+        if(currentMachine == MachineType.COSMAC_VIP){
+            C8INST_UNKNOWN(MachineType.COSMAC_VIP.getMachineName() + "Does not support scroll instructions!");
+            return;
+        }
         //System.out.println("scroll up");
-        int height = opcode & 0xF;
+        final int height = opcode & 0xF;
         int bufSize = DISPLAY_WIDTH * DISPLAY_HEIGHT;
         for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
             if ((plane & (1 << currBitPlane)) == 0) {
@@ -570,6 +671,7 @@ public class Chip8SOC{
                 graphics[currBitPlane][z] = (z < (bufSize - DISPLAY_WIDTH * height)) ? graphics[currBitPlane][z + (DISPLAY_WIDTH * height)] : 0;
             }
         }
+        update = true;
     }
     //00E0: Clear Screen
     private void C8INST_00E0(){
@@ -584,34 +686,78 @@ public class Chip8SOC{
     }
     //00EE: Returns from a subroutine on top of the stack. 
     private void C8INST_00EE(){
-        pc = cst.pop();
+        int addr = cst.pop();
+        if(addr != -1){
+            pc = addr;
+        } else {
+            cpuHalted = true;
+            causeOfHalt = "Stack Underflow";
+        }
+
     }
     //00FB: Scroll right by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FB() {
-        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
-            if ((plane & (1 << currBitPlane)) == 0) {
-                continue;
-            }
-            for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
-                for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
-                    graphics[currBitPlane][y + x] = (x > 3) ? graphics[currBitPlane][y + x - 4] : 0;
+        if(currentMachine == MachineType.COSMAC_VIP){
+            C8INST_UNKNOWN(MachineType.COSMAC_VIP.getMachineName() + "Does not support scroll instructions!");
+            return;
+        }
+
+        //if(currentMachine == MachineType.SUPERCHIP_1_1_COMPAT && !hires){
+//            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+//                if ((plane & (1 << currBitPlane)) == 0) {
+//                    continue;
+//                }
+//                for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+//                    for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
+//                        graphics[currBitPlane][y + x] = (x > 3) ? graphics[currBitPlane][y + x - 2] : 0;
+//                    }
+//                }
+//            }
+        //}else{
+            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+                if ((plane & (1 << currBitPlane)) == 0) {
+                    continue;
+                }
+                for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+                    for (int x = DISPLAY_WIDTH - 1; x >= 0; x--) {
+                        graphics[currBitPlane][y + x] = (x > 3) ? graphics[currBitPlane][y + x - 4] : 0;
+                    }
                 }
             }
-        }
+        //}
+        update = true;
     }
     //00FC: Scroll left by 4 pixels; in low resolution mode, 2 pixels
     private void C8INST_00FC() {
-        for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
-            if ((plane & (1 << currBitPlane)) == 0) {
-                continue;
-            }
-            for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
-                for (int x = 0; x < DISPLAY_WIDTH; x++) {
-                    graphics[currBitPlane][y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[currBitPlane][y + x + 4] : 0;
+        if(currentMachine == MachineType.COSMAC_VIP){
+            C8INST_UNKNOWN(MachineType.COSMAC_VIP.getMachineName() + "Does not support scroll instructions!");
+            return;
+        }
+
+//        if(currentMachine == MachineType.SUPERCHIP_1_1_COMPAT && !hires){
+//            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+//                if ((plane & (1 << currBitPlane)) == 0) {
+//                    continue;
+//                }
+//                for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+//                    for (int x = 0; x < DISPLAY_WIDTH; x++) {
+//                        graphics[currBitPlane][y + x] = (x < DISPLAY_WIDTH - 2) ? graphics[currBitPlane][y + x + 2] : 0;
+//                    }
+//                }
+//            }
+//        }else{
+            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+                if ((plane & (1 << currBitPlane)) == 0) {
+                    continue;
+                }
+                for (int y = 0; y < graphics[currBitPlane].length; y += DISPLAY_WIDTH) {
+                    for (int x = 0; x < DISPLAY_WIDTH; x++) {
+                        graphics[currBitPlane][y + x] = (x < DISPLAY_WIDTH - 4) ? graphics[currBitPlane][y + x + 4] : 0;
+                    }
                 }
             }
-        }
-       
+        //}
+        update = true;
     }
     //00FD: Exit interpreter
     private void C8INST_00FD(){
@@ -647,7 +793,12 @@ public class Chip8SOC{
         } 
     }
     private void C8INSTSET_5000(){
-        _0x5Instructions[(opcode & 0xF)].execute();
+        int inst = (opcode & 0xF);
+        if(inst > _0x5Instructions.length){
+            C8INST_UNKNOWN();
+        }else{
+            _0x5Instructions[inst].execute();
+        }
     }
     //0x5XY0 skip next instruction if VX == VY
     private void C8INST_5XY0(){
@@ -697,7 +848,12 @@ public class Chip8SOC{
     }
     //Execute instructions that have 0x8 as their prefix
     private void C8INSTSET_8000(){
-        _0x8Instructions[(opcode & 0xF)].execute();
+        int inst = (opcode & 0xF);
+        if(inst > _0x8Instructions.length){
+            C8INST_UNKNOWN();
+        }else{
+            _0x8Instructions[inst].execute();
+        }
     }
     //0x8XY0 set the value of Vx to Vy
     private void C8INST_8XY0(){
@@ -782,8 +938,20 @@ public class Chip8SOC{
     }
     //Only reason why this is an instruction subset is because of superchip.
     private void C8INSTSET_DXY(){
-        _0xDInstructions[(opcode & 0xF)].execute();
-    } 
+        int inst = (opcode & 0xF);
+        if(inst > _0xDInstructions.length){
+            C8INST_UNKNOWN();
+        }else {
+
+            _0xDInstructions[inst].execute();
+        }
+//        }else if(currentMachine== MachineType.SUPERCHIP_1_1_COMPAT){
+//
+//            _0xDLegacyInstructions[inst].execute();
+//        }
+    }
+
+
 
 //    private void C8INST_DXY0(){
 //        if(currentMachine == MachineType.COSMAC_VIP)
@@ -809,9 +977,7 @@ public class Chip8SOC{
     * COSMAC VIP vBlank Quirk derived from: https://github.com/lesharris/dorito   
     */
      private void C8INST_DXYN() {
-        if (WaitForInterrupt()) {
-            return;
-        }
+
         //Grab the screen coordinate from the vX and vY registers
         int x = v[X];
         int y = v[Y];
@@ -831,7 +997,6 @@ public class Chip8SOC{
                      for (byte xLine = 0; xLine < 16; xLine++) {
                          currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
                          targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
-
                          if (clipQuirks) {
                              if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                                  currPixel = 0;
@@ -895,13 +1060,106 @@ public class Chip8SOC{
                 i += n;
              }
          }
-
-
+        update = true;
     }
+
+//    private void C8INST_DXYN_LEGACY() {
+//
+//        //Grab the screen coordinate from the vX and vY registers
+//        int x = v[X];
+//        int y = v[Y];
+//        //grab the pixel height from the Nth nibble of DXYN. Does not apply to DXY0
+//        int n = (int) (opcode & 0x000F);
+//        v[0xF] = 0;
+//        int i = I;
+//        int currPixel = 0;
+//        int targetPixel = 0;
+//        //DXY0
+//        if (currentMachine != MachineType.COSMAC_VIP && n == 0) {
+//            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+//                if ((plane & (1 << currBitPlane)) == 0) {
+//                    continue;
+//                }
+//                for (byte yLine = 0; yLine < 16; yLine++) {
+//                    for (byte xLine = 0; xLine < (hires? 16: 8); xLine++) {
+//                        currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
+//                        targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+//
+//                        if (clipQuirks) {
+//                            if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+//                                currPixel = 0;
+//                            }
+//                        }
+//                        if (currPixel == 0) {
+//                            continue;
+//                        }
+//
+//                        //check if pixel in current sprite row is on
+//                        if (currPixel != 0) {
+//                            if (graphics[currBitPlane][targetPixel] == 1) {
+//                                graphics[currBitPlane][targetPixel] = 0;
+//                                v[0xF] = 0x1;
+//                            } else {
+//                                graphics[currBitPlane][targetPixel] ^= 1;
+//                            }
+//                        }
+//                    }
+//                }
+//                i += 32;
+//            }
+//        } else {
+//            //DXYN: draw a sprite that is 8xN in dimensions
+//            //Outer loop determines the screen plane to draw on
+//            for (int currBitPlane = 0; currBitPlane < 4; currBitPlane++) {
+//                //Do not draw on the plane if the bitwise AND of the plane register and the current bitplane being iterated + 1 is equal to 0
+//                if ((plane & (1 << currBitPlane)) == 0) {
+//                    continue;
+//                }
+//                //iterate on each line of video
+//                for (byte yLine = 0; yLine < n; yLine++) {
+//                    //iterate on each pixel of the screen and try to check if we want to write on it
+//                    for (byte xLine = 0; xLine < 8; xLine++) {
+//                        //Load a pixel from a specific address in memory pointed by the index register
+//                        currPixel = ((mem[i + yLine] >> (7 - xLine)) & 0x1);
+//                        //Load the target pixel on the screen to draw on
+//                        targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
+//                        //Do not draw a sprite that is outside of the display area
+//                        if (clipQuirks) {
+//                            if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
+//                                currPixel = 0;
+//                            }
+//                        }
+//                        if (currPixel == 0) {
+//                            continue;
+//                        }
+//
+//                        //check if pixel in current sprite row is on
+//                        if (currPixel != 0) {
+//                            if (graphics[currBitPlane][targetPixel] == 1) {
+//                                graphics[currBitPlane][targetPixel] = 0;
+//                                v[0xF] = 0x1;
+//                            } else {
+//                                graphics[currBitPlane][targetPixel] ^= 1;
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                i += n;
+//            }
+//        }
+//        update = true;
+//    }
+
     //Execute instructions that start with 0xE as their prefix
     private void C8INSTSET_E000(){
-        _0xEInstructions[(opcode & 0xF)].execute();
-    } 
+         int inst = (opcode & 0xF);
+         if(inst > _0xEInstructions.length)
+             C8INST_UNKNOWN();
+         else
+             _0xEInstructions[inst].execute();
+
+    }
     //EX9E Skip one instruction when key is pressed. But since pc is incremented here, we skip two.
     private void C8INST_EX9E(){
         if (keyPad[v[X] & 0xF]) {
@@ -916,12 +1174,16 @@ public class Chip8SOC{
     }
     //Execute instructions that start with 0xF as their prefix
     private void C8INSTSET_F000(){
-        _0xFInstructions[(opcode & 0xFF)].execute();
+         int inst = (opcode & 0xFF);
+         if(inst > _0xFInstructions.length){
+             C8INST_UNKNOWN();
+         }else{
+             _0xFInstructions[inst].execute();
+         }
     }
     //F000 NNNN Load the index register I with a 16-bit address
     private void C8INST_F000_NNNN(){
-        int NNNN = (mem[pc] << 8 | mem[pc+1]);
-        I = NNNN;
+        I = (mem[pc] << 8 | mem[pc+1]);
         pc+=2;
     }
     //Set the current plane to draw, where 0 <= X <= F
@@ -992,16 +1254,15 @@ public class Chip8SOC{
     //FX0A: Stops program execution until a key is pressed.
     private void C8INST_FX0A(){
         waitState = true; waitReg = X;
-        
     }
     
     /*
     * These are a public methods that frontends need to use to get input on keyUp during FX0A
     */
     
-    public void sendKeyStroke(int keyValue){
-        v[waitReg] = keyValue;
-    }
+    //public void sendKeyStroke(int keyValue){
+    //    v[waitReg] = keyValue;
+    //}
      
     public int getWaitReg() {
         return waitReg;
@@ -1010,14 +1271,17 @@ public class Chip8SOC{
     public Boolean getWaitState() {
         return waitState;
     }
-
-    public void setWaitReg(int waitReg) {
-        this.waitReg = waitReg;
+    public void setWaitState(boolean state) {
+        waitState = state;
     }
 
-    public void setWaitState(Boolean waitState) {
-        this.waitState = waitState;
-    }
+    //public void setWaitReg(int waitReg) {
+    //    this.waitReg = waitReg;
+    //}
+
+    //public void setWaitState(Boolean waitState) {
+    //    this.waitState = waitState;
+    //}
     
     //FX29: Point index register to font in memory
     private void C8INST_FX29(){
@@ -1027,6 +1291,11 @@ public class Chip8SOC{
     private void C8INST_FX30(){
         I = ((v[X]*10) +  0xA0);
     }
+
+//    public int getRomSize() {
+//        return romArray.size();
+//    }
+
     //FX33: Get number from vX and
     //store hundreds digit in memory point by I
     //store tens digit in memory point by I+1
@@ -1041,6 +1310,11 @@ public class Chip8SOC{
     //in successive memory locations
     private void C8INST_FX55(){
         for (int i = 0; i <= X; i++) {
+            if(I+i > mem.length){
+                cpuHalted = true;
+                setCauseOfHalt("Program tried to access a memory location that is out of bounds!");
+                return;
+            }
             mem[I + i] = (v[i] & 0xFF);
         }
         if (!loadStoreQuirks) {
@@ -1051,61 +1325,43 @@ public class Chip8SOC{
     //in i registers from v0 to vi
     private void C8INST_FX65(){
         for (int i = 0; i <= X; i++) {
+            if(I+i > mem.length){
+                cpuHalted = true;
+                setCauseOfHalt("Program tried to access a memory location that is out of bounds!");
+                return;
+            }
             v[i] = (mem[I + i] & 0xFF);
         }
         if (!loadStoreQuirks) {
             I = (I + X + 1) & 0xFFFF;
         }
     }
-    //FX75: Store V0..VX in RPL user flags (X <= 7)
-    private void C8INST_FX75(){
-//        for(int n = 0;(n < X) || (n <= 7);n++){
-//            flags[n] = v[n];
-//        }
-        File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
-        
-        try{
-            if (!f.exists()) {
-                f.getParentFile().mkdirs();
-                f.createNewFile();
-            }
-            try ( DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
 
-                for (int n = 0; (n <= X); n++) {
-                    out.writeInt(v[n] & 0xFF);
-                }
-                out.flush();
-                out.close();
-            }catch(IOException ioe){
-                throw ioe;
-            }
-        }catch(IOException ioe){
-            ioe.printStackTrace();
+    public void keyPress(int key){
+        if(keyPad!= null && key <= 0xF){
+            keyPad[key] = true;
         }
     }
+
+    public void keyRelease(int key){
+        if(keyPad!= null && key <= 0xF){
+            if (waitState) {
+                waitState = false;
+                v[waitReg] = key;
+            }
+            keyPad[key] = false;
+        }
+    }
+    //FX75: Store V0..VX in RPL user flags (X <= 7)
+    public abstract void C8INST_FX75();
+
     //FX85: Read V0..VX from RPL user flags (X <= 7)
-    private void C8INST_FX85(){
-        File f = new File("SavedFlags/" + crc32Checksum + ".scflag");
-        
-        if (f.exists()) {
-            //copy the flags first to a temporary array before writing it to memory.
-            ArrayList<Integer> temp = new ArrayList<>();
-            try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(f)))) {
-                for (int n = 0;in.available() > 0; n++) {
-                   temp.add(in.readInt() & 0xFF);
-                }
-                for(int i = 0; i < temp.size(); i++){
-                    v[i] = temp.get(i) & 0xFF;
-                }
-                in.close();
-            }catch(EOFException eofe){
-                System.err.println("Invalid/broken flags file. It will not be loaded into memory.");
-            } catch (IOException ioe) {
-                ioe.printStackTrace();
-            }
-        }
+    public abstract void C8INST_FX85();
+
+    public boolean isCpuHalted() {
+        return cpuHalted;
     }
-    
+    public void setCpuHalted(boolean bool){cpuHalted = bool;}
     public int getSoundTimer(){
         return sT;
     }

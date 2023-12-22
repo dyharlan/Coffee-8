@@ -50,7 +50,16 @@ public enum MachineType {
 //     IOverflowQuirks = true;
 //     jumpQuirks = true;
     SUPERCHIP_1_1("Super-Chip 1.1",64,32, 50,new boolean[]{false,true,false,true,true,false,true,true}),
-    
+    //SuperChip-Compat 1.1 settings
+    //     vfOrderQuirks = false;
+//     shiftQuirks = true;
+//     logicQuirks = false;
+//     loadStoreQuirks = true;
+//     clipQuirks = true;
+//     vBlankQuirks = true;
+//     IOverflowQuirks = true;
+//     jumpQuirks = true;
+    SUPERCHIP_1_1_COMPAT("Super-Chip 1.1 with COSMAC VIP Compatibility",64,32, 50,new boolean[]{false,true,false,true,true,true,true,true}),
 //XO-Chip settings
 //     vfOrderQuirks = false;
 //     shiftQuirks = false;
@@ -60,7 +69,9 @@ public enum MachineType {
 //     vBlankQuirks = false;
 //     IOverflowQuirks = false;
 //     jumpQuirks = false;
-    XO_CHIP("XO-Chip",64,32, 200,new boolean[]{false,false,false,false,false,false,false,false});
+    XO_CHIP("XO-Chip",64,32, 200,new boolean[]{false,false,false,false,false,false,false,false}),
+
+    NONE("None",64,32, -1,new boolean[]{false,false,false,false,false,false,false,false});
     private final String MACHINE_NAME;
     private final int DISPLAY_WIDTH;
     private final int DISPLAY_HEIGHT;

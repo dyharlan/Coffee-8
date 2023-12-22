@@ -81,21 +81,21 @@ public class AboutScreen {
                 }
             });
             panel2.add(repoLink, BorderLayout.CENTER);
-            octoJamLink = new JLabel("<html><style>p {text-align: center;}</style><body><p>This is a special release commemorating OctoJam 10.<br><a href=\" https://itch.io/jam/octojam-10 \">Click here to learn more.</a> </p></body></html>");
-            octoJamLink.addMouseListener(new MouseAdapter(){
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    try {
-                        Desktop.getDesktop().browse(new URI("https://itch.io/jam/octojam-10"));
-                    } catch (IOException | URISyntaxException e1) {
-                        JOptionPane.showMessageDialog(aboutDialog,
-                                "Could not open the hyperlink. Error: " + e1.getMessage(),
-                                "Error",
-                                JOptionPane.ERROR_MESSAGE);
-                    }
-                }
-            });
-            panel2.add(octoJamLink, BorderLayout.SOUTH);
+//            octoJamLink = new JLabel("<html><style>p {text-align: center;}</style><body><p>This is a special release commemorating OctoJam 10.<br><a href=\" https://itch.io/jam/octojam-10 \">Click here to learn more.</a> </p></body></html>");
+//            octoJamLink.addMouseListener(new MouseAdapter(){
+//                @Override
+//                public void mouseClicked(MouseEvent e) {
+//                    try {
+//                        Desktop.getDesktop().browse(new URI("https://itch.io/jam/octojam-10"));
+//                    } catch (IOException | URISyntaxException e1) {
+//                        JOptionPane.showMessageDialog(aboutDialog,
+//                                "Could not open the hyperlink. Error: " + e1.getMessage(),
+//                                "Error",
+//                                JOptionPane.ERROR_MESSAGE);
+//                    }
+//                }
+//            });
+//            panel2.add(octoJamLink, BorderLayout.SOUTH);
         aboutDialog.add(panel2, BorderLayout.CENTER);
         panel3 = new JPanel();
             okButton = new JButton("Ok");

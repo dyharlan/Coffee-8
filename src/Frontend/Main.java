@@ -42,10 +42,11 @@ public class Main {
         if(!configFile.exists()){
             configFile.getParentFile().mkdirs();
             configFile.createNewFile();
-            d = new SwingDisplay("Coffee-8 1.2.0 OctoJam 10 edition");
+            d = new SwingDisplay("Coffee-8 1.2.0");
+            d.startApp();
         }else{
             try{
-                d = new SwingDisplay("Coffee-8 1.2.0 OctoJam 10 edition", configFile);
+                d = new SwingDisplay("Coffee-8 1.2.0", configFile);
             }catch(Exception ex){
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(null, "An error occured while starting Coffee-8! " + ex, "Error starting app", JOptionPane.ERROR_MESSAGE);

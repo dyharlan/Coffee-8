@@ -28,6 +28,9 @@ package Frontend.Swing;
  */
 import Backend.Chip8SOC;
 import Backend.MachineType;
+import static Backend.MachineType.COSMAC_VIP;
+import static Backend.MachineType.SUPERCHIP_1_1;
+import static Backend.MachineType.XO_CHIP;
 import java.awt.Graphics;
 import java.awt.*;
 import javax.swing.*;
@@ -41,7 +44,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /*
-* A class representing the elapsedTimeFromEpoch frame of the display where:
+* A class representing the last frame of the display where:
 * prevFrame: contains the pixels that are on from the previous frame. Atm, it is a shallow copy, but works fine with a deep copy as well.
 * hires: if the previous frame is hi-res or not
 * prevColors: the colors in the previous frame
@@ -130,7 +133,6 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
     //constructor for default settings
     public SwingDisplay(String verNo, File configFile) throws IOException {
         this();
-        
         loadSettingsFromFile(configFile);
         loadedFromConfigFile = true;
         buildPanel();
@@ -145,7 +147,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         
         isRunning = false;
         romStatus = false;
-        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon_oj10.png"));
+        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
@@ -174,22 +176,56 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
 //        planeColors[3] = new Color(66,66,66);
         //Octo Classic
         planeColors = new Color[16];
-        planeColors[0] = new Color(0x99,0x66,0x00);
-        planeColors[1] = new Color(0xFF,0xCC,0x00);
-        planeColors[2] = new Color(0xFF,0x66,0x00);
-        planeColors[3] = new Color(0x66,0x22,0x00);
-        planeColors[4] = new Color(0xBF,0x2A,0xED);
-        planeColors[5] = Color.MAGENTA;
-        planeColors[6] = Color.YELLOW;
-        planeColors[7] = Color.GREEN;
-        planeColors[8] = Color.GRAY;
-        planeColors[9] = new Color(0x4B,0x00,0x82); //INDIGO
-        planeColors[10] = new Color(0xEE,0x82,0xEE); //VIOLET
-        planeColors[11] = new Color(0xAA,0x55,0x00);
-        planeColors[12] = Color.BLACK;
-        planeColors[13] = Color.WHITE;
-        planeColors[14] = Color.BLUE;
-        planeColors[15] =  Color.RED;
+//        planeColors[0] = new Color(0x99,0x66,0x00);
+//        planeColors[1] = new Color(0xFF,0xCC,0x00);
+//        planeColors[2] = new Color(0xFF,0x66,0x00);
+//        planeColors[3] = new Color(0x66,0x22,0x00);
+//        planeColors[4] = new Color(0xBF,0x2A,0xED);
+//        planeColors[5] = Color.MAGENTA;
+//        planeColors[6] = Color.YELLOW;
+//        planeColors[7] = Color.GREEN;
+//        planeColors[8] = Color.GRAY;
+//        planeColors[9] = new Color(0x4B,0x00,0x82); //INDIGO
+//        planeColors[10] = new Color(0xEE,0x82,0xEE); //VIOLET
+//        planeColors[11] = new Color(0xAA,0x55,0x00);
+//        planeColors[12] = Color.BLACK;
+//        planeColors[13] = Color.WHITE;
+//        planeColors[14] = Color.BLUE;
+//        planeColors[15] =  Color.RED;
+
+//        planeColors[0] = new Color(0x000000);
+//        planeColors[1] = new Color(0x0000AA);
+//        planeColors[2] = new Color(0x00AA00);
+//        planeColors[3] = new Color(0x00AAAA);
+//        planeColors[4] = new Color(0xAA0000);
+//        planeColors[5] = new Color(0xAA00AA);
+//        planeColors[6] = new Color(0xAA5500);
+//        planeColors[7] = new Color(0xAAAAAA);
+//        planeColors[8] = new Color(0x555555);
+//        planeColors[9] = new Color(0x5555FF); //INDIGO
+//        planeColors[10] = new Color(0x55FF55); //VIOLET
+//        planeColors[11] = new Color(0x55FFFF);
+//        planeColors[12] = new Color(0xFF5555);
+//        planeColors[13] = new Color(0xFF55FF);
+//        planeColors[14] = new Color(0xFFFF55);
+//        planeColors[15] =  new Color(0xFFFFFF);
+
+        planeColors[0] = new Color(0x000000);
+        planeColors[1] = new Color(0xAA0000);
+        planeColors[2] = new Color(0x00AA00);
+        planeColors[3] = new Color(0x0000AA);
+        planeColors[4] = new Color(0x00AAAA);
+        planeColors[5] = new Color(0xAA00AA);
+        planeColors[6] = new Color(0xAA5500);
+        planeColors[7] = new Color(0xAAAAAA);
+        planeColors[8] = new Color(0x555555);
+        planeColors[9] = new Color(0xFF5555); //INDIGO
+        planeColors[10] = new Color(0x55FF55); //VIOLET
+        planeColors[11] = new Color(0x5555FF);
+        planeColors[12] = new Color(0x55FFFF);
+        planeColors[13] = new Color(0xFF55FF);
+        planeColors[14] = new Color(0xFFFF55);
+        planeColors[15] =  new Color(0xFFFFFF);
     }
     public SwingDisplay(String verNo) throws IOException {
         this();
@@ -207,7 +243,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         
         isRunning = false;
         romStatus = false;
-        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon_oj10.png"));
+        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
@@ -286,10 +322,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
                     continue;
                 }
                 tempStrArray = tempStr.trim().split("=");
-                if (tempStrArray.length != 2) {
-                    //JOptionPane.showMessageDialog(f, "No Machine Type entered, resetting to XO-Chip as the default.", "Error", JOptionPane.ERROR_MESSAGE);
-                    throw new IllegalArgumentException("No color value set for No. " + currentlySelectedColor + ", please enter a value and try again.");
-                } else {
+                if(tempStrArray.length == 2){
                     //needs padding in the beginning to autoconvert to string
                     try {
                         int R = Integer.parseInt("" + tempStrArray[1].charAt(1) + tempStrArray[1].charAt(2), 16);
@@ -333,8 +366,31 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             }                       
         }
     }
-    private void saveSettingsToFile() {
+    private void saveSettingsToFile(File configFile) throws IOException{
         //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        PrintWriter pr = new PrintWriter(new FileWriter(configFile));
+        switch(m){
+            case COSMAC_VIP:
+                    pr.println("MachineType=cosmac_vip");
+                    break;
+                case SUPERCHIP_1_1:
+                    pr.println("MachineType=superchip1.1");
+                    break;
+                case XO_CHIP:
+                    pr.println("MachineType=xochip");
+                    break;
+                default:
+                    pr.println("MachineType=xochip");
+                    break;
+        }
+        int index = 0;
+        for(Color c : planeColors){
+            pr.println("Color" + index + "=#" + Integer.toHexString(c.getRGB()));
+            index++;
+        }
+        pr.println("ScaleFactor="+LOWRES_SCALE_FACTOR);
+        pr.close();
+        
     }
     //initially sets the machine on first startup
     public void setInitialMachine(){
@@ -393,7 +449,11 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         exitSwitch = new JMenuItem("Exit");
         exitSwitch.addActionListener((e) -> {
             chip8CPU.closeSound();
-            saveSettingsToFile();
+            try{
+                saveSettingsToFile(new File("config.cfg"));
+            }catch(IOException ioe){
+                JOptionPane.showMessageDialog(f, "There was a problem saving the new settings, the old ones will be restored.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
             System.exit(0);
         });
         fileMenu.add(loadROM);
@@ -684,8 +744,6 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             repaintImage();
             
         }
-        
-
     }
     
     //these methods will check if an array is equal. It will exit early if there is an inequality
@@ -765,8 +823,14 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         if (chip8CPU.keyPad == null) {
             return;
         }
+        //System.out.println("pressed a key!");
         int keyCode = e.getKeyCode();
         switch (keyCode) {
+            case KeyEvent.VK_K:
+                if (rom != null) {
+                    loadROM(rom);
+                }
+                break;
             case KeyEvent.VK_X:
                 chip8CPU.keyPad[0] = true;
 
@@ -829,6 +893,7 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
         if (chip8CPU.keyPad == null) {
             return;
         }
+        //System.out.println("released a key!");
         int keyCode = e.getKeyCode();
 
         switch (keyCode) {
@@ -962,7 +1027,11 @@ public final class SwingDisplay extends KeyAdapter implements Runnable {
             @Override
             public void windowClosing(WindowEvent e) {
                 chip8CPU.closeSound();
-                saveSettingsToFile();
+                try {
+                    saveSettingsToFile(new File("config.cfg"));
+                } catch (IOException ioe) {
+                    JOptionPane.showMessageDialog(f, "There was a problem saving the new settings, the old ones will be restored.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
                 System.exit(0);
             }
         });

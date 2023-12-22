@@ -191,22 +191,41 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
 //        planeColors[14] = new Color(0xFFFF55);
 //        planeColors[15] =  new Color(0xFFFFFF);
 
+          //vga 16 colors
+//        planeColors[0] = new Color(0x000000);
+//        planeColors[1] = new Color(0xAA0000);
+//        planeColors[2] = new Color(0x00AA00);
+//        planeColors[3] = new Color(0x0000AA);
+//        planeColors[4] = new Color(0x00AAAA);
+//        planeColors[5] = new Color(0xAA00AA);
+//        planeColors[6] = new Color(0xAA5500);
+//        planeColors[7] = new Color(0xAAAAAA);
+//        planeColors[8] = new Color(0x555555);
+//        planeColors[9] = new Color(0xFF5555); //INDIGO
+//        planeColors[10] = new Color(0x55FF55); //VIOLET
+//        planeColors[11] = new Color(0x5555FF);
+//        planeColors[12] = new Color(0x55FFFF);
+//        planeColors[13] = new Color(0xFF55FF);
+//        planeColors[14] = new Color(0xFFFF55);
+//        planeColors[15] =  new Color(0xFFFFFF);
+
         planeColors[0] = new Color(0x000000);
-        planeColors[1] = new Color(0xAA0000);
-        planeColors[2] = new Color(0x00AA00);
-        planeColors[3] = new Color(0x0000AA);
-        planeColors[4] = new Color(0x00AAAA);
-        planeColors[5] = new Color(0xAA00AA);
-        planeColors[6] = new Color(0xAA5500);
-        planeColors[7] = new Color(0xAAAAAA);
-        planeColors[8] = new Color(0x555555);
-        planeColors[9] = new Color(0xFF5555); //INDIGO
-        planeColors[10] = new Color(0x55FF55); //VIOLET
-        planeColors[11] = new Color(0x5555FF);
-        planeColors[12] = new Color(0x55FFFF);
-        planeColors[13] = new Color(0xFF55FF);
-        planeColors[14] = new Color(0xFFFF55);
+        planeColors[1] = new Color(0xfbf305);
+        planeColors[2] = new Color(0xDD8E00);
+        planeColors[3] = new Color(0xdd0907);
+        planeColors[4] = new Color(0xf20884);
+        planeColors[5] = new Color(0x4700a5);
+        planeColors[6] = new Color(0x0000d3);
+        planeColors[7] = new Color(0x02abea);
+        planeColors[8] = new Color(0x1fb714);
+        planeColors[9] = new Color(0x006412); 
+        planeColors[10] = new Color(0x562c05); 
+        planeColors[11] = new Color(0x90713a);
+        planeColors[12] = new Color(0xC0C0C0);
+        planeColors[13] = new Color(0x808080);
+        planeColors[14] = new Color(0x404040);
         planeColors[15] =  new Color(0xFFFFFF);
+
         crc32 = new CRC32();
     }
     public SwingDisplay(String verNo) throws IOException {

@@ -1,0 +1,1719 @@
+:stringmode ascii "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_" { CHAR } ascii "XO_NYAN_CAT"
+:macro save-pointer dest { load v1 i := dest save v1 }
+: pointer-0  0xF0 0 : strptr-0  0 0 return
+: pointer-1  0xF0 0 : strptr-1  0 0 return
+: pointer-2  0xF0 0 : strptr-2  0 0 return
+: pointer-3  0xF0 0 : strptr-3  0 0 return
+:macro |> a { :pointer a }
+
+:macro add16 a0 a1 b0 b1 { a1 += b1 a0 += vF a0 += b0 }
+:macro sub16 a0 a1 b0 b1 { a0 -= 1 a1 -= b1 a0 += vF a0 -= b0 }
+
+:macro loadSong m delayStart {
+  v0 := m  songLoadAddresses
+	:calc z { 255 - delayStart }
+	v0 := z  i := tickStates  save v0
+}
+
+:macro mySongList { 
+# +-----------------------------------
+# | Your song list goes here
+# +-----------------------------------
+  |> song-BananaFox-Theme  # song 0
+  
+# +-----------------------------------
+}
+
+#+-----------------------------------------------------------------------------
+#| 3x5 Simple Fontset'
+#+-----------------------------------------------------------------------------
+
+:calc .... { 0b0000 } :calc ...@ { 0b0001 } :calc @... { 0b1000 } :calc @..@ { 0b1001 }
+:calc ..@. { 0b0010 } :calc ..@@ { 0b0011 } :calc @.@. { 0b1010 } :calc @.@@ { 0b1011 }
+:calc .@.. { 0b0100 } :calc .@.@ { 0b0101 } :calc @@.. { 0b1100 } :calc @@.@ { 0b1101 }
+:calc .@@. { 0b0110 } :calc .@@@ { 0b0111 } :calc @@@. { 0b1110 } :calc @@@@ { 0b1111 }
+
+:calc ra { @@@. }
+
+:macro 8c AA BB CC DD EE FF GG HH {
+    :calc ra { AA }  :calc rb { BB } :calc rc { CC }  :calc rd { DD }
+    :calc re { EE }  :calc rf { FF } :calc rg { GG }  :calc rh { HH }
+}
+:macro 8c_init {
+    :calc tra { 0 } :calc trb { 0 } :calc trc { 0 } :calc trd { 0 }
+    :calc tre { 0 } :calc trf { 0 } :calc trg { 0 } :calc trh { 0 }
+}
+:macro 8c_sto {
+    :calc tra { ( tra << 4 ) | ra } :calc trb { ( trb << 4 ) | rb }
+    :calc trc { ( trc << 4 ) | rc } :calc trd { ( trd << 4 ) | rd }
+    :calc tre { ( tre << 4 ) | re } :calc trf { ( trf << 4 ) | rf }
+    :calc trg { ( trg << 4 ) | rg } :calc trh { ( trh << 4 ) | rh }
+}
+
+:macro 8c_byta { :byte { ( tra >> 24 ) & 240 } :calc tra { tra << 4 } }
+:macro 8c_bytb { :byte { ( trb >> 24 ) & 240 } :calc trb { trb << 4 } }
+:macro 8c_bytc { :byte { ( trc >> 24 ) & 240 } :calc trc { trc << 4 } }
+:macro 8c_bytd { :byte { ( trd >> 24 ) & 240 } :calc trd { trd << 4 } }
+:macro 8c_byte { :byte { ( tre >> 24 ) & 240 } :calc tre { tre << 4 } }
+:macro 8c_bytf { :byte { ( trf >> 24 ) & 240 } :calc trf { trf << 4 } }
+:macro 8c_bytg { :byte { ( trg >> 24 ) & 240 } :calc trg { trg << 4 } }
+:macro 8c_byth { :byte { ( trh >> 24 ) & 240 } :calc trh { trh << 4 } }
+
+:macro 8c_fin6 { 8c_sto  8c_sto
+    8c_byta 8c_byta 8c_byta 8c_byta 8c_byta 8c_byta 
+    8c_bytb 8c_bytb 8c_bytb 8c_bytb 8c_bytb 8c_bytb 
+    8c_bytc 8c_bytc 8c_bytc 8c_bytc 8c_bytc 8c_bytc 
+    8c_bytd 8c_bytd 8c_bytd 8c_bytd 8c_bytd 8c_bytd 
+    8c_byte 8c_byte 8c_byte 8c_byte 8c_byte 8c_byte 
+    8c_bytf 8c_bytf 8c_bytf 8c_bytf 8c_bytf 8c_bytf 
+    8c_bytg 8c_bytg 8c_bytg 8c_bytg 8c_bytg 8c_bytg 
+		8c_byth 8c_byth 8c_byth 8c_byth 8c_byth 8c_byth 
+}
+
+:stringmode text6 "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#=-./,:!* " { :byte   { 3 * VALUE } }
+
+:stringmode char6 "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#=-./,:!* " { :calc z { 3 * VALUE } }
+
+:stringmode chid6 "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#=-./,:!* " { :calc z {     VALUE } }
+
+: fontMap   text6 "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ#=-./,:!* "
+
+:macro string text { text6 text  0xFF } # string macro, with terminator 0xFF
+
+:macro myFontSet {
+: fontSet # regular font
+  8c_init
+  8c .@.. @@.. @@.. @@.. ..@. @@@. .@@. @@@. 8c_sto 
+  8c @.@. .@.. ..@. ..@. .@@. @... @... ..@. 8c_sto 
+  8c @.@. .@.. .@.. @@.. @.@. @@.. @@.. .@.. 8c_sto 
+  8c @.@. .@.. @... ..@. @@@. ..@. @.@. .@.. 8c_sto 
+  8c .@.. @@@. @@@. @@.. ..@. @@.. .@.. .@.. 8c_sto
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+  8c .@.. .@.. .@.. @@.. .@@. @@.. @@@. @@@. 8c_sto 
+  8c @.@. @.@. @.@. @.@. @... @.@. @... @... 8c_sto 
+  8c .@.. .@@. @@@. @@.. @... @.@. @@@. @@@. 8c_sto 
+  8c @.@. ..@. @.@. @.@. @... @.@. @... @... 8c_sto 
+  8c .@.. @@.. @.@. @@.. .@@. @@.. @@@. @... 8c_sto 
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+  8c .@@. @.@. @@@. .@@. @.@. @... @.@. @@.. 8c_sto
+  8c @... @.@. .@.. ..@. @.@. @... @@@. @.@. 8c_sto
+  8c @.@. @@@. .@.. ..@. @@.. @... @@@. @.@. 8c_sto
+  8c @.@. @.@. .@.. @.@. @.@. @... @.@. @.@. 8c_sto
+  8c .@@. @.@. @@@. .@.. @.@. @@@. @.@. @.@. 8c_sto
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+  8c .@.. @@.. .@.. @@.. .@@. @@@. @.@. @.@. 8c_sto
+  8c @.@. @.@. @.@. @.@. @... .@.. @.@. @.@. 8c_sto
+  8c @.@. @@.. @.@. @@.. .@.. .@.. @.@. @.@. 8c_sto
+  8c @.@. @... @@@. @.@. ..@. .@.. @.@. @@@. 8c_sto
+  8c .@.. @... .@@. @.@. @@.. .@.. @@@. .@.. 8c_sto
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+  8c @.@. @.@. @.@. @@@. @.@. .... .... .... 8c_sto
+  8c @.@. @.@. @.@. ..@. @@@. @@@. .... .... 8c_sto
+  8c @@@. .@.. @@@. .@.. @.@. .... @@@. .@.. 8c_sto
+  8c @@@. @.@. .@.. @... @@@. @@@. .... .... 8c_sto
+  8c @.@. @.@. .@.. @@@. @.@. .... .... .... 8c_sto
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+  8c ..@. .... .... .@.. .... .... .... .... 8c_sto
+  8c ..@. .... .@.. .@.. @.@. .... .... .... 8c_sto
+  8c .@.. .... .... .@.. .@.. .... .... .... 8c_sto
+  8c @... .... .@.. .... @.@. .... .... .... 8c_sto
+  8c @... .@.. .... .@.. .... .... .... .... 8c_sto
+  8c .... .... .... .... .... .... .... .... 8c_sto
+  8c_fin6
+	
+: fontSha # shadow font
+  8c_init
+  8c ..@. ..@. ..@. ..@. ...@ ...@ ...@ ...@ 8c_sto 
+  8c .@.@ @.@. @@.@ @@.@ ...@ .@@@ .@@. ...@ 8c_sto 
+  8c .@.@ ..@. ..@@ ..@@ .@.@ ..@. ..@. ..@@ 8c_sto 
+  8c .@.@ ..@. .@@. @@.@ ...@ @@.@ .@.@ ..@. 8c_sto 
+  8c @.@@ ...@ ...@ ..@@ @@.@ ..@@ @.@@ ..@. 8c_sto
+  8c .@@. @@@@ @@@@ @@@. ..@@ @@@. .@@. .@@. 8c_sto
+  8c_fin6
+  8c ..@. ..@. ..@. ..@. ...@ ..@. ...@ ...@ 8c_sto 
+  8c .@.@ .@.@ .@.@ .@.@ .@@@ .@.@ .@@@ .@@@ 8c_sto 
+  8c @.@@ @..@ ...@ ..@@ .@.. .@.@ ...@ ...@ 8c_sto 
+  8c .@.@ .@.@ .@.@ .@.@ .@.. .@.@ .@@@ .@@@ 8c_sto 
+  8c @.@@ ..@@ .@.@ ..@@ ...@ ..@@ ...@ .@.. 8c_sto 
+  8c .@@. @@@. @@@@ @@@. .@@@ @@@. @@@@ @@.. 8c_sto
+  8c_fin6
+  8c ...@ .@.@ ...@ ...@ .@.@ .@.. .@.@ ..@. 8c_sto
+  8c .@@@ .@.@ ..@@ ...@ .@.@ .@.. ...@ .@.@ 8c_sto
+  8c .@.@ ...@ ..@. ...@ ..@@ .@.. ...@ .@.@ 8c_sto
+  8c .@.@ .@.@ ..@. .@.@ .@.@ .@.. .@.@ .@.@ 8c_sto
+  8c @..@ .@.@ ...@ @.@@ .@.@ ...@ .@.@ .@.@ 8c_sto
+  8c .@@@ @@@@ @@@@ .@@. @@@@ @@@@ @@@@ @@@@ 8c_sto
+  8c_fin6
+  8c ..@. ..@. ..@. ..@. ...@ ...@ .@.@ .@.@ 8c_sto
+  8c .@.@ .@.@ .@.@ .@.@ .@@@ @.@@ .@.@ .@.@ 8c_sto
+  8c .@.@ ..@@ .@.@ ..@@ @.@@ ..@. .@.@ .@.@ 8c_sto
+  8c .@.@ .@@. ...@ .@.@ .@.@ ..@. .@.@ ...@ 8c_sto
+  8c @.@@ .@.. ...@ .@.@ ..@@ ..@. ...@ ..@@ 8c_sto
+  8c .@@. @@.. .@@@ @@@@ @@@. .@@. @@@@ .@@. 8c_sto
+  8c_fin6
+  8c .@.@ .@.@ .@.@ ...@ .@.@ .... .... .... 8c_sto
+  8c .@.@ .@.@ .@.@ @@.@ ...@ ...@ .... .... 8c_sto
+  8c ...@ @.@@ ...@ ..@@ .@.@ @@@@ ...@ ..@. 8c_sto
+  8c ...@ .@.@ @.@@ .@@. ...@ ...@ @@@@ .@@. 8c_sto
+  8c .@.@ .@.@ ..@. ...@ .@.@ @@@@ .... .... 8c_sto
+  8c @@@@ @@@@ .@@. @@@@ @@@@ .... .... .... 8c_sto
+  8c_fin6
+  8c ...@ .... .... ..@. .... .... .... .... 8c_sto
+  8c ...@ .... ..@. ..@. .@.@ .... .... .... 8c_sto
+  8c ..@@ .... .@@. ..@. ..@@ .... .... .... 8c_sto
+  8c .@@. .... ..@. .@@. .@.@ .... .... .... 8c_sto
+  8c .@.. ..@. .@@. ..@. @@@@ .... .... .... 8c_sto
+  8c @@.. .@@. .... .@@. .... .... .... .... 8c_sto
+  8c_fin6
+	
+	
+}
+
+:macro drawsprite I x y w h {
+  v0 := x i := drwsprx save v0
+	v1 := y v2 := w v3 := h
+	I c_drawsprite
+}
+
+: nyan-anim 0
+: nyan-xpos 0 0
+: nyan-xvel 0 0
+: nyan-xtar 16 0
+: nyan-ypos 7 0
+: nyan-yvel 0 0
+: nyan-ytar 20 0
+
+
+: stars #x y s t
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+: stars2
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+:monitor stars "%16x"
+:monitor stars2 "%16x"
+
+
+: flytext_draw
+	load v3  i := flytext_str_ref  save v1  v1 := 0  v5 := 0
+	:next flytext_x_offset  v2 += 0
+	:next flytext_y_offset  v3 += 0
+	:next flytext_z_offset  v5 += 0
+	i := overalltick  load v7 - v8
+	v3 <<= v3  if vF != 0 then return
+	v3 <<= v3  if vF != 0 then return
+	v3 >>= v3  v3 >>= v3  v4 := v3
+	loop
+		0xF0 0  : flytext_str_ref  0 0
+		i += v1  load v0  if v0 == 0xFF then ;
+		i := long sintable  v7 := v8 v7 += v7   v7 += v5  v7 += v5  v7 += v5  i += v7  load v7 - v7
+		v3 := v4  v7 >>= v7  v7 >>= v7  v7 >>= v7  v7 >>= v7   v7 >>= v7  v7 >>= v7  v3 += v7  v3 -= 2
+		plane 1  i := long fontSet i += v0 i += v0  sprite v2 v3 6
+		plane 2  i := long fontSha i += v0 i += v0  sprite v2 v3 6
+	v1 += 1  v5 += 1  v2 += 4  again
+
+# String pointer             X Pos   Y Pos
+: flytext_xo_nyan string  "NYAN CAT!!!"
+: flytext_xo_nyan_string  |> flytext_xo_nyan       10       6
+: flytext_prguitar string "BY PRGUITARMAN"
+: flytext_prguitar_string |> flytext_prguitar      4       14
+: flytext_daniwell string "AND DANIWELL"
+: flytext_daniwell_string |> flytext_daniwell      8       22
+: flytext_portby string   "XO-CHIP PORT BY"
+: flytext_portby_string   |> flytext_portby        2       36
+: flytext_kouzeru string  "KOUZERUMATSUKITE"
+: flytext_kouzeru_string  |> flytext_kouzeru       0       44
+: flytext_forfun string   "OCTOJAM9 4FUN :3"
+: flytext_forfun_string   |> flytext_forfun        0       52
+: flytext_pressstart string  "ANY CHIP-8 KEY TO START"
+: flytext_pressstart_string   |> flytext_pressstart        16       24
+: flytext_swipestart string  "OR SWIPE SCREEN TO START"
+: flytext_swipestart_string   |> flytext_swipestart        14       32
+: flytext_nyanedfor string   "YOUVE NYANED FOR"
+: flytext_nyanedfor_string   |> flytext_nyanedfor          4       50
+: flytext_nnnsecs string   "NNNNN.NNN SECS "
+: flytext_nnnsecs_string   |> flytext_nnnsecs
+: flytext_nnnsecs_xpos  2       57
+: secsc string " SECS"
+
+: flytext_timer   |> tmt        14       57
+
+:macro draw_string strpointer { i := strpointer  flytext_draw }
+
+: overalltick  0 0
+: songhasstarted 0
+
+: main
+	
+	i := long particles  v2 := 0   loop
+	v0 := random 255  v1 := random 255
+	save v1  v2 += 2  if v2 != 0 then again
+	#loop again
+
+
+  hires
+	loop
+	  i := overalltick  load v1  v1 += 1  if v1 == 0 then  v0 += 1  
+		i := overalltick  save v1
+		plane 3  clear
+		i := flytext_z_offset  v0 := 0  save v0
+		draw_string  flytext_pressstart_string
+		i := flytext_z_offset  v0 := 4  save v0
+		draw_string  flytext_swipestart_string
+	  waitDelay
+	  setDelay
+		v0 := 0  v1 := 0
+		loop
+		  if v0 key then  jump exitloop
+		  v0 += 1  if v0 != 16 then
+		again
+	again
+: exitloop
+	v4 := 0  loop
+	  v0 := random 0b11111111
+	  v1 := random 0b111111
+	  v2 := random 0b11
+	  v3 := random 0b11111
+		i := stars i += v4  save v3
+		v4 += 4  if v4 != 32 then
+	again
+	
+  loadSong 0 0
+
+	loop  
+	  i := overalltick  load v1  v1 += 1  if v1 == 0 then  v0 += 1  
+		i := overalltick  save v1
+		plane 3  clear
+		
+		i := songhasstarted load v0 - v0
+		if v0 == 0 begin
+			v0 := 0  v1 := 0
+			loop
+				if v0 key then jump dontstartsong
+				v0 += 1  if v0 != 16 then
+			again
+			save v0
+		else
+			songUpdateTick
+	  	songUpdateFrame
+		end
+		: dontstartsong
+	  	
+			# determine the sprite references
+	  i := nyan-anim  load v0  v2 >>= v0
+		i := long nyantailsprites
+    i := long nyantailcolorssprites
+		i += v2 i += v2 save-pointer strptr-0
+		i := long nyansprites-static
+		i := long nyansprites
+		i += v2 i += v2 save-pointer strptr-2
+		
+	  i := nyan-anim  load v0  v0 >>= v0  v0 >>= v0  v0 >>= v0
+	  i := long nyanheadsprites i += v0 i += v0 save-pointer strptr-1
+		
+		
+		# calculate how much it should orbit
+		i := nyan-xpos  load v0 - v5
+		sub16 v4 v5 v0 v1
+		v5 := v4  v5 >>= v5  v5 >>= v5  
+		vF <<= v4  if vF != 0 begin
+		  v5 += 0b11000000  v4 := 0xFF
+		else  v4 := 0  end
+		add16 v2 v3 v4 v5
+		add16 v0 v1 v2 v3
+		i := nyan-xpos  save v3
+		
+		i := nyan-ypos  load v0 - v5
+		sub16 v4 v5 v0 v1
+		v5 := v4  v5 >>= v5  v5 >>= v5  v5 >>= v5   
+		vF <<= v4  if vF != 0 begin
+		  v5 += 0b11100000  v4 := 0xFF
+		else  v4 := 0  end
+		add16 v2 v3 v4 v5
+		add16 v0 v1 v2 v3
+		i := nyan-ypos  save v3
+		
+		# draw nyan
+		i := nyan-xpos  load v4 - v4
+		i := nyan-ypos  load v5 - v5
+	  drawsprite pointer-0 v4 v5 24 24  v4 += 24
+		drawsprite pointer-1 v4 v5 24 24 
+	  
+		# draw rainbow
+		
+		i := nyan-anim  load v0  v0 >>= v0
+		v1 := 12  v0 -= v1  if vF == 0 then v0 += 12
+		v5 -= 1  v3 := vF  v5 += vF  v4 -= v0  v4 -= 19  v5 += 4
+		v3 <<= v3
+		loop
+		  pointer-2  sprite v4 v5 9  v5 += 9  vF := 18
+		  i += vF  sprite v4 v5 9  v5 -= 9
+			v4 -= 6
+			v2 >>= v3  if vF != 0 begin
+			  vF >>= v2  if vF == 0 begin v5 += 1 else v5 -= 1 end
+			end
+			v3 += 1
+		vF <<= v4  if vF == 0 then again
+		
+		scroll-left  scroll-left
+		
+		# draw stars
+		v4 := 0  loop
+		  i := stars i += v4  load v0 - v3
+			v0 -= 1  v0 -= v2
+			v3 += 1  if v3 == 32 begin
+			  v0 := random 0b1111111
+	      v1 := random 0b111111
+	      v2 := random 0b11
+			  v3 := 0
+			end
+			save v0 - v3
+			i := stars i += v4  load v0 - v3  v3 >>= v3  v3 >>= v3
+			i := long starsprites  i += v3 i += v3 save-pointer strptr-3
+			i := stars i += v4  load v0 - v3  pointer-3  vF := 63  v0 &= vF
+			plane 2  sprite v0 v1 8  if vF == 0 begin  sprite v0 v1 8
+			  plane 1  sprite v0 v1 8  if vF != 0 then  sprite v0 v1 8
+			else  sprite v0 v1 8  end
+			
+		  v4 += 4  if v4 != 32 then
+	  again
+		
+		v0 := 0
+		i := flytext_x_offset  v0 := 0  save v0
+		i := flytext_y_offset  v0 := 0  save v0
+		i := flytext_z_offset  v0 := 0  save v0
+		
+		v3 := 0  loop
+			i := tmt  i += v3  load v0
+			v3 += 1  if v0 == 0 then again
+		v3 -= 1
+		
+		i := tmt  i += v3  load v9  i := flytext_nnnsecs  save v9
+		
+		i := secsc  load v5
+		
+		v7 := 0  loop
+			i := flytext_nnnsecs  i += v7  load v6 - v6
+			v7 += 1  if v6 != 0xFF then again
+		v7 -= 1  i := flytext_nnnsecs  i += v7  save v5
+		v7 += 4  v7 <<= v7  v0 := 34  v0 -= v7  i := flytext_nnnsecs_xpos  save v0
+		
+		draw_string  flytext_nyanedfor_string
+		draw_string  flytext_nnnsecs_string
+		
+		drawParticles
+		
+		i := scroll_up_opcodes  load v7
+		i := opentriggers_animate  load v8 - v8
+		if v8 > 0x3F then  v8 := 0x3F
+		add-up-whole-evens-v0-v7-with-v8
+		i := scroll-up-dfds  save v7
+		i := scroll-up2-dfds  save v7
+		
+		i := scroll_down_opcodes  load v7
+		i := opentriggers_animate  load v8 - v8
+		if v8 > 0x3F then  v8 := 0x3F
+		add-up-whole-evens-v0-v7-with-v8
+		i := scroll-down-dfds  save v7
+		i := scroll-down2-dfds  save v7
+		
+		plane 3
+		
+		: scroll-up-dfds  0 0 0 0 0 0  0 0
+		: scroll-down-dfds  0 0 0 0 0 0  0 0
+		: scroll-down2-dfds  0 0 0 0 0 0  0 0
+		: scroll-up2-dfds  0 0 0 0 0 0  0 0
+		
+		plane 3
+		v0 := 0  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		i := opentriggers_animate  load v0  vF := 48  v0 =- vF  
+		i := long easetable  i += v0  i += v0 load v1
+		if v0 != 0 begin v0 := 0x7F else v0 := v1 end  v0 >>= v0 v0 >>= v0
+		vF := 0  v0 =- vF
+		i := flytext_y_offset  v0 += 4  save v0
+		i := flytext_z_offset  v0 := 0  save v0
+		draw_string  flytext_xo_nyan_string
+		v0 := 2  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		i := flytext_z_offset  v0 := 1  save v0
+		draw_string  flytext_prguitar_string
+		v0 := 4  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		i := flytext_z_offset  v0 := 2  save v0
+		draw_string  flytext_daniwell_string
+		i := opentriggers_animate  load v0  vF := 48  v0 =- vF  
+		i := long easetable  i += v0  i += v0 load v1
+		if v0 != 0 begin v0 := 0x7F else v0 := v1 end  v0 >>= v0 v0 >>= v0
+		i := flytext_y_offset  v0 += 4  save v0
+		i := flytext_z_offset  v0 := 0  save v0
+		v0 := 6  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		draw_string  flytext_portby_string
+		i := flytext_z_offset  v0 := 1  save v0
+		v0 := 8  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		draw_string  flytext_kouzeru_string
+		i := flytext_z_offset  v0 := 2  save v0
+		v0 := 10  applyanim  i := flytext_x_offset  v0 += 4  save v0
+		draw_string  flytext_forfun_string
+		plane 3
+		scroll-up 4  scroll-up 4  scroll-down 4
+		scroll-right scroll-right scroll-right scroll-right 
+		scroll-right scroll-right scroll-right scroll-right 
+		scroll-right scroll-right scroll-right scroll-right 
+		scroll-right scroll-right
+		drawInterfaceValuesTracker
+		
+		inc-timer
+		timer2str	
+		
+		
+	  waitDelay
+	  setDelay
+    songUpdateBuzzer
+	  
+	  i := nyan-anim  load v0
+	  v0 += 2  if v0 == 48 then  v0 := 0
+	  i := nyan-anim  save v0
+		
+		i := rowStates  load v0  if v0 == 0x20 begin
+			i := opentriggers  v0 := 1  save v0
+		end
+		i := opentriggers  load v0  if v0 != 0 begin
+			i := opentriggers_animate  load v0 - v1
+			if v0 != 0 then  v0 -= 1  save v0 - v0
+		end
+		
+		v3 := 0  v4 := 64 loop
+		i := animations  i += v3  load v0 - v1
+		v0 -= 1  v1 -= v4  v0 += vF  if vF == 0 then  save v1
+		v3 += 2  if v3 != 12 then
+		again
+		
+  again
+	
+: opentriggers
+0 # gate to animate
+: opentriggers_animate
+48 # animated frmes
+
+: shl  v0 <<= v0  v1 <<= v1  v0 += vF  return
+: shr  v1 >>= v1  v0 >>= v0  if vF != 0 then  v1 += 128  return
+
+
+:  applyanim
+i := animations  i += v0  load v1  shl shl  i := long easetable  i += v0  i += v0  load v1  shr shr shr  v0 := v1  return
+
+: animations
+16 0
+20 0
+24 0
+36 0
+40 0
+48 0
+
+: c_drawsprite
+  # v0: Xpos
+  # v1: Ypos
+  # v2: Xsize
+	# v3: Ysize
+	v2 += v0  v3 += v1
+	loop
+	  :next drwsprx v0 := 0
+		loop
+	    sprite v0 v1 12
+			vF := 24  i += vF
+			v0 += 8 if v0 != v2 then
+		again
+		v1 += 12 if v1 != v3 then
+	again
+	return
+
+: setDelay  vF := 1  delay := vF  return
+: waitDelay loop  vF := delay if vF != 0 then again return  #wait for delay only
+	
+  
+: waitDelayWithIndicator
+  v0 := 0  v1 := 0  v2 := 63  
+  plane 3  scroll-down 1 scroll-up 1
+	i := dot  sprite v1 v2 1
+  loop  vF := delay  if vF != 0 begin
+	  v1 += vF  v0 += vF  sprite v1 v2 1
+	if vF != 0 then sprite v1 v2 1  again  end
+	i := cyclesFree  save v1  return
+: cyclesFree 0 0  :monitor cyclesFree 2
+
+: scroll_up_opcodes
+  scroll-up 0  scroll-up 0  scroll-up 0  scroll-up 0  
+: scroll_down_opcodes
+	scroll-down 0  scroll-down 0  scroll-down 0  scroll-down 0  
+: add-up-whole-evens-v0-v7-with-v8
+  v8 >>= v8  v9 := vF  v9 <<= v9  v8 >>= v8  v9 += vF
+  v1 += v8  v3 += v8  v5 += v8  v7 += v8
+	v9 >>= v9  if vF != 0 then  v5 += 1  v7 += vF
+	v9 >>= v9  v3 += vF  return
+
+: gotofontpointer 0xf0 0
+: fontpointer 0 0  return
+: draw3times  gotofontpointer
+  i += v0  i += v0 
+  drawWithInc drawWithInc jump drawWithInc 
+: drawfont
+  load v0
+: drawfontnoload
+	gotofontpointer  i += v0  i += v0
+: drawWithInc
+	sprite v5 v4 6  v5 += 4
+  return
+
+: addr2fontset |> fontSet
+: addr2fontsha |> fontSha
+
+: filled 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+
+: drawInterfaceValuesTracker
+  i := filled
+  v0 := 0  loop
+	  v1 := 0  loop
+		  plane 1  sprite v0 v1 8
+			plane 2  sprite v0 v1 8
+	  v1 += 8  if v1 != 64 then again
+  v0 += 8  if v0 != 56 then again
+  plane 1
+  i := rowStates  load v2 - v4  v2 -= 1  vE := 7  vE &= v2
+	if v2 == 0xFF begin  v2 := 0  vE := 0xFF  end  v5 := 0xF8  v5 &= v2
+	v2 := v5  v6 >>= v5  v6 >>= v6  v6 >>= v6  v6 >>= v6
+	v7 := 0x8  v7 &= v5  vC := v2  vA := v4
+	loop vC -= v4  if vF != 0 then again  vC += v4
+	v0 := 8  v3 -= v2  v3 -= v0  if vF == 0 then  v0 += v3
+	i := kjkjkjk  save v0  vB := 0
+	loop
+		i := overalltick  load v1  v1 += vB  v1 += vB  v1 += vB  v1 <<= v1  v1 <<= v1  vD := 0
+		i := long sintable  i += v1  load v0  v0 <<= v0  vD <<= vF  v0 <<= v0  vD |= vF
+		i := addr2fontset  load v1  i := fontpointer  save v1
+	  plane 2  if vB != vE then  plane 1  drawInterfaceValuesTrackerRow
+		i := addr2fontsha  load v1  i := fontpointer  save v1
+		plane 1  drawInterfaceValuesTrackerRow
+		if vB != vE begin
+	  plane 2  drawInterfaceValuesTrackerRow  end
+		v7 += 1  v2 += 1  vC += 1  if vA == vC then  vC := 0
+		if v7 == 16 begin  v7 := 0  v6 += 1 end
+		if v6 == 16 then  v6 := 0
+	v4 += 6  vB += 1  :next kjkjkjk if vB != 0 then again
+  return
+: drawInterfaceValuesTrackerRow
+    v5 := 3  v4 := 4  v9 := 0x7  v9 &= v2
+		v4 += v9  v4 += v9  v4 += v9  v4 += v9  v4 += v9  v4 += v9  v4 += v9
+		v4 += vD  if vB == vE then  v5 += 1
+    i := fontMap  i += v6  drawfont
+	  i := fontMap  i += v7  drawfont  v5 += 4
+    i:=seqRefData  load v8 - v9
+    if v8 == 0 begin
+		  char6 "."  v0 := z  draw3times  v5 += 4  draw3times
+			
+		else  if v8 == 1 begin
+			  char6 "-"  v0 := z  draw3times  v5 += 4
+				char6 "."  v0 := z  draw3times
+			else
+			  if v8 == 2 begin
+				  char6 "="  v0 := z  draw3times  v5 += 4
+					char6 "."  v0 := z  draw3times
+				else  char6 "."
+				  v1 >>= v8  v1 >>= v1
+					i := long noteTable  i += v1  drawfont
+					i := long sharpTable  i += v1  drawfont
+					i := long octaveTable  i += v1  drawfont  v5 += 4
+					v1 >>= v9  v1 >>= v1
+					i := long commandTableA  i += v1  drawfont
+					i := long commandTableB  i += v1  drawfont
+					i := long commandTableC  i += v1  drawfont
+				end
+			end
+		end
+		v5 += 4  v1 := 3  v1 &= v9  i := fontMap  i += v1  drawfont
+   return
+	 
+
+
+: songUpdateTick
+	i := tickRate  load v1  v1 += v0  i := tickRate  save v1  loop
+		vF := 60  v1 -= vF  if vF == 0 then  return  i := tickRate  save v1
+		i := tickStates  load v1  v0 += 1  i := tickStates  save v0
+	if v0 == v1 then  jump songStep  i := tickRate  load v1  again
+
+: songStepRowNext  v2 := 0  : songStepRow
+  i := tickStates  save v2  advanceSeqRefData
+: songStep  # advance row position of song
+  # Jump to next frame when row length is reached or jump command is found
+    i := tickStates  load v3  if v2 == v3 then  jump songStepRowNext
+		i:=seqRefData  load v1  v2 := v1  if v0 == 2 then  jump songStepRow
+  # Apply pitch and apply samples when the command is defined as note key
+    if v0 != 0 begin  if v0 == 1 begin  v2 := 0  v3 := 0  else
+    v1 >>= v1  v1 >>= v1  i := long instrSet  i += v1  i += v1
+		load v2 - v3  i := curBuzz  v1 := v0  save v1  end  
+		v0 := 1  v1 := 1  i := curSamp  save v3  end
+  # Update tickrate
+	  i := tickStates  load v2  v3 := v1
+    i:=seqRefData  load v1  v0 := 3  v0 &= v1
+		i := tickSelect  save v0
+    i:=songProp  i += v0  load v1 - v1  v0 := 0
+		i := tickStates  v2 += 1  save v2  
+		return
+ 
+: songUpdateFrame  # uses v0-vF
+    i := curBuzz  load v7  # Load the current states
+		v7 >>= v7  if vF != 0 then  v7 += 128
+		v6 >>= v6  if vF != 0 then  v6 += 128
+  # Update counters first
+	  i := long ornData  i += v7  i += v7  load v9 - v9  i += v5  load vB - vB
+		i := long smpRef   i += v6  i += v6  load v8 - v8  i += v4  load vA - vA
+    i := curSamp  load v3  v1 += 1  if v1 == 16 then  v1 := v9
+		v0 += 1  if v0 == 16 then  v0 := v8  i := curSamp  save v1
+  # Accumulate the pitches and update the current pitch
+		v2 >>= vB  v3 := vF  i := curBuzz  load v0  v1 <<= v2
+		if v3 == 0 then  v1 += v0  i := curBuzz  save v1
+  # And update the current audio sample buffer
+    i := long smpData  i += vA  load vF
+    i := curSampData  save vF  return
+
+: songUpdateBuzzer  i := curBuzz  load v1  vF := 255  
+  i := curSampData  audio pitch := v1  buzzer := vF  return
+
+: advanceSeqRefData
+  i := seqRefLoop  load v3  i := seqRefPlay  load v1
+  v1 += 1  if v1 == 0 then  v0 += 1  i := seqRefLoop
+  if v1 == v3 begin  if v0 == v2 begin  load v1  end  end
+  i := seqRefPlay  save v1  : updateSeqRefData  seqRefsetI  load v0
+  i := long seqFrameLookUpTable  i += v0  i += v0  load v1
+  i := sRDW  save v1  return
+
+: songLoadAddresses
+  i := songChoosen  v1 := 128  save v1
+  i := songList  i += v0  i += v0  load v1
+	i := writePointer  save v1  setItoPointer  load v7
+  i := seqRefStart  save v5  i := seqRefPlay  save v1  i := lSL  save v4 - v5
+  i:=songProp  v0 := 5  i += v0  load v2 - v3  i := rowLength  save v2 - v3
+  v0 := v6  v1 := v7  i := long seqFrameLookUpTable  v3 := 0  v2 += v2
+  loop  save v1  v1 += v2  v0 += vF  v3 += 1  if v3 != 0 then again
+: songReset
+  i := zeroes load v7  i := curBuzz  save v7  
+	i:=songProp  load v1 - v1  i := tickStates  save v2
+	i:=songProp  v0 := 4  i += v0  load v0  i := tickRate  save v0
+  i := seqRefStart  load v1  i := seqRefPlay  save v1
+	updateSeqRefData  return
+
+: i:=seqRefData   0xF0 00  : sRDW 0 0  i += v2  i += v2  return
+: i:=songProp  0xF0 0  : lSL  0 0  return
+
+: seqRefStart   0 0
+: seqRefLoop    0 0
+: seqRefEnd     0 0
+: seqRefsetI 0xF0 0
+: seqRefPlay    0 0 #current seq frame
+return
+
+:monitor seqRefPlay 2
+
+:calc z { HERE }
+: songList  mySongList
+
+: songListLen :byte { ( HERE - z ) / 2 }
+: songChoosen  0
+: songDispDur  0
+
+: curBuzz # Current state of pitch
+  0 # original
+  0 # altered pitch, being used in buzzpitch
+  0 #
+  0 #
+: curSamp  # Current states of sampRef and orn 
+  0 # sampRef counter
+  0 # ornament counter
+  0 # sampRef offset
+  0 # ornament offset
+
+:monitor curBuzz 4
+:monitor curSamp 4
+
+: tickStates 0  # current frames in tick
+: tickLength 0  # current frames per tick
+: rowStates  0  # current row in frame
+: rowLength  0  # current row per frame
+: rowsPerQN  0  # row per quarter note
+: tickSelect 0  # current tick selected
+: tickRate   0  # current ticks per second
+: tickSub    0  # current subticks
+
+:monitor tickStates 2
+:monitor rowStates 2
+
+: curSampData # current sample data being played
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+	
+: zeroes  0 0 0 0
+          1 1 0 0 # for also song reset values
+
+: synthesia-only-interface
+	plane 3  scroll-down 1
+  # draw samples like bytebeater
+	plane 2  i := curSampData
+	v2 := 0  v1 := 0  v3 := 0 loop
+      sprite v1 v2 1  v1 += 8  load v0  v3 |= v0
+			sprite v1 v2 1  v1 += 8  load v0  v3 |= v0
+			sprite v1 v2 1  v1 += 8  load v0  v3 |= v0
+			sprite v1 v2 1  v1 += 8  load v0  v3 |= v0
+  if v1 != 128 then  again
+	# draw the tick states
+	i := tickStates  load v0  i := dot  v2 := 0
+	plane 1  sprite v0 v2 1  if vF != 0 then sprite v0 v2 1 
+	plane 2  sprite v0 v2 1  if vF != 0 then sprite v0 v2 1 
+	sprite v0 v2 1 
+	# draw dot like synthesia
+	if v3 != 0 begin
+	 i := curBuzz  load v1  i := dot  v0 := 0  v1 >>= v1
+	 v1 += 1  sprite v1 v0 1  if vF == 0 then sprite v1 v0 1 
+	 v1 -= 1  sprite v1 v0 1  if vF != 0 then sprite v1 v0 1    
+	 v1 -= 1  sprite v1 v0 1  if vF == 0 then sprite v1 v0 1  
+	 i := 3dots  plane 1  sprite v1 v0 1
+	end  return
+
+: incsignv0 :next drwprsign v0 += 0  return
+: incsignv2 :next drwprsign2 v2 += 0  return
+: sincycle 0 0
+: shfk
+  i := long sintable  i += v1  load v0  
+  v4 <<= v0  v0 := vF  v5 >>= v4  v6 >>= v5  v7 >>= v6
+	if v0 == 0 begin
+	  v5 += 0x80  v6 += 0xc0  v7 += 0xe0  v0 := 255
+	else  v0 := 0  end  return 
+: drawParticles
+  i := sincycle  load v1 vF := 0x80  v0 += vF  v1 += vF i := sincycle  save v1
+  shfk  i := drwprsign  save v0  v1 += 64 v8 := v4  v9 := v5
+	vA := v6  vB := v7   shfk  i := drwprsign2  save v0
+  vC := 0  vD := 0  loop  i := long particles  i += vC  load v3
+	incsignv0  if vD == 0 then v1 += v8  if vD == 1 then v1 += v9
+	if vD == 2 then v1 += vA  if vD == 3 then v1 += vB
+	v0 += vF  vF := 0xFF  v1 += vF  v0 += vF
+	incsignv2  if vD == 0 then v3 += v4  if vD == 1 then v3 += v5
+	if vD == 2 then v3 += v6  if vD == 3 then v3 += v7
+	v2 += vF  vF := 0x84  v3 += vF  v2 += vF
+	v1 += 1  i := long particles  i += vC  save v3
+	vE <<= v0  v1 := vF  vE <<= v0  v3 := vF  v3 <<= v3  v1 += v3
+	if v1 == 0 then  vF := random 1  vF += 1  if v1 == 0 then  v1 := vF
+	if v1 == 1 then plane 1  if v1 == 2 then plane 2  if v1 == 3 then plane 3
+	v1 := 0b1111111  v3 := 0b111111  v0 &= v1  v2 &= v3  vF := 0  v0 =- vF
+	i := dot  sprite v0 v2 1  if vF != 0 then  sprite v0 v2 1
+	vD += 1  if vD == 4 then  vD := 0
+	vC += 4  if vC != 0 then  again  return
+
+:macro '0 { text6 "0" }
+:macro '_ { text6 " " }
+: str_timer 10
+: tmt '0 '0 '0 : tst '0 '0 : tmst '_ '0 '0 '0
+0xFF
+
+: inc-timer
+  i := timer  load v3
+  i := long tmsinc load v0 v0 += 1
+  if v0 == 16 then    v0 := 1
+  i := long tmsinc save v0
+  i := long tmsinc i += v0 load v0
+  v3 += v0  v2 += vF
+  if v2 == 100 begin v2 := 0
+  v1 += 1  end
+  i := timer  save v3 ;
+
+: b2dsh
+  v0 >>= v0  if vF != 0 then  v1 += 10
+  v1 >>= v1  if vF != 0 then  v2 += 10
+  v2 >>= v2  if vF != 0 then  v3 += 10
+  v3 >>= v3  if vF != 0 then  v0 += 128 ;
+: shrDec
+  b2dsh b2dsh b2dsh b2dsh b2dsh b2dsh b2dsh b2dsh  return
+: timer #(H,M,S,)
+:calc tms { timer + 3 }
+  0 0 0 0
+: bcd2strv3
+  i := long nchar   i += v1    load v0   v1 := v0
+  i := long nchar   i += v2    load v0   v2 := v0
+  i := long nchar i += v3 load v0 v3 := v0 return
+: timer2str
+  i := zeroes  load v3  i := tms  load v0  shrDec
+  v0 <<= v0 v3 += vF bcd2strv3  char6 "," v0 := z
+  i := long tmst   save v3   i := timer   load v2
+  i := long tmt    bcd v1   i := long tst  bcd v2
+  i := long str_timer     load v3       bcd2strv3
+  i := long str_timer      v0 := 10       save v3
+  i := long tst                           load v2
+  i := long nchar   i += v1   load v0    v1 := v0
+  i := long nchar   i += v2   load v0    v2 := v0
+  i := long tst  v0 := v1  v1 := v2  v2 := z
+	save v2  return
+: tmsinc
+  0 4 4 5 4 4 4 5 4 4 4 5 4 4 4 5
+	
+: dot 0x80 0x80
+: 3dots 0xe0 0xe0
+
+: setItoPointer
+  0xF0 0
+: writePointer 0 0
+  return
+: programSize
+
+: noteTable
+  text6 "GAABCCDDEFFGGAABCCDDEFFGGAABCCDDEFFGGAABCCDDEFFGGAABCCDDEFFGGAAB"
+: sharpTable
+  text6 "#-#--#-#--#-#-#--#-#--#-#-#--#-#--#-#-#--#-#--#-#-#--#-#--#-#-#-"
+: octaveTable
+  text6 "1111222222222222333333333333444444444444555555555555666666666666"
+: commandTableA
+  text6 "----UUUUUUUUUUUUAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBCCCCCCCCCCCCCCCC"
+: commandTableB
+  text6 "....------------....JJJJIIIIDDDD....JJJJIIIIDDDD....JJJJIIIIDDDD"
+: commandTableC
+  text6
+	".HDS0123456789AB.HDS.HDS.HDS.HDS.HDS.HDS.HDS.HDS.HDS.HDS.HDS.HDS"
+
+: nchar  text6 "0123456789"
+
+:org 0x1000 : flytext_prop
+# n+0: character
+# n+1: motion index
+# n+2: x-position target
+# n+3: y-position target
+
+:org 0x1120 myFontSet
+
+
+# 16-BIT LSFR noise generator
+:calc  lsfrSeed { 18241 }
+:macro lsfr z { :calc z { ( ( ( ( z & 1 ) ^ ( ( z >> 2 ) & 1 ) ) << 15 ) | ( z >> 1 ) ) } }
+:macro lsfrShftNybble { lsfr lsfrSeed lsfr lsfrSeed lsfr lsfrSeed lsfr lsfrSeed }
+:macro NOIS { :byte { lsfrSeed } lsfrShftNybble lsfrShftNybble }
+		
+:macro ---- { 0b00000000 }
+:macro &--- { 0b11000000 }
+:macro &&-- { 0b11110000 }
+:macro &&&- { 0b11111100 }
+:macro &&&& { 0b11111111 }
+
+: smpData  # SAMPLE BUFFER DATA  [ 128 bytes ]
+  ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----  # 0x00 |        Silence
+  &&-- ---- ---- ---- &&-- ---- ---- ---- &&-- ---- ---- ---- &&-- ---- ---- ----  # 0x10 |  12.5% Pulse Duty
+  &&&& ---- ---- ---- &&&& ---- ---- ---- &&&& ---- ---- ---- &&&& ---- ---- ----  # 0x20 |  25.0% Pulse Duty
+  &&&& &&&& ---- ---- &&&& &&&& ---- ---- &&&& &&&& ---- ---- &&&& &&&& ---- ----  # 0x30 |  50.0% Pulse Duty
+  NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS ---- ---- ---- ---- ---- ---- ---- ----  # 0x40 |  50.0% Pulse Noise
+  NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS  # 0x50 | 100.0% Pulse Noise
+  NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS  # 0x60 | 100.0% Pulse Noise
+  NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS NOIS  # 0x70 | 100.0% Pulse Noise
+	&&&& &&&- ---- ---- &&&& &&&- ---- ---- &&&& &&&- ---- ---- &&&& &&&- ---- ----  # 0x80 | 43.25% Pulse Duty
+	&&&& &&-- ---- ---- &&&& &&-- ---- ---- &&&& &&-- ---- ---- &&&& &&-- ---- ----  # 0x90 | 37.50% Pulse Duty
+	&&&& &--- ---- ---- &&&& &--- ---- ---- &&&& &--- ---- ---- &&&& &--- ---- ----  # 0xA0 | 31.75% Pulse Duty
+	&&&- ---- ---- ---- &&&- ---- ---- ---- &&&- ---- ---- ---- &&&- ---- ---- ----  # 0xB0 | 18.25% Pulse Duty
+: instrSet     # SAMPLE AND ORNAMENT SEQUENCE MAPPER [ 128 bytes ]
+#    0          1          2          3          4          5          6          7  
+#          8          9         10         11         12         13         14         15  
+# __________ __________ __________ __________ __________ __________ __________ __________
+#| smpI ornI| smpI ornI| smpI ornI| smpI ornI| smpI ornI| smpI ornI| smpI ornI| smpI ornI|
+  0x00 0x00  0x10 0x10  0x20 0x20  0x30 0x30  0x80 0x01  0x80 0x11  0xC0 0x01  0xC0 0x11  # Silence + HKS & 12
+  0x01 0x00  0x11 0x10  0x21 0x20  0x31 0x30  0x01 0x21  0x40 0x21  0x80 0x21  0xC0 0x21  # User-def instruments
+  0x40 0x00  0x50 0x10  0x60 0x20  0x70 0x30  0x40 0x40  0x50 0x50  0x60 0x60  0x70 0x70  # 12.5% Lead + HKS +
+  0x40 0x80  0x50 0x90  0x60 0xA0  0x70 0xB0  0x40 0xC0  0x50 0xD0  0x60 0xE0  0x70 0xF0  # maj-min-dim chords
+  0x80 0x00  0x90 0x10  0xA0 0x20  0xB0 0x30  0x80 0x40  0x90 0x50  0xA0 0x60  0xB0 0x70  # 25.0% Lead + HKS +
+  0x80 0x80  0x90 0x90  0xA0 0xA0  0xB0 0xB0  0x80 0xC0  0x90 0xD0  0xA0 0xE0  0xB0 0xF0  # maj-min-dim chords
+  0xC0 0x00  0xD0 0x10  0xE0 0x20  0xF0 0x30  0xC0 0x40  0xD0 0x50  0xE0 0x60  0xF0 0x70  # 50.0% Lead + HKS +
+  0xC0 0x80  0xD0 0x90  0xE0 0xA0  0xF0 0xB0  0xC0 0xC0  0xD0 0xD0  0xE0 0xE0  0xF0 0xF0  # maj-min-dim chords
+
+: smpRef    # SAMPLE SEQUENCE DATA [ 256 bytes ]
+# Loop    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15
+#  PREDEFINED SAMPLE DATA
+   15  0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # [0x00] Silence
+   15  0x70 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # [0x10] Hat only
+   15  0x50 0x40 0x30 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # [0x20] Kick only
+   15  0x70 0x60 0x50 0x40 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00  # [0x30] Snare only
+   15  0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10  # [0x40] 12.5 % Pulse Tone
+   15  0x70 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10  # [0x50] Hat + 12.5 % Pulse
+   15  0x50 0x40 0x30 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10  # [0x60] Kick + 12.5 % Pulse
+   15  0x70 0x60 0x50 0x40 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10 0x10  # [0x70] Snare + 12.5 % Pulse
+   15  0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20  # [0x80] 25 % Pulse Tone
+   15  0x70 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20  # [0x90] Hat + 25 % Pulse 
+   15  0x50 0x40 0x30 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20  # [0xA0] Kick + 25 % Pulse
+   15  0x70 0x60 0x50 0x40 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20 0x20  # [0xB0] Snare + 25 % Pulse
+   15  0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30  # [0xC0] 50 % Pulse Tone
+   15  0x70 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30  # [0xD0] Hat + 50 % Pulse
+   15  0x50 0x40 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30  # [0xE0] Kick + 50 % Pulse
+   15  0x70 0x60 0x50 0x40 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30 0x30  # [0xF0] Snare + 50 % Pulse
+#  USER DEFINED SAMPLE DATA
+    8  0x20 0xA0 0x90 0x80 0x30 0x80 0x90 0xA0 0x20 0xA0 0x90 0x80 0x30 0x80 0x90  # [0x01] 25%-50% PWM Tone
+		8  0x70 0xA0 0x90 0x80 0x30 0x80 0x90 0xA0 0x20 0xA0 0x90 0x80 0x30 0x80 0x90  # [0x11] Hat + 25%-50% PWM
+		8  0x50 0x40 0x30 0x80 0x30 0x80 0x90 0xA0 0x20 0xA0 0x90 0x80 0x30 0x80 0x90  # [0x21] Kick + 25%-50% PWM
+		8  0x70 0x60 0x50 0x40 0x30 0x80 0x90 0xA0 0x20 0xA0 0x90 0x80 0x30 0x80 0x90  # [0x31] Snare + 25%-50% PWM
+   #   theres no other samples needed beside above, hence nothing.
+
+: ornData   # ORNAMENT SEQUENCE DATA [ 256 bytes ]
+#       Odd values (e.g. 63 67 71 ) is fixed pitch alter.
+#       Even values (e.g 4 8 12 -4 -8 -12 ) is relative pitch alter.
+#       Zero value won't alter the current pitch.
+# Loop    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15  
+#  PREDEFINED ORNAMENTS DATA
+   13     0    0    0    0    0    0    0    0    0    0    0    0    0    0    0  # [0x00] Tone
+   13   211    0    0    0    0    0    0    0    0    0    0    0    0    0    0  # [0x10] Hat + tone
+   13   147  103   67    0    0    0    0    0    0    0    0    0    0    0    0  # [0x20] Kick + tone
+   13   107  171  159  147    0    0    0    0    0    0    0    0    0    0    0  # [0x30] Snare + tone
+   13    16   28    0   16   28    0   16   28    0   16   28    0   16   28    0  # [0x40] Major chord tone
+   13   211   16   28    0   16   28    0   16   28    0   16   28    0   16   28  # [0x50] Hat + major chord
+   13   147  103   67   16   28    0   16   28    0   16   28    0   16   28    0  # [0x60] Kick + major chord
+   13   107  171  159  147   16   28    0   16   28    0   16   28    0   16   28  # [0x70] Snare + major chord
+   13    12   28    0   12   28    0   12   28    0   12   28    0   12   28    0  # [0x80] Minor chord tone
+   13   211   12   28    0   12   28    0   12   28    0   12   28    0   12   28  # [0x90] Hat + minor chord 
+   13   147  103   67   12   28    0   12   28    0   12   28    0   12   28    0  # [0xA0] Kick + minor chord
+   13   107  171  159  147   12   28    0   12   28    0   12   28    0   12   28  # [0xB0] Snare + minor chord
+   13    12   24    0   12   24    0   12   24    0   12   24    0   12   24    0  # [0xC0] Diminish chord tone
+   13   211   12   24    0   12   24    0   12   24    0   12   24    0   12   24  # [0xD0] Hat + diminish chord
+   13   147  103   67   12   24    0   12   24    0   12   24    0   12   24    0  # [0xE0] Kick + diminish chord
+   13   107  171  159  147   12   24    0   12   24    0   12   24    0   12   24  # [0xF0] Snare + diminish chord
+#  USER DEFINED ORNAMENTS DATA
+   15   -20  -16   -8    0    0    0    0    0    0    0    0    0    0    0    0  # [0x01] SlideUp
+   15    20   16    8    0    0    0    0    0    0    0    0    0    0    0    0  # [0x11] SlideDown
+   10     2    2    0   -2   -2    0    2    2    0   -2   -2    0    2    2    0  # [0x21] Vibratio
+   10     2    2    0   -2   -2    0    2    2    0   -2   -2    0    2    2    0  
+
+: seqFrameLookUpTable
+:org { seqFrameLookUpTable + 512 }
+
+#+--------------------------------------------------------
+#| MISCELLANEOUS THINGS,
+#| In order to make easy of music making, some inputs are mapped here.
+#+--------------------------------------------------------
+
+# Note key name mappings
+  :macro ... { 0   } # blank/continue
+  :macro --- { 1   } # mute
+  :macro === { 2   } # jump next
+
+# Precise pitch table according to corresponding standard note key
+  :macro G$1 { 3   } :macro C-3 { 67  } :macro E-4 { 131 } :macro G$5 { 195 }
+  :macro A-1 { 7   } :macro C$3 { 71  } :macro F-4 { 135 } :macro A-5 { 199 }
+  :macro A$1 { 11  } :macro D-3 { 75  } :macro F$4 { 139 } :macro A$5 { 203 }
+  :macro B-1 { 15  } :macro D$3 { 79  } :macro G-4 { 143 } :macro B-5 { 207 }
+  :macro C-2 { 19  } :macro E-3 { 83  } :macro G$4 { 147 } :macro C-6 { 211 }
+  :macro C$2 { 23  } :macro F-3 { 87  } :macro A-4 { 151 } :macro C$6 { 215 }
+  :macro D-2 { 27  } :macro F$3 { 91  } :macro A$4 { 155 } :macro D-6 { 219 }
+  :macro D$2 { 31  } :macro G-3 { 95  } :macro B-4 { 159 } :macro D$6 { 223 }
+  :macro E-2 { 34  } :macro G$3 { 99  } :macro C-5 { 163 } :macro E-6 { 227 }
+  :macro F-2 { 39  } :macro A-3 { 103 } :macro C$5 { 167 } :macro F-6 { 231 }
+  :macro F$2 { 43  } :macro A$3 { 107 } :macro D-5 { 171 } :macro F$6 { 235 }
+  :macro G-2 { 47  } :macro B-3 { 111 } :macro D$5 { 175 } :macro G-6 { 239 }
+  :macro G$2 { 51  } :macro C-4 { 115 } :macro E-5 { 179 } :macro G$6 { 243 }
+  :macro A-2 { 55  } :macro C$4 { 119 } :macro F-5 { 183 } :macro A-6 { 247 }
+  :macro A$2 { 59  } :macro D-4 { 123 } :macro F$5 { 187 } :macro A$6 { 251 }
+  :macro B-2 { 63  } :macro D$4 { 127 } :macro G-5 { 191 } :macro B-6 { 255 }
+
+# Predefined sample keys
+  :macro defS z n { :macro z l { :byte { ( l & 3 ) | ( n << 2 ) } } }
+  defS -.. 0x0   defS A.. 0x10   defS B.. 0x20   defS C.. 0x30
+  defS -.H 0x1   defS A.H 0x11   defS B.H 0x21   defS C.H 0x31
+  defS -.K 0x2   defS A.K 0x12   defS B.K 0x22   defS C.K 0x32
+  defS -.S 0x3   defS A.S 0x13   defS B.S 0x23   defS C.S 0x33
+  defS -J. 0x4   defS AJ. 0x14   defS BJ. 0x24   defS CJ. 0x34
+  defS -JH 0x5   defS AJH 0x15   defS BJH 0x25   defS CJH 0x35
+  defS -JK 0x6   defS AJK 0x16   defS BJK 0x26   defS CJK 0x36
+  defS -JS 0x7   defS AJS 0x17   defS BJS 0x27   defS CJS 0x37
+  defS -I. 0x8   defS AI. 0x18   defS BI. 0x28   defS CI. 0x38
+  defS -IH 0x9   defS AIH 0x19   defS BIH 0x29   defS CIH 0x39
+  defS -IK 0xA   defS AIK 0x1A   defS BIK 0x2A   defS CIK 0x3A
+  defS -IS 0xB   defS AIS 0x1B   defS BIS 0x2B   defS CIS 0x3B
+  defS -D. 0xC   defS AD. 0x1C   defS BD. 0x2C   defS CD. 0x3C
+  defS -DH 0xD   defS ADH 0x1D   defS BDH 0x2D   defS CDH 0x3D
+  defS -DK 0xE   defS ADK 0x1E   defS BDK 0x2E   defS CDK 0x3E
+  defS -DS 0xF   defS ADS 0x1F   defS BDS 0x2F   defS CDS 0x3F
+# User defined sample keys
+	defS U-0 4     defS U-1 5      defS U-2 6      defS U-3 7
+  defS U-4 8     defS U-5 9      defS U-6 10     defS U-7 11
+  defS U-8 12    defS U-9 13     defS U-A 14     defS U-B 15
+:macro |>--TitleName: k n { : n 32 text5 k 255 }
+#+-----------------------------------------------------------------------------------------------+
+#|                                    YOUR SONG DATA GOES HERE                                   |
+#+-----------------------+-----------------------+-----------------------+-----------------------+
+#| Song timeline         | Song loop point       | Song properties       | Song sequence data    |
+#+-----------------------+-----------------------+-----------------------+-----------------------+
+ :                                      song-BananaFox-Theme                                     #
+ |>  seqTime-BananaFox   |>  seqLoop-BananaFox   |>  seqProp-BananaFox   |>  seqData-BananaFox   #
+
+################################################################
+#   IMPORTANT NOTE:
+#   Both seqTime and seqLoop must be paired for every song, and
+#   must be in order: seqTime, seqLoop, then last seqProp.
+
+#   If song has no loop, it has to loop within an empty frame
+
+: seqTime-BananaFox # Song timeline of frames
+  0
+: seqLoop-BananaFox # The song loop point
+  1 2 3 4 1 2 3 5 6 7 8 9 6 7 10 11
+
+	
+: seqProp-BananaFox # Song properties
+#  _______ _______ _______ _______ 
+# |Speed A|Speed B|Speed C|Speed D|
+   6       4       3       2      
+#  __________________ ______________ _____________________
+# |Default tick rate |Rows per Frame|Rows per quarter note|
+   60                 32             4
+
+: seqData-BananaFox  # 16 bytes per frame; with 66 frames, 1056 bytes in total
+# Key : Corresponding musical key note, ranged from G$1 to B-6
+# D : Tone duty type, - for silence, A for 12.5% duty, B for 25% duty, and C for 50% duty
+# O : Ornament, . for monotone, J for major triad, I for minor triad, D for diminished triad
+# S : Sample type, . for tone only, H tone with hat, K tone with kick, S tone with snare
+# G : Groove select, which selects ticks per row from the corresponding table of Speeds above
+#     0 uses Speed A, 1 uses Speed B, 2 uses Speed C, and 3 uses Speed D.
+# __________ __________ __________ __________ __________ __________ __________ __________ _______ 
+#| Row 0    | Row 1    | Row 2    | Row 3    | Row 4    | Row 5    | Row 6    | Row 7    | Frame |
+#|Key DOS G |Key DOS G |Key DOS G |Key DOS G |Key DOS G |Key DOS G |Key DOS G |Key DOS G |   #   |
+  D$5 A.S 0  E-5 A.. 0  F$5 A.. 0  F$5 U-B 0  B-5 A.S 0  F$5 A.. 0  E-5 A.. 0  F$5 A.. 0  B-5 A.K 0  C$6 A.. 0  D$6 A.. 0  E-6 A.. 0  D$6 A.S 0  A$5 A.. 0  B-5 A.K 0  F$6 U-0 0  F$5 A.K 0  F$5 U-B 0  D-5 A.. 0  D$5 A.. 0  F$5 A.S 0  F$5 U-B 0  B-5 A.K 0  F$5 U-1 0  C$6 A.S 0  A$5 A.. 0  B-5 A.H 0  C$6 A.. 0  E-6 A.S 0  D$6 A.. 0  E-6 A.H 0  C$6 A.H 0  
+  F$5 B.K 1  E-3 C.. 2  F$5 B.. 2  ... -.. 3  G$5 B.H 1  ... -.. 2  G$4 CJ. 2  ... -.. 3  D-5 B.S 1  F$3 C.. 2  D$5 B.. 2  ... -.. 3  D$5 B.H 1  D$5 U-A 2  B-4 C.H 2  ... -.. 3  C$5 B.K 1  D$3 C.. 2  C-5 C.. 2  ... -.. 3  B-4 C.H 1  ... -.. 2  ... -.. 2  ... -.. 3  B-4 C.S 1  G$3 C.. 2  B-4 C.. 2  ... -.. 3  C$5 B.H 1  ... -.. 2  ... -.. 2  ... -.. 3  
+  D-5 U-6 1  D-3 C.. 2  D-5 B.. 2  ... -.. 3  D-5 C.H 1  ... -.. 2  C$5 C.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  C$5 C.. 2  ... -.. 3  D$5 B.H 1  ... -.. 2  F$5 B.H 2  ... -.. 3  G$5 B.K 1  B-2 C.. 2  D$5 C.H 2  ... -.. 3  F$5 C.H 1  ... -.. 2  C$5 C.. 2  ... -.. 3  D$5 C.S 1  ... -.. 2  B-4 C.. 2  ... -.. 3  C$5 B.H 1  ... -.. 2  B-4 C.. 2  ... -.. 3  
+  D$5 B.K 1  E-3 C.. 2  D$5 B.. 2  ... -.. 3  F$5 B.H 1  ... -.. 2  G$4 CJ. 2  ... -.. 3  G$5 B.S 1  ... -.. 2  D$5 C.. 2  ... -.. 3  F$5 C.H 1  ... -.. 2  C$5 C.H 2  ... -.. 3  D$5 C.K 1  D$3 C.. 2  B-4 C.. 2  ... -.. 3  D-5 C.H 1  ... -.. 2  D$5 C.. 2  ... -.. 3  D-5 C.S 1  ... -.. 2  C$5 C.. 2  ... -.. 3  B-4 C.H 1  ... -.. 2  C$5 C.. 2  ... -.. 3  
+  D-5 C.K 1  D-3 C.. 2  D-5 C.. 2  ... -.. 3  B-4 B.H 1  ... -.. 2  C$5 B.. 2  ... -.. 3  D$5 B.S 1  ... -.. 2  F$5 B.. 2  ... -.. 3  C$5 C.H 1  ... -.. 2  D-5 C.H 2  ... -.. 3  C$5 C.K 1  B-2 C.. 2  B-4 C.. 2  ... -.. 3  C$5 C.H 1  ... -.. 2  C$5 U-B 2  ... -.. 3  B-4 C.S 1  ... -.. 2  ... -.. 2  ... -.. 3  C$5 C.S 1  ... -.. 2  ... -.. 2  ... -.. 3  
+  D-5 C.K 1  D-3 C.. 2  D-5 C.. 2  ... -.. 3  B-4 C.H 1  ... -.. 2  C$5 C.. 2  ... -.. 3  D$5 B.S 1  ... -.. 2  F$5 B.. 2  ... -.. 3  C$5 C.H 1  ... -.. 2  D-5 C.H 2  ... -.. 3  C$5 C.K 1  B-2 C.. 2  B-4 C.. 2  ... -.. 3  C$5 B.H 1  ... -.. 2  C$5 B.H 2  ... -.. 3  B-4 B.S 1  ... -.. 2  B-4 U-A 2  ... -.. 3  B-4 B.S 1  ... -.. 2  ... -.. 2  ... -.. 3  
+  B-4 C.K 1  E-3 C.. 2  B-4 C.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  B-4 C.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.. 2  ... -.. 3  B-4 C.K 1  D$3 C.. 2  C$5 C.. 2  ... -.. 3  D$5 C.H 1  G$4 CI. 2  B-4 C.. 2  ... -.. 3  E-5 C.S 1  ... -.. 2  D$5 C.. 2  ... -.. 3  E-5 C.H 1  G$4 CI. 2  F$5 C.. 2  ... -.. 3  
+  B-4 C.K 1  D-3 C.. 2  B-4 C.. 2  ... -.. 3  B-4 C.H 1  F$4 CI. 2  B-4 C.. 2  ... -.. 3  F$4 B.S 1  ... -.. 2  G$4 B.. 2  ... -.. 3  B-4 B.H 1  F$4 CI. 2  G$4 C.H 2  ... -.. 3  E-5 C.K 1  B-2 C.. 2  D$5 U-4 2  ... -.. 3  C$5 U-5 1  F$4 CI. 2  B-4 U-4 2  ... -.. 3  F$4 U-7 1  ... -.. 2  D$4 U-4 2  ... -.. 3  E-4 U-7 1  F$4 CI. 2  F$4 U-4 2  ... -.. 3  
+  B-4 C.K 1  E-3 C.. 2  B-4 C.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  ... -.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.. 2  ... -.. 3  B-4 C.K 1  D$3 C.. 2  B-4 C.. 2  ... -.. 3  C$5 C.H 1  G$4 CI. 2  D$5 C.. 2  ... -.. 3  B-4 B.S 1  ... -.. 2  F$4 B.. 2  ... -.. 3  G$4 B.H 1  G$4 CI. 2  F$4 B.. 2  ... -.. 3  
+  B-4 C.K 1  D-3 C.. 2  B-4 C.. 2  ... -.. 3  B-4 C.H 1  F$4 CI. 2  A$4 B.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  F$4 B.. 2  ... -.. 3  G$4 B.H 1  F$4 CI. 2  B-4 B.H 2  ... -.. 3  E-5 C.K 1  B-2 C.. 2  D$5 C.. 2  ... -.. 3  E-5 C.H 1  F$4 CI. 2  F$5 C.. 2  ... -.. 3  B-4 U-7 1  ... -.. 2  ... -.. 2  ... -.. 3  A$4 U-7 1  F$4 CI. 2  A$4 U-7 2  ... -.. 3  
+  B-4 C.K 1  E-3 C.. 2  B-4 C.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  ... -.. 2  ... -.. 3  F$4 B.H 1  G$4 CI. 2  G$4 B.H 2  ... -.. 3  B-4 C.K 1  D$3 C.. 2  B-4 C.. 2  ... -.. 3  C$5 C.H 1  G$4 CI. 2  D$5 C.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  F$4 B.. 2  ... -.. 3  G$4 B.H 1  G$4 CI. 2  F$4 B.. 2  ... -.. 3  
+  B-4 C.K 1  D-3 C.. 2  B-4 C.. 2  ... -.. 3  B-4 C.H 1  F$4 CI. 2  A$4 B.. 2  ... -.. 3  B-4 C.S 1  ... -.. 2  F$4 B.. 2  ... -.. 3  G$4 B.H 1  F$4 CI. 2  B-4 C.. 2  ... -.. 3  E-5 C.S 1  ... -.. 2  D$5 C.. 2  ... -.. 3  E-5 C.H 1  ... -.. 2  F$5 C.. 2  ... -.. 3  B-4 B.S 1  B-2 C.. 2  B-4 B.. 2  ... -.. 3  C$5 C.S 1  F$4 CI. 2  C$5 C.S 2  ... -.. 3  
+
+: fill
+  0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+	0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+	0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+	0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 
+
+: sintable
+  :macro mysinvl { :byte { 128 + ( 127 * sin ( 2 * PI * ( HERE - z ) / 256 ) ) } }
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+	mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl mysinvl 
+
+: easetable
+:calc zzz { HERE }
+:macro ea { :pointer { ( ( zzz - HERE ) * ( zzz - HERE ) ) / 16  } }
+	ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea 
+	ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea 
+	ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea 
+	ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea ea 
+
+: particles
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+	0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+
+: nyan01
+  252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 
+  252 0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 
+: nyan02
+  0 252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 
+  252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 252 
+: nyan03
+  0 252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 
+  252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 252 
+: nyan04
+  252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 0 
+  0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 
+: nyan05
+  0 252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 
+  252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 
+: nyan06
+  0 252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 
+  252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 
+: nyan07
+  0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 252 
+  0 252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 
+: nyan08
+  252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 
+  0 0 252 0 252 252 0 252 0 252 252 0 252 0 0 252 0 252 
+: nyan09
+  252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 
+  0 0 252 0 252 252 0 252 0 252 252 0 252 0 0 252 0 252 
+: nyan10
+  0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 
+  252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 0 
+: nyan11
+  252 0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 
+  0 252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 
+: nyan12
+  252 0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 
+  0 252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 
+: nyan13
+  252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 252 
+  252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 0 
+: nyan14
+  0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 
+  252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 
+: nyan15
+  0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 252 
+  252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 
+: nyan16
+  252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 252 
+  0 252 252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 
+: nyan17
+  0 252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 
+  252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 0 
+: nyan18
+  0 252 0 252 252 0 252 0 0 252 0 252 0 0 252 0 252 252 
+  252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 0 
+: nyan19
+  0 0 252 0 252 252 0 252 0 252 252 0 252 0 0 252 0 252 
+  0 252 0 252 252 0 252 0 0 252 252 252 252 252 252 252 252 252 
+: nyan20
+  252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 0 
+  0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 252 
+: nyan21
+  252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 0 
+  0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 252 
+: nyan22
+  0 252 0 0 252 0 252 252 0 252 252 252 252 0 252 0 0 252 
+  252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 252 
+: nyan23
+  252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 0 
+  0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 
+: nyan24
+  252 0 252 0 0 252 0 252 252 252 252 252 252 252 0 252 0 0 
+  0 252 0 0 252 0 252 252 0 252 0 252 252 252 252 252 252 252 
+
+: nyansprites
+|> nyan01
+|> nyan02
+|> nyan03
+|> nyan04
+|> nyan05
+|> nyan06
+|> nyan07
+|> nyan08
+|> nyan09
+|> nyan10
+|> nyan11
+|> nyan12
+|> nyan13
+|> nyan14
+|> nyan15
+|> nyan16
+|> nyan17
+|> nyan18
+|> nyan19
+|> nyan20
+|> nyan21
+|> nyan22
+|> nyan23
+|> nyan24
+
+: nyansprites-static
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+|> nyan01
+
+: nyantail01
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 31 31 0 31 0 1 31 1 0 0 0 0 31 31 31 31 31 31 1 31 
+  0 0 1 3 255 255 7 255 7 231 63 159 0 0 1 2 252 252 252 252 252 252 244 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  31 31 0 31 0 0 31 0 31 31 0 0 0 0 31 0 31 31 31 31 31 31 0 0 
+  207 231 63 255 7 7 255 17 243 254 0 0 252 124 252 12 252 252 254 255 255 254 0 0 
+: nyantail02
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 63 63 0 63 0 1 63 1 0 0 0 0 63 63 63 63 63 63 1 63 
+  0 0 1 7 255 255 7 255 7 231 63 159 0 0 1 6 252 252 252 252 252 252 244 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  63 63 0 63 0 0 63 0 63 63 0 0 0 0 63 0 63 63 63 63 63 63 0 0 
+  207 231 63 255 7 7 255 17 243 254 0 0 252 124 252 12 252 252 254 255 255 254 0 0 
+: nyantail03
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 127 127 0 127 0 1 127 1 0 0 0 0 127 127 127 127 127 127 1 127 
+  0 0 1 7 255 255 7 255 7 231 63 159 0 0 1 6 252 252 252 252 252 252 244 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  127 127 0 127 0 0 127 0 127 127 0 0 0 0 127 0 127 127 127 127 127 127 0 0 
+  207 231 63 255 7 15 255 17 243 254 0 0 252 124 252 12 252 252 254 255 255 254 0 0 
+: nyantail04
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 255 255 0 255 0 1 255 1 0 0 0 0 255 255 255 255 255 255 1 255 
+  0 0 1 15 255 247 15 247 7 239 55 159 0 0 1 14 252 252 252 252 252 244 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  255 255 0 255 0 0 255 0 255 255 0 0 0 0 255 0 255 255 255 255 255 255 0 0 
+  207 231 63 255 7 15 255 1 243 254 0 0 252 124 252 12 252 252 254 255 255 254 0 0 
+: nyantail05
+  0 0 0 0 1 1 0 1 0 0 1 0 0 0 0 0 1 1 1 1 1 1 0 1 
+  0 0 0 0 255 255 0 255 0 0 255 1 0 0 0 0 255 255 255 255 255 255 0 255 
+  0 0 1 31 255 231 31 231 7 31 231 31 0 0 1 30 252 252 252 252 252 228 220 228 
+  1 1 0 1 0 0 1 0 1 1 0 0 0 0 1 0 1 1 1 1 1 1 0 0 
+  255 255 0 255 0 0 255 0 255 255 0 0 1 0 255 0 255 255 255 255 255 255 0 0 
+  63 135 103 255 7 31 231 25 249 238 0 0 252 252 252 28 252 252 254 255 255 238 0 0 
+: nyantail06
+  0 0 0 0 3 3 0 3 0 0 3 0 0 0 0 0 3 3 3 3 3 3 0 3 
+  0 0 0 0 255 255 0 255 0 0 255 1 0 0 0 0 255 255 255 255 255 255 0 255 
+  0 0 1 63 255 199 63 199 7 63 199 63 0 0 1 62 252 252 252 252 252 196 252 228 
+  3 3 0 3 0 0 3 0 3 3 0 0 0 0 3 0 3 3 3 3 3 3 0 0 
+  255 255 0 255 0 0 255 0 255 255 0 0 1 0 255 0 255 255 255 255 255 255 0 0 
+  63 135 103 223 7 63 199 57 249 206 0 0 252 252 252 60 252 252 254 255 255 206 0 0 
+: nyantail07
+  0 0 0 0 7 7 0 7 0 0 7 0 0 0 0 0 7 7 7 7 7 7 0 7 
+  0 0 0 0 255 255 0 255 0 0 255 1 0 0 0 0 255 255 255 255 255 255 0 255 
+  0 0 1 127 255 135 127 135 7 127 199 63 0 0 1 126 252 252 252 252 252 132 252 228 
+  7 7 0 7 0 0 7 0 7 7 0 0 0 0 7 0 7 7 7 7 7 7 0 0 
+  255 255 0 255 0 0 255 0 255 255 0 0 1 0 255 0 255 255 255 255 255 255 0 0 
+  63 135 103 159 7 127 135 121 249 142 0 0 252 252 252 124 252 252 254 255 255 142 0 0 
+: nyantail08
+  0 0 0 0 15 15 0 15 0 0 15 0 0 0 0 0 15 15 15 15 15 15 0 15 
+  0 0 0 0 255 255 0 255 0 0 255 1 0 0 0 0 255 255 255 255 255 255 0 255 
+  0 0 1 255 255 7 255 7 7 255 199 63 0 0 1 254 252 252 252 252 252 4 252 228 
+  15 15 0 15 0 0 15 0 15 15 0 0 0 0 15 0 15 15 15 15 15 15 0 0 
+  255 255 0 255 0 0 255 0 255 255 0 0 1 0 255 0 255 255 255 255 255 255 0 0 
+  63 135 231 31 7 255 7 249 249 14 0 0 252 252 124 252 252 252 254 255 255 14 0 0 
+: nyantail09
+  0 0 0 0 31 31 0 31 0 0 31 0 0 0 0 0 31 31 31 31 31 31 0 31 
+  0 0 0 1 255 254 1 254 0 1 254 1 0 0 0 1 255 255 255 255 255 254 1 254 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 255 254 252 252 252 252 4 252 4 
+  31 31 0 31 0 0 31 0 31 31 0 0 0 0 31 0 31 31 31 31 31 31 0 0 
+  255 254 1 255 1 1 254 1 255 254 0 0 0 1 254 1 255 255 255 255 255 254 0 0 
+  255 15 255 135 31 255 7 255 253 4 7 0 4 252 124 252 252 252 252 254 255 7 7 0 
+: nyantail10
+  0 0 0 0 63 63 0 63 0 0 63 0 0 0 0 0 63 63 63 63 63 63 0 63 
+  0 0 0 3 255 252 3 252 0 3 252 3 0 0 0 3 255 255 255 255 255 252 3 252 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 255 254 252 252 252 252 4 252 4 
+  63 63 0 63 0 0 63 0 63 63 0 0 0 0 63 0 63 63 63 63 63 63 0 0 
+  255 252 3 253 1 3 252 3 255 252 0 0 0 3 252 3 255 255 255 255 255 252 0 0 
+  255 15 255 135 31 255 7 255 253 4 7 0 4 252 124 252 252 252 252 254 255 7 7 0 
+: nyantail11
+  0 0 0 0 127 127 0 127 0 0 127 0 0 0 0 0 127 127 127 127 127 127 0 127 
+  0 0 0 7 255 248 7 248 0 7 248 7 0 0 0 7 255 255 255 255 255 248 7 248 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 255 254 252 252 252 252 4 252 4 
+  127 127 0 127 0 0 127 0 127 127 0 0 0 0 127 0 127 127 127 127 127 127 0 0 
+  255 248 7 249 1 7 248 7 255 248 0 0 0 7 248 7 255 255 255 255 255 248 0 0 
+  255 15 255 135 31 255 7 255 253 4 7 0 4 252 124 252 252 252 252 254 255 7 7 0 
+: nyantail12
+  0 0 0 0 255 255 0 255 0 0 255 0 0 0 0 0 255 255 255 255 255 255 0 255 
+  0 0 0 15 255 240 15 240 0 15 240 15 0 0 0 15 255 255 255 255 255 240 15 240 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 255 254 252 252 252 252 4 252 4 
+  255 255 0 255 0 0 255 0 255 255 0 0 0 0 255 0 255 255 255 255 255 255 0 0 
+  255 240 15 241 1 15 240 15 255 240 0 0 0 15 240 15 255 255 255 255 255 240 0 0 
+  255 15 255 135 31 255 7 255 253 4 7 0 4 252 124 252 252 252 252 254 255 7 7 0 
+: nyantail13
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 31 31 0 31 0 0 31 0 31 0 0 0 31 31 31 31 31 31 0 31 0 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 255 254 252 252 252 252 4 252 4 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  31 0 31 0 1 31 0 31 31 0 0 0 0 31 0 31 31 31 31 31 31 0 0 0 
+  255 31 231 135 63 63 199 255 249 9 14 0 4 252 124 252 252 252 252 254 255 15 14 0 
+: nyantail14
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 63 63 0 63 0 0 63 0 63 0 0 0 63 63 63 63 63 63 0 63 0 
+  0 0 0 253 255 7 255 7 7 255 7 255 0 0 0 253 254 252 252 252 252 4 252 4 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  63 0 63 0 1 63 0 63 63 0 0 0 0 63 0 63 63 63 63 63 63 0 0 0 
+  255 31 231 135 63 63 199 255 249 9 14 0 4 252 124 252 252 252 252 254 255 15 14 0 
+: nyantail15
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 127 127 0 127 0 0 127 0 127 0 0 0 127 127 127 127 127 127 0 127 0 
+  0 0 0 249 255 7 255 7 7 255 7 255 0 0 0 249 254 252 252 252 252 4 252 4 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  127 0 127 0 1 127 0 127 127 0 0 0 0 127 0 127 127 127 127 127 127 0 0 0 
+  255 31 231 135 63 63 199 255 249 9 14 0 4 252 124 252 252 252 252 254 255 15 14 0 
+: nyantail16
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 0 
+  0 0 0 241 255 15 247 15 7 247 15 247 0 0 0 241 254 252 252 252 252 12 244 12 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  255 0 255 0 1 255 0 255 255 0 0 0 0 255 0 255 255 255 255 255 255 0 0 0 
+  255 31 231 135 63 55 207 247 249 9 14 0 4 252 124 252 252 252 252 254 255 15 14 0 
+: nyantail17
+  0 0 0 1 1 0 1 0 0 1 0 1 0 0 0 1 1 1 1 1 1 0 1 0 
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 1 
+  0 0 0 225 255 31 231 31 7 231 31 231 0 0 0 225 254 252 252 252 252 28 228 252 
+  1 0 1 0 0 1 0 1 1 0 0 0 0 1 0 1 1 1 1 1 1 0 0 0 
+  254 3 255 0 0 255 0 255 255 0 0 0 3 255 0 255 255 255 255 255 255 0 0 0 
+  63 15 247 31 7 231 31 255 227 39 56 0 252 252 252 252 252 252 252 254 255 63 56 0 
+: nyantail18
+  0 0 0 3 3 0 3 0 0 3 0 3 0 0 0 3 3 3 3 3 3 0 3 0 
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 1 
+  0 0 0 193 255 63 199 63 7 199 63 231 0 0 0 193 254 252 252 252 252 60 196 252 
+  3 0 3 0 0 3 0 3 3 0 0 0 0 3 0 3 3 3 3 3 3 0 0 0 
+  254 3 255 0 0 255 0 255 255 0 0 0 3 255 0 255 255 255 255 255 255 0 0 0 
+  63 15 247 63 7 199 63 223 227 39 56 0 252 252 252 220 252 252 252 254 255 63 56 0 
+: nyantail19
+  0 0 0 7 7 0 7 0 0 7 0 7 0 0 0 7 7 7 7 7 7 0 7 0 
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 1 
+  0 0 0 129 255 127 135 127 7 135 127 231 0 0 0 129 254 252 252 252 252 124 132 252 
+  7 0 7 0 0 7 0 7 7 0 0 0 0 7 0 7 7 7 7 7 7 0 0 0 
+  254 3 255 0 0 255 0 255 255 0 0 0 3 255 0 255 255 255 255 255 255 0 0 0 
+  63 15 247 127 7 135 127 159 227 103 56 0 252 252 252 156 252 252 252 254 255 127 56 0 
+: nyantail20
+  0 0 0 15 15 0 15 0 0 15 0 15 0 0 0 15 15 15 15 15 15 0 15 0 
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 1 
+  0 0 0 1 255 255 7 255 7 7 255 231 0 0 0 1 254 252 252 252 252 252 4 252 
+  15 0 15 0 0 15 0 15 15 0 0 0 0 15 0 15 15 15 15 15 15 0 0 0 
+  254 3 255 0 0 255 0 255 255 0 0 0 3 255 0 255 255 255 255 255 255 0 0 0 
+  63 15 247 255 7 7 255 31 227 231 56 0 252 252 252 28 252 252 252 254 255 255 56 0 
+: nyantail21
+  0 0 0 31 31 0 31 0 0 31 0 31 0 0 0 31 31 31 31 31 31 0 31 0 
+  0 0 0 254 255 1 254 1 0 254 1 255 0 0 0 254 255 255 255 255 255 1 254 1 
+  0 0 0 1 255 255 7 255 7 7 255 39 0 0 0 1 254 252 252 252 252 252 196 252 
+  31 0 31 0 0 31 0 31 31 0 0 0 0 31 0 31 31 31 31 31 31 0 0 0 
+  255 1 254 1 0 254 1 254 255 1 0 0 1 254 1 254 255 255 255 255 255 1 0 0 
+  63 135 103 255 7 7 255 23 227 231 57 0 252 252 252 28 252 252 252 254 255 255 57 0 
+: nyantail22
+  0 0 0 63 63 0 63 0 0 63 0 63 0 0 0 63 63 63 63 63 63 0 63 0 
+  0 0 0 252 255 3 252 3 0 252 3 253 0 0 0 252 255 255 255 255 255 3 252 3 
+  0 0 0 1 255 255 7 255 7 7 255 39 0 0 0 1 254 252 252 252 252 252 196 252 
+  63 0 63 0 0 63 0 63 63 0 0 0 0 63 0 63 63 63 63 63 63 0 0 0 
+  255 3 252 3 0 252 3 252 255 3 0 0 1 252 3 252 255 255 255 255 255 3 0 0 
+  63 135 103 255 7 7 255 23 227 231 57 0 252 252 252 28 252 252 252 254 255 255 57 0 
+: nyantail23
+  0 0 0 127 127 0 127 0 0 127 0 127 0 0 0 127 127 127 127 127 127 0 127 0 
+  0 0 0 248 255 7 248 7 0 248 7 249 0 0 0 248 255 255 255 255 255 7 248 7 
+  0 0 0 1 255 255 7 255 7 7 255 39 0 0 0 1 254 252 252 252 252 252 196 252 
+  127 0 127 0 0 127 0 127 127 0 0 0 0 127 0 127 127 127 127 127 127 0 0 0 
+  255 7 248 7 0 248 7 248 255 7 0 0 1 248 7 248 255 255 255 255 255 7 0 0 
+  63 135 103 255 7 7 255 23 227 231 57 0 252 252 252 28 252 252 252 254 255 255 57 0 
+: nyantail24
+  0 0 0 255 255 0 255 0 0 255 0 255 0 0 0 255 255 255 255 255 255 0 255 0 
+  0 0 0 240 255 15 240 15 0 240 15 241 0 0 0 240 255 255 255 255 255 15 240 15 
+  0 0 0 1 255 255 7 255 7 7 255 39 0 0 0 1 254 252 252 252 252 252 196 252 
+  255 0 255 0 0 255 0 255 255 0 0 0 0 255 0 255 255 255 255 255 255 0 0 0 
+  255 15 240 15 0 240 15 240 255 15 0 0 1 240 15 240 255 255 255 255 255 15 0 0 
+  63 135 103 255 7 7 255 23 227 231 57 0 252 252 252 28 252 252 252 254 255 255 57 0 
+
+: nyantailsprites
+  |> nyantail01
+  |> nyantail02
+  |> nyantail03
+  |> nyantail04
+  |> nyantail05
+  |> nyantail06
+  |> nyantail07
+  |> nyantail08
+  |> nyantail09
+  |> nyantail10
+  |> nyantail11
+  |> nyantail12
+  |> nyantail13
+  |> nyantail14
+  |> nyantail15
+  |> nyantail16
+  |> nyantail17
+  |> nyantail18
+  |> nyantail19
+  |> nyantail20
+  |> nyantail21
+  |> nyantail22
+  |> nyantail23
+  |> nyantail24
+
+: nyantailcolors01
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 31 31 0 31 0 1 31 1 0 0 0 0 31 31 31 31 31 31 1 31 
+  0 0 1 3 255 255 7 255 7 231 63 159 0 0 1 2 252 252 252 252 252 252 244 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  31 31 0 31 0 0 31 0 31 31 0 0 0 0 31 0 31 31 31 31 31 31 0 0 
+  207 231 63 255 7 7 255 17 243 254 0 0 252 124 252 12 252 252 254 255 255 254 0 0 
+: nyantailcolors02
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 0 63 63 0 63 1 1 63 0 0 0 0 63 63 63 63 63 63 63 1 
+  0 0 1 3 7 255 255 7 255 231 55 159 0 0 1 2 252 252 252 252 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 63 63 0 63 0 0 63 0 63 0 0 63 0 0 63 0 63 63 63 63 63 0 0 
+  207 231 255 15 255 7 15 241 19 254 0 0 252 124 60 252 4 252 254 255 255 254 0 0 
+: nyantailcolors03
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 0 127 127 0 127 1 1 127 0 0 0 0 127 127 127 127 127 127 127 1 
+  0 0 1 3 7 255 255 7 255 231 55 159 0 0 1 6 252 252 252 252 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 127 127 0 127 0 0 127 0 127 0 0 127 0 0 127 0 127 127 127 127 127 0 0 
+  207 231 255 15 255 7 15 241 19 254 0 0 252 124 60 252 4 252 254 255 255 254 0 0 
+: nyantailcolors04
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 255 0 255 255 0 255 1 1 0 0 0 0 255 255 255 255 255 255 255 255 
+  0 0 1 15 247 15 255 247 15 247 55 159 0 0 1 14 252 252 252 252 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  255 0 255 255 0 255 0 0 255 0 0 0 0 255 0 0 255 0 255 255 255 255 0 0 
+  207 103 255 255 15 247 15 17 243 30 0 0 252 252 60 12 244 12 254 255 255 254 0 0 
+: nyantailcolors05
+  0 0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 1 1 1 1 1 1 1 1 
+  0 0 0 0 0 255 0 255 255 0 255 1 0 0 0 0 255 255 255 255 255 255 255 255 
+  0 0 1 3 31 231 31 255 231 31 231 39 0 0 1 30 252 252 252 252 252 252 252 252 
+  0 1 0 1 1 0 1 0 0 1 0 0 1 0 1 0 0 1 0 1 1 1 0 0 
+  1 255 0 255 255 0 255 0 0 255 0 0 255 0 255 0 0 255 0 255 255 255 0 0 
+  63 135 103 255 231 31 231 9 25 238 0 0 252 252 252 28 28 228 30 255 255 238 0 0 
+: nyantailcolors06
+  0 0 0 0 0 3 0 3 3 0 3 0 0 0 0 0 3 3 3 3 3 3 3 3 
+  0 0 0 0 0 255 0 255 255 0 255 1 0 0 0 0 255 255 255 255 255 255 255 255 
+  0 0 1 3 63 199 63 255 199 63 199 39 0 0 1 62 252 252 252 252 252 252 252 252 
+  0 3 0 3 3 0 3 0 0 3 0 0 3 0 3 0 0 3 0 3 3 3 0 0 
+  1 255 0 255 255 0 255 0 0 255 0 0 255 0 255 0 0 255 0 255 255 255 0 0 
+  63 135 103 255 199 63 199 9 57 206 0 0 252 252 252 28 60 196 62 255 255 206 0 0 
+: nyantailcolors07
+  0 0 0 0 0 0 7 0 7 7 0 7 0 0 0 0 7 7 7 7 7 7 7 7 
+  0 0 0 0 0 0 255 0 255 255 0 255 0 0 0 0 255 255 255 255 255 255 255 255 
+  0 0 1 3 7 127 135 127 255 135 255 39 0 0 1 126 252 252 252 252 252 252 252 252 
+  0 0 7 0 7 7 0 7 0 0 0 0 7 7 0 7 0 0 7 0 7 7 0 0 
+  1 0 255 0 255 255 0 255 0 0 0 0 255 255 0 255 0 0 255 0 255 255 0 0 
+  63 135 231 127 255 135 127 137 9 14 0 0 252 252 124 156 4 124 134 127 255 142 0 0 
+: nyantailcolors08
+  0 0 0 0 15 0 0 15 0 15 15 0 0 0 0 0 0 15 15 15 15 15 15 15 
+  0 0 0 0 255 0 0 255 0 255 255 1 0 0 0 0 0 255 255 255 255 255 255 255 
+  0 0 1 255 7 7 255 7 255 255 199 63 0 0 1 2 252 252 252 252 252 252 252 252 
+  15 0 0 15 0 15 15 0 15 0 0 0 15 15 15 0 15 0 0 15 0 15 0 0 
+  255 0 0 255 0 255 255 0 255 0 0 0 255 255 255 0 255 0 0 255 0 255 0 0 
+  63 135 231 31 255 255 7 249 9 14 0 0 252 252 124 252 4 4 254 15 255 14 0 0 
+: nyantailcolors09
+  0 0 0 0 31 0 0 31 0 31 31 0 0 0 0 0 0 31 31 31 31 31 31 31 
+  0 0 0 1 254 0 1 254 1 255 254 1 0 0 0 0 1 255 255 255 255 255 255 255 
+  0 0 0 255 3 7 255 7 255 255 7 255 0 0 0 1 254 252 252 252 252 252 252 252 
+  31 0 0 31 0 31 31 0 31 0 0 0 31 31 31 0 31 0 0 31 0 31 0 0 
+  254 0 1 255 1 255 254 1 254 0 0 0 255 255 254 1 255 0 1 254 1 254 0 0 
+  7 15 255 135 31 255 7 255 5 4 7 0 252 252 124 252 252 244 252 6 255 7 7 0 
+: nyantailcolors10
+  0 0 0 0 0 63 0 0 63 0 63 63 0 0 0 0 63 0 63 63 63 63 63 63 
+  0 0 0 0 3 252 0 3 252 3 255 252 0 0 0 3 252 3 255 255 255 255 255 255 
+  0 0 0 1 255 7 7 255 7 255 255 7 0 0 0 255 2 252 252 252 252 252 252 252 
+  0 63 0 0 63 0 63 63 0 63 0 0 63 63 63 63 0 63 0 0 63 0 0 0 
+  3 252 0 3 253 3 255 252 3 252 0 0 255 255 255 253 3 252 0 3 252 0 0 0 
+  255 15 127 135 31 255 255 7 253 4 7 0 252 252 252 252 252 244 4 254 7 7 7 0 
+: nyantailcolors11
+  0 0 0 0 127 0 127 0 0 127 0 127 0 0 0 0 0 127 0 127 127 127 127 127 
+  0 0 0 7 248 7 248 0 7 248 7 255 0 0 0 0 7 248 7 255 255 255 255 255 
+  0 0 0 255 3 255 7 7 255 7 255 255 0 0 0 1 254 4 252 252 252 252 252 252 
+  127 0 127 0 0 127 0 127 127 0 0 0 127 127 127 127 127 0 127 0 0 127 0 0 
+  248 7 248 1 7 248 7 255 248 0 0 0 255 255 255 255 249 7 248 0 7 248 0 0 
+  7 255 127 135 31 247 255 255 5 4 7 0 252 252 252 252 252 252 4 6 255 7 7 0 
+: nyantailcolors12
+  0 0 0 0 255 0 255 0 0 255 0 255 0 0 0 0 0 255 0 255 255 255 255 255 
+  0 0 0 15 240 15 240 0 15 240 15 255 0 0 0 0 15 240 15 255 255 255 255 255 
+  0 0 0 255 3 255 7 7 255 7 255 255 0 0 0 1 254 4 252 252 252 252 252 252 
+  255 0 255 0 0 255 0 255 255 0 0 0 255 255 255 255 255 0 255 0 0 255 0 0 
+  240 15 240 1 15 240 15 255 240 0 0 0 255 255 255 255 241 15 240 0 15 240 0 0 
+  7 255 127 135 31 247 255 255 5 4 7 0 252 252 252 252 252 252 4 6 255 7 7 0 
+: nyantailcolors13
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 31 31 0 31 0 0 31 0 31 0 0 0 0 0 31 0 31 31 31 31 31 
+  0 0 0 255 255 7 255 7 7 255 7 255 0 0 0 1 2 252 4 252 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  31 0 31 0 1 31 0 31 31 0 0 0 31 31 31 31 31 1 31 0 0 0 0 0 
+  255 31 231 135 63 63 199 255 249 9 14 0 252 252 252 252 252 228 252 6 15 15 14 0 
+: nyantailcolors14
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 63 63 0 63 0 0 63 0 0 0 0 63 0 0 63 0 63 63 63 63 
+  0 0 0 1 255 255 7 255 7 7 255 7 0 0 0 253 2 4 252 4 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  63 63 0 63 1 1 63 0 63 0 0 0 63 63 63 63 63 63 0 63 0 0 0 0 
+  255 255 103 135 63 39 255 7 249 9 14 0 252 252 252 252 252 252 196 254 15 15 14 0 
+: nyantailcolors15
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 0 127 127 0 127 0 0 127 0 0 0 0 127 0 0 127 0 127 127 127 127 
+  0 0 0 1 251 255 7 255 7 7 255 7 0 0 0 249 6 4 252 4 252 252 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  127 127 0 127 1 1 127 0 127 0 0 0 127 127 127 127 127 127 0 127 0 0 0 0 
+  255 255 103 135 63 39 255 7 249 9 14 0 252 252 252 252 252 252 196 254 15 15 14 0 
+: nyantailcolors16
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 0 0 255 0 255 255 0 255 0 0 255 0 0 0 0 255 0 0 255 0 255 255 255 
+  0 0 0 241 15 247 255 15 247 15 7 247 0 0 0 1 242 12 4 244 12 244 252 252 
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+  0 255 255 0 255 1 0 255 0 0 0 0 255 255 255 255 255 255 255 0 255 0 0 0 
+  15 255 231 135 63 47 199 247 9 9 14 0 252 252 252 252 252 252 252 14 255 15 14 0 
+: nyantailcolors17
+  0 0 0 0 1 0 1 1 0 1 0 0 0 0 0 1 0 1 0 0 1 0 1 1 
+  0 0 0 0 255 0 255 255 0 255 0 1 0 0 0 255 0 255 0 0 255 0 255 255 
+  0 0 0 1 227 31 231 255 31 231 31 231 0 0 0 225 30 228 28 4 228 28 228 252 
+  1 0 1 1 0 1 0 0 1 0 0 0 1 1 1 1 1 1 1 1 0 0 0 0 
+  254 3 255 255 0 255 0 0 255 0 0 0 255 255 255 255 255 255 255 255 0 0 0 0 
+  63 15 247 255 31 231 31 31 227 39 56 0 252 252 252 252 252 252 252 254 63 61 56 0 
+: nyantailcolors18
+  0 0 0 0 3 0 3 3 0 3 0 0 0 0 0 3 0 3 0 0 3 0 3 3 
+  0 0 0 0 255 0 255 255 0 255 0 1 0 0 0 255 0 255 0 0 255 0 255 255 
+  0 0 0 1 195 63 199 255 63 199 63 231 0 0 0 193 62 196 60 4 196 60 196 252 
+  3 0 3 3 0 3 0 0 3 0 0 0 3 3 3 3 3 3 3 3 0 0 0 0 
+  254 3 255 255 0 255 0 0 255 0 0 0 255 255 255 255 255 255 255 255 0 0 0 0 
+  63 15 247 255 63 199 63 31 227 39 56 0 252 252 252 252 252 252 252 254 63 61 56 0 
+: nyantailcolors19
+  0 0 0 0 0 7 0 7 7 0 7 0 0 0 0 7 7 0 7 0 0 7 0 7 
+  0 0 0 0 0 255 0 255 255 0 255 1 0 0 0 255 255 0 255 0 0 255 0 255 
+  0 0 0 1 3 135 127 135 255 127 135 255 0 0 0 129 254 124 132 124 4 132 124 228 
+  0 7 0 7 7 0 7 0 0 0 0 0 7 7 7 7 7 7 7 7 7 0 0 0 
+  2 255 0 255 255 0 255 0 0 0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 
+  63 15 247 159 255 127 143 127 35 37 56 0 252 252 252 252 252 252 252 254 255 127 56 0 
+: nyantailcolors20
+  0 0 0 15 0 0 15 0 15 15 0 15 0 0 0 15 15 15 0 15 0 0 15 0 
+  0 0 0 255 0 0 255 0 255 255 0 255 0 0 0 255 255 255 0 255 0 0 255 1 
+  0 0 0 1 255 7 7 255 7 255 255 231 0 0 0 1 254 252 252 4 252 4 4 252 
+  0 0 15 0 15 15 0 15 0 0 0 0 15 15 15 15 15 15 15 15 15 0 0 0 
+  2 3 255 0 255 255 0 255 0 0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 
+  63 15 247 255 7 255 255 31 227 37 56 0 252 252 252 252 252 252 252 254 255 255 56 0 
+: nyantailcolors21
+  0 0 0 31 0 0 31 0 31 31 0 31 0 0 0 31 31 31 0 31 0 0 31 0 
+  0 0 0 254 1 0 254 1 254 255 1 255 0 0 0 254 255 255 1 254 1 0 254 1 
+  0 0 0 1 255 7 7 255 7 255 255 39 0 0 0 1 254 252 252 4 252 4 196 252 
+  0 0 31 0 31 31 0 31 0 0 0 0 31 31 31 31 31 31 31 31 31 0 0 0 
+  1 0 254 1 254 255 1 254 1 0 0 0 255 255 255 255 255 255 255 255 255 1 0 0 
+  63 135 103 255 7 255 255 23 227 37 57 0 252 252 252 252 252 252 252 254 255 255 57 0 
+: nyantailcolors22
+  0 0 0 0 63 0 0 63 0 63 63 0 0 0 0 63 63 63 63 0 63 0 0 63 
+  0 0 0 0 252 3 0 252 3 252 255 3 0 0 0 252 255 255 255 3 252 3 0 253 
+  0 0 0 1 3 255 7 7 255 7 255 63 0 0 0 1 254 252 252 252 4 252 196 228 
+  63 0 0 63 0 63 63 0 63 0 0 0 0 63 63 63 63 63 63 63 63 0 0 0 
+  253 3 0 252 3 252 255 3 252 3 0 0 3 252 255 255 255 255 255 255 255 3 0 0 
+  63 135 103 31 255 7 255 247 35 231 57 0 252 252 252 252 252 252 252 254 255 255 57 0 
+: nyantailcolors23
+  0 0 0 127 0 127 0 0 127 0 127 127 0 0 0 127 127 127 127 127 0 127 0 0 
+  0 0 0 248 7 248 7 0 248 7 248 255 0 0 0 248 255 255 255 255 7 248 7 1 
+  0 0 0 1 255 7 255 7 7 255 199 63 0 0 0 1 254 252 252 252 252 4 252 228 
+  0 127 0 0 127 0 127 127 0 0 0 0 127 0 127 127 127 127 127 127 127 0 0 0 
+  7 248 7 0 248 7 248 255 7 0 0 0 249 7 248 255 255 255 255 255 255 7 0 0 
+  63 135 231 31 7 255 15 247 227 37 57 0 252 252 124 252 252 252 252 254 255 255 57 0 
+: nyantailcolors24
+  0 0 0 255 0 255 0 0 255 0 255 255 0 0 0 255 255 255 255 255 0 255 0 0 
+  0 0 0 240 15 240 15 0 240 15 240 255 0 0 0 240 255 255 255 255 15 240 15 1 
+  0 0 0 1 255 7 255 7 7 255 199 63 0 0 0 1 254 252 252 252 252 4 252 228 
+  0 255 0 0 255 0 255 255 0 0 0 0 255 0 255 255 255 255 255 255 255 0 0 0 
+  15 240 15 0 240 15 240 255 15 0 0 0 241 15 240 255 255 255 255 255 255 15 0 0 
+  63 135 231 31 7 255 15 247 227 37 57 0 252 252 124 252 252 252 252 254 255 255 57 0 
+: nyantailcolorssprites
+  |> nyantailcolors01
+  |> nyantailcolors02
+  |> nyantailcolors03
+  |> nyantailcolors04
+  |> nyantailcolors05
+  |> nyantailcolors06
+  |> nyantailcolors07
+  |> nyantailcolors08
+  |> nyantailcolors09
+  |> nyantailcolors10
+  |> nyantailcolors11
+  |> nyantailcolors12
+  |> nyantailcolors13
+  |> nyantailcolors14
+  |> nyantailcolors15
+  |> nyantailcolors16
+  |> nyantailcolors17
+  |> nyantailcolors18
+  |> nyantailcolors19
+  |> nyantailcolors20
+  |> nyantailcolors21
+  |> nyantailcolors22
+  |> nyantailcolors23
+  |> nyantailcolors24
+
+ : nyanhead01
+  0 0 255 255 255 255 255 255 255 255 255 255 0 0 255 0 0 2 64 0 0 4 0 32 
+  0 0 255 255 255 255 255 255 159 143 135 128 0 0 255 0 0 64 0 100 240 248 255 255 
+  0 0 0 128 192 192 192 216 228 196 132 4 0 0 0 128 64 64 64 88 124 124 252 252 
+  255 255 255 255 255 255 255 255 72 112 0 0 3 129 1 9 65 0 0 255 120 112 0 0 
+  0 24 24 96 105 143 192 255 37 28 0 0 255 239 255 159 159 255 127 255 61 28 0 0 
+  2 50 178 14 46 228 8 240 32 192 0 0 254 222 254 242 242 252 248 240 224 192 0 0 
+: nyanhead02
+  0 0 255 255 255 255 255 255 255 255 255 255 0 0 255 0 0 2 64 0 0 4 0 32 
+  0 0 255 255 255 255 255 255 207 199 195 192 0 0 255 0 0 64 0 52 120 124 127 127 
+  0 0 0 128 192 192 192 204 210 226 194 2 0 0 0 128 64 64 64 76 94 126 254 254 
+  255 255 255 255 255 255 255 255 72 56 0 0 2 128 0 8 64 0 0 255 120 56 0 0 
+  128 140 140 176 180 199 224 255 18 14 0 0 255 247 255 207 207 127 63 255 30 14 0 0 
+  1 25 89 7 151 242 4 248 144 112 0 0 255 239 255 249 249 254 252 248 240 112 0 0 
+: nyanhead03
+  0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 255 0 0 2 64 0 0 4 0 
+  0 0 0 255 255 255 255 255 255 207 199 195 0 0 0 255 0 0 64 0 52 120 124 127 
+  0 0 0 0 128 192 192 192 204 210 226 194 0 0 0 0 128 64 64 64 76 94 126 254 
+  255 255 255 255 255 255 255 255 255 164 28 0 32 2 128 0 8 64 0 0 255 188 28 0 
+  192 128 140 140 176 180 199 224 255 9 7 0 127 255 247 255 207 207 127 63 255 15 7 0 
+  2 1 25 89 7 151 242 4 248 72 56 0 254 255 239 255 249 249 254 252 248 120 56 0 
+: nyanhead04
+  0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 255 0 0 2 64 0 0 4 0 
+  0 0 0 255 255 255 255 255 255 207 199 195 0 0 0 255 0 0 64 0 52 120 124 127 
+  0 0 0 0 128 192 192 192 204 210 226 194 0 0 0 0 128 64 64 64 76 94 126 254 
+  255 255 255 255 255 255 255 255 255 72 56 0 32 2 128 0 8 64 0 0 255 120 56 0 
+  192 128 140 140 176 180 199 224 255 18 14 0 127 255 247 255 207 207 127 63 255 30 14 0 
+  2 1 25 89 7 151 242 4 248 144 112 0 254 255 239 255 249 249 254 252 248 240 112 0 
+: nyanhead05
+  0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 255 0 0 2 64 0 0 4 0 
+  0 0 0 255 255 255 255 255 255 159 143 135 0 0 0 255 0 0 64 0 100 240 248 255 
+  0 0 0 0 128 192 192 192 216 228 196 132 0 0 0 0 128 64 64 64 88 124 124 252 
+  255 255 255 255 255 255 255 255 255 32 224 0 32 3 129 1 9 65 0 0 255 224 224 0 
+  128 0 24 24 96 105 143 192 255 74 57 0 255 255 239 255 159 159 255 127 255 123 57 0 
+  4 2 50 178 14 46 228 8 240 64 192 0 252 254 222 254 242 242 252 248 240 192 192 0 
+: nyanhead06
+  0 0 0 255 255 255 255 255 255 255 255 255 0 0 0 255 0 0 2 64 0 0 4 0 
+  0 0 0 255 255 255 255 255 159 143 135 128 0 0 0 255 0 0 64 96 244 248 255 255 
+  0 0 0 0 128 192 192 216 228 196 132 4 0 0 0 0 128 64 64 88 124 124 252 252 
+  255 255 255 255 255 255 255 255 255 32 192 0 33 3 129 1 9 64 0 0 255 224 192 0 
+  0 24 24 96 105 143 192 255 255 74 113 0 255 239 255 159 159 255 127 63 255 123 113 0 
+  2 50 178 14 46 228 8 240 64 64 192 0 254 222 254 242 242 252 248 240 192 192 192 0 
+	
+: nyanheadsprites
+|> nyanhead01
+|> nyanhead02
+|> nyanhead03
+|> nyanhead04
+|> nyanhead05
+|> nyanhead06
+
+: star01
+  0 0 0 16 0 0 0 0 0 0 0 0 0 0 0 0 
+: star02
+  0 0 16 40 16 0 0 0 0 0 0 0 0 0 0 0 
+: star03
+  0 16 16 108 16 16 0 0 0 0 0 0 0 0 0 0 
+: star04
+  16 16 16 238 16 16 16 0 0 0 0 0 0 0 0 0 
+: star05
+  16 84 0 198 0 84 16 0 0 0 0 0 0 0 0 0 
+: star06
+  16 68 0 130 0 68 16 0 0 0 0 0 0 0 0 0 
+: star07
+  16 0 0 130 0 0 16 0 0 0 0 0 0 0 0 0 
+: star08
+  0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 
+: starsprites
+|> star01
+|> star02
+|> star03
+|> star04
+|> star05
+|> star06
+|> star07
+|> star08
+
+
+

@@ -63,10 +63,8 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     private int panelY;
     //array to store colour palette
     private Color[] planeColors;
-    
+    //store the file reference in memory.
     File rom;
-    //MachineType m;
-    //an object representing the last frame of the image
     public BufferedImage image;
     public static BufferedImage icon;
     public Graphics2D frameBuffer;
@@ -736,8 +734,8 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                             super.cpuExec();
                         }else{
                             stopEmulation();
-                            if(getCauseOfHalt().trim() != ""){
-                                JOptionPane.showMessageDialog(f, "An error occured dluring the execution of the emulated machine and has been halted: " + getCauseOfHalt(), "Error", JOptionPane.ERROR_MESSAGE); 
+                            if(!getCauseOfHalt().trim().equals("")){
+                                JOptionPane.showMessageDialog(f, "An error occured during the execution of the emulated machine and has been halted: " + getCauseOfHalt(), "Error", JOptionPane.ERROR_MESSAGE); 
                             }
                             break;
                         }

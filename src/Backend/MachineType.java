@@ -27,6 +27,15 @@ package Backend;
  *
  * @author dyharlan
  */
+//Meaning of each quirk:
+//     vfOrderQuirks - reset destination register to the value after vF has been set.
+//     shiftQuirks - Instead of modifying vY on 8xy6 and 8xyE, we modify vX instead.
+//     logicQuirks - reset vF on 8xy1, 8xy2, 8xy3
+//     loadStoreQuirks - Increment I by vX;
+//     clipQuirks - Clip pixels instead of wrapping it;
+//     vBlankQuirks - wait for the start of next frame during screen redraws. Relevant to COSMAP VIP and lowres mode of old SCHIP;
+//     IOverflowQuirks - VF is set to 1 if I exceeds 0xFFF, outside of the 12-bit addressing range.
+//     jumpQuirks - Instead of jumping to NNN + v0, we jump to NNN + vX;
 public enum MachineType {
 //cosmac VIP settings
 //     vfOrderQuirks = false;

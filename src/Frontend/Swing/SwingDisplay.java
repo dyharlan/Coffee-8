@@ -46,7 +46,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 
-public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListener {
+public final class SwingDisplay extends Chip8SOC implements Runnable {
     //resolution of the buffered image
     protected final int IMGWIDTH = 128;
     protected final int IMGHEIGHT = 64;
@@ -112,14 +112,8 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-//        planeColors[0] = Color.ORANGE;
-//        planeColors[1] = Color.BLUE;
-//        planeColors[2] = Color.RED;
-//        planeColors[3] = new Color(149,129,103);
-        
         isRunning = false;
         romStatus = false;
-        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
@@ -137,10 +131,10 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
             }
         };
         gamePanel.setPreferredSize(new Dimension(panelX, panelY));
-        f.add(mb, BorderLayout.NORTH);
+        f.setJMenuBar(mb);
         f.add(gamePanel,BorderLayout.CENTER);
     }
-    public SwingDisplay(){
+    public SwingDisplay() throws IOException {
         super(true);
         super.setCurrentMachine(MachineType.XO_CHIP); 
         super.setCycles(200);
@@ -212,7 +206,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         planeColors[0] = new Color(0x000000);
         planeColors[1] = new Color(0xfbf305);
         planeColors[2] = new Color(0xDD8E00);
-        planeColors[3] = new Color(0xdd0907);
+        planeColors[3] = new Color(0xC22524);
         planeColors[4] = new Color(0xf20884);
         planeColors[5] = new Color(0x4700a5);
         planeColors[6] = new Color(0x0000d3);
@@ -225,8 +219,10 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         planeColors[13] = new Color(0x808080);
         planeColors[14] = new Color(0x404040);
         planeColors[15] =  new Color(0xFFFFFF);
-
         crc32 = new CRC32();
+        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
+
+        
     }
     public SwingDisplay(String verNo) throws IOException {
         this();
@@ -240,11 +236,10 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
 //        planeColors[1] = Color.BLUE;
 //        planeColors[2] = Color.RED;
 //        planeColors[3] = new Color(149,129,103);
-        
+        f.setIconImage(icon);
         isRunning = false;
         romStatus = false;
-        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
-        f.setIconImage(icon);
+        
         panelX = 64 * LOWRES_SCALE_FACTOR;
         panelY = 32 * LOWRES_SCALE_FACTOR;
         //Overriding the paint method of JPanel
@@ -671,6 +666,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
     public void loadROM(File rom) {
         try {
             synchronized(this){
+                stopEmulation();
                 romStatus = false;
                 DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
                 int offset = 0x0;
@@ -812,73 +808,70 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         //tell the emulator that we have successfully updated the framebuffer
         update = false;
     }
-    @Override
+    
+    class keyHandler extends KeyAdapter{
+        @Override
     public void keyPressed(KeyEvent e) {
-        if (super.keyPad == null) {
+        if (keyPad == null) {
             return;
         }
         //System.out.println("pressed a key!");
         int keyCode = e.getKeyCode();
         switch (keyCode) {
             case KeyEvent.VK_X:
-                super.keyPress(0);
+                keyPress(0);
                 break;
             case KeyEvent.VK_1:
-                super.keyPress(1);
-
+                keyPress(1);
                 break;
             case KeyEvent.VK_2:
-                super.keyPress(2);
-
+                keyPress(2);
                 break;
             case KeyEvent.VK_3:
-                super.keyPress(3);
-
+                keyPress(3);
                 break;
             case KeyEvent.VK_Q:
-                super.keyPress(4);
-
+                keyPress(4);
                 break;
             case KeyEvent.VK_W:
-                super.keyPress(5);
-
+                keyPress(5);
                 break;
             case KeyEvent.VK_E:
-                super.keyPress(6);
+                keyPress(6);
                 break;
             case KeyEvent.VK_A:
-                super.keyPress(7);
+                keyPress(7);
                 break;
             case KeyEvent.VK_S:
-                super.keyPress(8);
+                keyPress(8);
                 break;
             case KeyEvent.VK_D:
-                super.keyPress(9);
+                keyPress(9);
                 break;
             case KeyEvent.VK_Z:
-                super.keyPress(10);
+                keyPress(10);
                 break;
             case KeyEvent.VK_C:
-                super.keyPress(11);
+                keyPress(11);
                 break;
             case KeyEvent.VK_4:
-                super.keyPress(12);
+                keyPress(12);
                 break;
             case KeyEvent.VK_R:
-                super.keyPress(13);
+                keyPress(13);
                 break;
             case KeyEvent.VK_F:
-                super.keyPress(14);
+                keyPress(14);
                 break;
             case KeyEvent.VK_V:
-                super.keyPress(15);
+                keyPress(15);
                 break;
         }
     }
-        
-       @Override
+
+    @Override
     public void keyReleased(KeyEvent e) {
-        if (super.keyPad == null) {
+        if (keyPad == null) {
             return;
         }
         //System.out.println("released a key!");
@@ -886,66 +879,61 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
 
         switch (keyCode) {
             case KeyEvent.VK_X:
-                super.keyRelease(0);
+                keyRelease(0);
                 break;
             case KeyEvent.VK_1:
-                super.keyRelease(1);
+                keyRelease(1);
                 break;
             case KeyEvent.VK_2:
-                super.keyRelease(2);
+                keyRelease(2);
                 break;
             case KeyEvent.VK_3:
-                super.keyRelease(3);
+                keyRelease(3);
                 break;
             case KeyEvent.VK_Q:
-                super.keyRelease(4);
+                keyRelease(4);
                 break;
             case KeyEvent.VK_W:
-                super.keyRelease(5);
+                keyRelease(5);
                 break;
             case KeyEvent.VK_E:
-                super.keyRelease(6);
+                keyRelease(6);
                 break;
             case KeyEvent.VK_A:
-                super.keyRelease(7);
+                keyRelease(7);
                 break;
             case KeyEvent.VK_S:
-                super.keyRelease(8);
+                keyRelease(8);
                 break;
             case KeyEvent.VK_D:
-                super.keyRelease(9);
+                keyRelease(9);
                 break;
             case KeyEvent.VK_Z:
-                super.keyRelease(10);
+                keyRelease(10);
                 break;
             case KeyEvent.VK_C:
-                super.keyRelease(11);
+                keyRelease(11);
                 break;
             case KeyEvent.VK_4:
-                super.keyRelease(12);
+                keyRelease(12);
                 break;
             case KeyEvent.VK_R:
-                super.keyRelease(13);
+                keyRelease(13);
                 break;
             case KeyEvent.VK_F:
-                super.keyRelease(14);
+                keyRelease(14);
                 break;
             case KeyEvent.VK_V:
-                super.keyRelease(15);
+                keyRelease(15);
                 break;
         }
-//                       for (int i = 0; i < chip8CPU.keyPad.length; i++) {
-//                System.out.println(chip8CPU.keyPad[i] + "\t");
-//            }
-//            System.out.println("");
-        }
-        
+    }
+    }
+    
+
     
     //FX75: Store V0..VX in RPL user flags (X <= 7)
     public void C8INST_FX75(){
-//        for(int n = 0;(n < X) || (n <= 7);n++){
-//            flags[n] = v[n];
-//        }
         File f = new File("SavedFlags/" + crc32.getValue() + ".scflag");
         
         try{
@@ -970,7 +958,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
     //FX85: Read V0..VX from RPL user flags (X <= 7)
     public void C8INST_FX85(){
         File f = new File("SavedFlags/" + crc32.getValue() + ".scflag");
-        
         if (f.exists()) {
             //copy the flags first to a temporary array before writing it to memory.
             ArrayList<Integer> temp = new ArrayList<>();
@@ -994,7 +981,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         f.setResizable(false);
         f.pack();
         f.setLocationRelativeTo(null);
-        f.addKeyListener(this);
+        f.addKeyListener(new keyHandler());
         f.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -1021,11 +1008,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable, KeyListene
         f.setVisible(true);
         
 
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-        
     }
 
     

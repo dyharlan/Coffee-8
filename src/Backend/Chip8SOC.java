@@ -58,7 +58,7 @@ public abstract class Chip8SOC{
     private Boolean shiftQuirks;
     private Boolean logicQuirks;
     private Boolean loadStoreQuirks;
-    private Boolean clipQuirks;
+    private Boolean wrapQuirks;
     protected Boolean vBlankQuirks;
     private Boolean IOverflowQuirks;
     private Boolean jumpQuirks;
@@ -166,7 +166,7 @@ public abstract class Chip8SOC{
         shiftQuirks = m.getQuirks(1);
         logicQuirks = m.getQuirks(2);
         loadStoreQuirks = m.getQuirks(3);
-        clipQuirks = m.getQuirks(4);
+        wrapQuirks = m.getQuirks(4);
         vBlankQuirks = m.getQuirks(5);
         IOverflowQuirks = m.getQuirks(6);
         jumpQuirks = m.getQuirks(7);
@@ -997,7 +997,7 @@ public abstract class Chip8SOC{
                      for (byte xLine = 0; xLine < 16; xLine++) {
                          currPixel = ((mem[i + (yLine * 2) + (xLine > 7 ? 1 : 0)] >> (7 - (xLine % 8))) & 0x1);
                          targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
-                         if (clipQuirks) {
+                         if (wrapQuirks) {
                              if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                                  currPixel = 0;
                              }
@@ -1036,7 +1036,7 @@ public abstract class Chip8SOC{
                          //Load the target pixel on the screen to draw on
                          targetPixel = ((x + xLine) % DISPLAY_WIDTH) + ((y + yLine) % DISPLAY_HEIGHT) * DISPLAY_WIDTH;
                          //Do not draw a sprite that is outside of the display area
-                         if (clipQuirks) {
+                         if (wrapQuirks) {
                              if ((x % DISPLAY_WIDTH) + xLine >= DISPLAY_WIDTH || (y % DISPLAY_HEIGHT) + yLine >= DISPLAY_HEIGHT) {
                                  currPixel = 0;
                              }

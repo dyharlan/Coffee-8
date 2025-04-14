@@ -690,10 +690,11 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                     update = true;
                     startEmulation();
                 });
-            } else {
-                romStatus = false;
-                JOptionPane.showMessageDialog(f, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
             }
+//            else {
+//                romStatus = false;
+//                JOptionPane.showMessageDialog(f, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
+//            }
         } catch (IOException ioe) {
             romStatus = false;
             JOptionPane.showMessageDialog(f, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);

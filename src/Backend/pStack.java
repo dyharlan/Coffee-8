@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-/**
+/*
  *
  * @author dyharlan
  */

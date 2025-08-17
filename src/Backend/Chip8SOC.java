@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 package Backend;
-/**
+/*
  *
  * @author dyharlan
  */
@@ -31,8 +31,6 @@ import java.util.*;
 import java.io.*;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.UnsupportedAudioFileException;
-
-
 
 /*
     * An interface that represents an instruction to execute. Lambda statements are used, but when unrolled,
@@ -46,7 +44,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 
 @FunctionalInterface
 interface Instruction {
-    public void execute();
+    void execute();
 }
 public abstract class Chip8SOC{
     private int DISPLAY_WIDTH;
@@ -530,12 +528,6 @@ public abstract class Chip8SOC{
         playSound = false;
     }
     
-//    public void closeSound(){
-//        if(tg != null){
-//            tg.close();
-//        }
-//    }
-    
     public Boolean isSoundEnabled(){
         return playSound;
     }
@@ -551,7 +543,6 @@ public abstract class Chip8SOC{
     }
     //cpu cycle
     public void cpuExec() {
-        //System.out.println(plane);
         //fetch
         //grab opcode and combine them
         opcode = (mem[pc] << 8 | mem[pc+1]);
@@ -595,8 +586,6 @@ public abstract class Chip8SOC{
         cpuHalted = true;
         causeOfHalt = "Unknown Opcode: " + Integer.toHexString(opcode);
         System.err.println(causeOfHalt);
-        //throw new IllegalInstructionException();
-        //System.err.println();
     }
     private void C8INST_UNKNOWN(String causeOfHalt){
         cpuHalted = true;
@@ -951,22 +940,6 @@ public abstract class Chip8SOC{
 //        }
     }
 
-
-
-//    private void C8INST_DXY0(){
-//        if(currentMachine == MachineType.COSMAC_VIP)
-//            C8INST_DXYN();
-//        else {
-//            int x = v[X];
-//            int y = v[Y];
-//            v[0xF] = 0;
-//            int i = I;
-//            int currPixel = 0;
-//            int targetPixel = 0;
-//            
-//
-//        }
-//    } 
     /*
     * DXY0/DXYN derived from Octo
     * In superchip: draw a 16x16 sprite, otherwise, draw normally

@@ -70,7 +70,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     public static BufferedImage icon;
     public Graphics2D frameBuffer;
     private Boolean romStatus;
-    private Thread cpuCycleThread;
+    private volatile Thread cpuCycleThread;
     private Graphics2D g2d;
     protected JFrame f;
     private JMenuBar mb;
@@ -658,7 +658,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     //This method loads the selected rom. It is also used when resetting the machine.
     public void loadROM(File rom) {
         try {
-            synchronized(this){
+            //synchronized(this){
                 stopEmulation();
                 romStatus = false;
                 DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(rom)));
@@ -674,7 +674,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                 }
                 in.close();
                 romStatus = true;
-            }
+            //}
             if (romStatus) {
                 this.rom = rom;
                 if (pauseToggle.isSelected()) {
@@ -712,7 +712,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         double origin = elapsedTimeFromEpoch+frameTime/2;
         Thread thisThread = Thread.currentThread();
         while (cpuCycleThread == thisThread) {
-            synchronized (this) {
+            //synchronized (this) {
                 long diff = System.currentTimeMillis() - elapsedTimeFromEpoch;
                 elapsedTimeFromEpoch+=diff;
                 for (long i = 0; origin < elapsedTimeFromEpoch - frameTime && i < 2; origin += frameTime, i++) {
@@ -734,11 +734,11 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                 }
 
                 try {
-                    cpuCycleThread.sleep((int)frameTime);
+                    Thread.sleep((int)frameTime);
                 } catch (InterruptedException ex) {
                     ex.printStackTrace();
                 }
-            }
+            //}
             
             repaintImage();
             

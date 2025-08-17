@@ -34,8 +34,6 @@ import javax.swing.JOptionPane;
  */
 public class Main {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, UnsupportedLookAndFeelException  {
-    
-        //try{
         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         SwingDisplay d = null;
         File configFile = new File("config.cfg");
@@ -54,15 +52,5 @@ public class Main {
             }
             d.startApp();
         }
-        
-        
-        
-        //}catch(FileNotFoundException fnfe){
-        //JOptionPane.showMessageDialog(null, "Rom not found: " + fnfe, "Error", JOptionPane.ERROR_MESSAGE);
-        //System.exit(0);
-        // }catch(IOException ioe){
-        //JOptionPane.showMessageDialog(null, "An I/O Error Occured: " + ioe, "Error", JOptionPane.ERROR_MESSAGE);
-        //System.exit(0);
-        //}
     }
 }

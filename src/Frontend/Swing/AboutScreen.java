@@ -51,12 +51,9 @@ public class AboutScreen {
                 aboutDialog.dispose();
             }
         });
-        //try{
-            appIcon = SwingDisplay.icon;
-            aboutDialog.setIconImage(appIcon);
-        //}catch(IOException ioe){
-            alt = "Coffee-8 Icon Placeholder";
-        //}
+        appIcon = SwingDisplay.icon;
+        aboutDialog.setIconImage(appIcon);
+        alt = "Coffee-8 Icon Placeholder";
         panel1 = new JPanel(new FlowLayout());
             appIconContainer = new JLabel(new ImageIcon(appIcon));
             panel1.add(appIconContainer);

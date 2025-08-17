@@ -39,6 +39,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.zip.CRC32;
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
@@ -109,7 +110,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        //isRunning = false;
         romStatus = false;
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
@@ -217,7 +217,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         planeColors[14] = new Color(0x404040);
         planeColors[15] =  new Color(0xFFFFFF);
         crc32 = new CRC32();
-        icon = ImageIO.read(getClass().getResourceAsStream("/Frontend/icon.png"));
+        icon = ImageIO.read(Objects.requireNonNull(getClass().getResourceAsStream("/Frontend/icon.png")));
 
         
     }
@@ -646,13 +646,10 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     public Boolean checkROMSize(File rom, MachineType m){
         Boolean rightSize = true;
         if (m == MachineType.COSMAC_VIP && rom.length() > 3232L) {
-            //JOptionPane.showMessageDialog(null, "Rom is too large for Chip-8!", "Error", JOptionPane.ERROR_MESSAGE);
             rightSize = false;
         } else if (m == MachineType.SUPERCHIP_1_1 && rom.length() > 3583L) {
-            //JOptionPane.showMessageDialog(null, "Rom is too large for Super-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
              rightSize = false;
         } else if (m == MachineType.XO_CHIP && rom.length() > 65024L) {
-            //JOptionPane.showMessageDialog(null, "Rom is too large for XO-Chip!", "Error", JOptionPane.ERROR_MESSAGE);
             rightSize = false;
         }
         return rightSize;
@@ -689,10 +686,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                     startEmulation();
                 });
             }
-//            else {
-//                romStatus = false;
-//                JOptionPane.showMessageDialog(f, "No ROM has been loaded into the emulator! Please load a ROM and try again.", "Error", JOptionPane.ERROR_MESSAGE);
-//            }
         } catch (IOException ioe) {
             romStatus = false;
             JOptionPane.showMessageDialog(f, "There was a problem loading the ROM file:" + ioe.toString(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -751,33 +744,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
             
         }
     }
-    
-    //these methods will check if an array is equal. It will exit early if there is an inequality
-    public Boolean arrayEqual(int[] a, int[] b) {
-        int length = a.length;
-        if (length != b.length) {
-            return false;
-        }
-        for (int i = 0; i < length; i++) {
-            if (a[i] != b[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    public Boolean arrayEqual(Color[] a, Color[] b) {
-        int length = a.length;
-        if (length != b.length) {
-            return false;
-        }
-        for (int i = 0; i < length; i++) {
-            if (a[i] != b[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
     /*
     * This function will not refresh the BufferedImage if it hasn't changed.
     * Original Implementation from: https://github.com/JohnEarnest/Octo/
@@ -801,7 +767,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         //apply the changes to the gamePanel
         gamePanel.repaint();
         //tell the emulator that we have successfully updated the framebuffer
-        update = false;
+        super.update = false;
     }
     
     class keyHandler extends KeyAdapter{
@@ -810,7 +776,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         if (keyPad == null) {
             return;
         }
-        //System.out.println("pressed a key!");
         int keyCode = e.getKeyCode();
         switch (keyCode) {
             case KeyEvent.VK_X:
@@ -864,69 +829,65 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         }
     }
 
-    @Override
-    public void keyReleased(KeyEvent e) {
-        if (keyPad == null) {
-            return;
-        }
-        //System.out.println("released a key!");
-        int keyCode = e.getKeyCode();
+        @Override
+        public void keyReleased(KeyEvent e) {
+            if (keyPad == null) {
+                return;
+            }
+            int keyCode = e.getKeyCode();
 
-        switch (keyCode) {
-            case KeyEvent.VK_X:
-                keyRelease(0);
-                break;
-            case KeyEvent.VK_1:
-                keyRelease(1);
-                break;
-            case KeyEvent.VK_2:
-                keyRelease(2);
-                break;
-            case KeyEvent.VK_3:
-                keyRelease(3);
-                break;
-            case KeyEvent.VK_Q:
-                keyRelease(4);
-                break;
-            case KeyEvent.VK_W:
-                keyRelease(5);
-                break;
-            case KeyEvent.VK_E:
-                keyRelease(6);
-                break;
-            case KeyEvent.VK_A:
-                keyRelease(7);
-                break;
-            case KeyEvent.VK_S:
-                keyRelease(8);
-                break;
-            case KeyEvent.VK_D:
-                keyRelease(9);
-                break;
-            case KeyEvent.VK_Z:
-                keyRelease(10);
-                break;
-            case KeyEvent.VK_C:
-                keyRelease(11);
-                break;
-            case KeyEvent.VK_4:
-                keyRelease(12);
-                break;
-            case KeyEvent.VK_R:
-                keyRelease(13);
-                break;
-            case KeyEvent.VK_F:
-                keyRelease(14);
-                break;
-            case KeyEvent.VK_V:
-                keyRelease(15);
-                break;
+            switch (keyCode) {
+                case KeyEvent.VK_X:
+                    keyRelease(0);
+                    break;
+                case KeyEvent.VK_1:
+                    keyRelease(1);
+                    break;
+                case KeyEvent.VK_2:
+                    keyRelease(2);
+                    break;
+                case KeyEvent.VK_3:
+                    keyRelease(3);
+                    break;
+                case KeyEvent.VK_Q:
+                    keyRelease(4);
+                    break;
+                case KeyEvent.VK_W:
+                    keyRelease(5);
+                    break;
+                case KeyEvent.VK_E:
+                    keyRelease(6);
+                    break;
+                case KeyEvent.VK_A:
+                    keyRelease(7);
+                    break;
+                case KeyEvent.VK_S:
+                    keyRelease(8);
+                    break;
+                case KeyEvent.VK_D:
+                    keyRelease(9);
+                    break;
+                case KeyEvent.VK_Z:
+                    keyRelease(10);
+                    break;
+                case KeyEvent.VK_C:
+                    keyRelease(11);
+                    break;
+                case KeyEvent.VK_4:
+                    keyRelease(12);
+                    break;
+                case KeyEvent.VK_R:
+                    keyRelease(13);
+                    break;
+                case KeyEvent.VK_F:
+                    keyRelease(14);
+                    break;
+                case KeyEvent.VK_V:
+                    keyRelease(15);
+                    break;
+            }
         }
     }
-    }
-    
-
-    
     //FX75: Store V0..VX in RPL user flags (X <= 7)
     public void C8INST_FX75(){
         File f = new File("SavedFlags/" + crc32.getValue() + ".scflag");

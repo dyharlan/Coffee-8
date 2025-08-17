@@ -123,71 +123,18 @@ public class ScalingManager {
             Object source = e.getSource();
             if (source == upButton) {
                 newScalingMultiplier += 2;
-                inputField.setText("<html><h4>" + Integer.toString(newScalingMultiplier) + "</h4></html>");
-                s.LOWRES_SCALE_FACTOR = newScalingMultiplier;
-                s.HIRES_SCALE_FACTOR = newScalingMultiplier / 2;
-                s.gamePanel.revalidate();
-                s.gamePanel.repaint();
-                if (s.getHiRes()) {
-                    sizeX = 128 * s.HIRES_SCALE_FACTOR;
-                    sizeY = 64 * s.HIRES_SCALE_FACTOR;
-                } else {
-                    sizeX = 64 * s.LOWRES_SCALE_FACTOR;
-                    sizeY = 32 * s.LOWRES_SCALE_FACTOR;
-                }
-
-                s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
-                s.f.pack();
+                inputField.setText("<html><h4>" + newScalingMultiplier + "</h4></html>");
+                applyDisplaySettings(newScalingMultiplier);
             } else if (source == downButton) {
-                if (newScalingMultiplier == 4) {
-                    inputField.setText("<html><h4>" + Integer.toString(newScalingMultiplier) + "</h4></html>");
-                    s.LOWRES_SCALE_FACTOR = newScalingMultiplier;
-                    s.HIRES_SCALE_FACTOR = newScalingMultiplier / 2;
-                    s.gamePanel.revalidate();
-                    s.gamePanel.repaint();
-                    if (s.getHiRes()) {
-                        sizeX = 128 * s.HIRES_SCALE_FACTOR;
-                        sizeY = 64 * s.HIRES_SCALE_FACTOR;
-                    } else {
-                        sizeX = 64 * s.LOWRES_SCALE_FACTOR;
-                        sizeY = 32 * s.LOWRES_SCALE_FACTOR;
-                    }
-                    s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
-                    s.f.pack();
-                } else {
+                if(newScalingMultiplier > 4){
                     newScalingMultiplier -= 2;
-                    inputField.setText("<html><h4>" + Integer.toString(newScalingMultiplier) + "</h4></html>");
-                    s.LOWRES_SCALE_FACTOR = newScalingMultiplier;
-                    s.HIRES_SCALE_FACTOR = newScalingMultiplier / 2;
-                    s.gamePanel.revalidate();
-                    s.gamePanel.repaint();
-                    if (s.getHiRes()) {
-                        sizeX = 128 * s.HIRES_SCALE_FACTOR;
-                        sizeY = 64 * s.HIRES_SCALE_FACTOR;
-                    } else {
-                        sizeX = 64 * s.LOWRES_SCALE_FACTOR;
-                        sizeY = 32 * s.LOWRES_SCALE_FACTOR;
-                    }
-                    s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
-                    s.f.pack();
+                    inputField.setText("<html><h4>" + newScalingMultiplier + "</h4></html>");
+                    applyDisplaySettings(newScalingMultiplier);
                 }
-
             } else if (source == okButton) {
                 dialog.dispose();
             } else if (source == cancelButton) {
-                s.LOWRES_SCALE_FACTOR = currentScalingMultiplier;
-                s.HIRES_SCALE_FACTOR = currentScalingMultiplier / 2;
-                s.gamePanel.revalidate();
-                s.gamePanel.repaint();
-                if (s.getHiRes()) {
-                    sizeX = 128 * s.HIRES_SCALE_FACTOR;
-                    sizeY = 64 * s.HIRES_SCALE_FACTOR;
-                } else {
-                    sizeX = 64 * s.LOWRES_SCALE_FACTOR;
-                    sizeY = 32 * s.LOWRES_SCALE_FACTOR;
-                }
-                s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
-                s.f.pack();
+                applyDisplaySettings(currentScalingMultiplier);
                 dialog.dispose();
             }
             s.hiResViewWidth = s.IMGWIDTH * s.HIRES_SCALE_FACTOR;
@@ -195,5 +142,22 @@ public class ScalingManager {
             s.lowResViewWidth = s.IMGWIDTH * s.LOWRES_SCALE_FACTOR;
             s.lowResViewHeight = s.IMGHEIGHT * s.LOWRES_SCALE_FACTOR;
         }
+
+        private void applyDisplaySettings(int scalingMultiplier) {
+            s.LOWRES_SCALE_FACTOR = scalingMultiplier;
+            s.HIRES_SCALE_FACTOR = scalingMultiplier / 2;
+            s.gamePanel.revalidate();
+            s.gamePanel.repaint();
+            if (s.getHiRes()) {
+                sizeX = 128 * s.HIRES_SCALE_FACTOR;
+                sizeY = 64 * s.HIRES_SCALE_FACTOR;
+            } else {
+                sizeX = 64 * s.LOWRES_SCALE_FACTOR;
+                sizeY = 32 * s.LOWRES_SCALE_FACTOR;
+            }
+            s.gamePanel.setPreferredSize(new Dimension(sizeX, sizeY));
+            s.f.pack();
+        }
+
     }
 }

@@ -70,7 +70,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     public Graphics2D frameBuffer;
     private Boolean romStatus;
     private Thread cpuCycleThread;
-    private Boolean isRunning;
     private Graphics2D g2d;
     protected JFrame f;
     private JMenuBar mb;
@@ -110,7 +109,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
         image = new BufferedImage(IMGWIDTH,IMGHEIGHT,BufferedImage.TYPE_INT_RGB);
         frameBuffer = image.createGraphics();
         f = new JFrame(verNo);
-        isRunning = false;
+        //isRunning = false;
         romStatus = false;
         f.setIconImage(icon);
         panelX = 64 * LOWRES_SCALE_FACTOR;
@@ -235,7 +234,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
 //        planeColors[2] = Color.RED;
 //        planeColors[3] = new Color(149,129,103);
         f.setIconImage(icon);
-        isRunning = false;
         romStatus = false;
         
         panelX = 64 * LOWRES_SCALE_FACTOR;
@@ -703,7 +701,6 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     //starts the cpu emulation cycle
     public void startEmulation() {
         if (cpuCycleThread == null) {
-            isRunning = true;
             cpuCycleThread = new Thread(this);
             cpuCycleThread.start();
         }
@@ -711,18 +708,17 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
     
     //stops the cpu emulation cycle
     public void stopEmulation() {
-        isRunning = false;
         cpuCycleThread = null;
     }
-    
+
     @Override
     public void run() {
         cpuCycleThread.setPriority(Thread.NORM_PRIORITY);
         double frameTime = 1000/60;
         long elapsedTimeFromEpoch = System.currentTimeMillis();
         double origin = elapsedTimeFromEpoch+frameTime/2;
-        
-        while (isRunning) {
+        Thread thisThread = Thread.currentThread();
+        while (cpuCycleThread == thisThread) {
             synchronized (this) {
                 long diff = System.currentTimeMillis() - elapsedTimeFromEpoch;
                 elapsedTimeFromEpoch+=diff;
@@ -743,7 +739,7 @@ public final class SwingDisplay extends Chip8SOC implements Runnable {
                     }
                     super.updateTimers();
                 }
-                
+
                 try {
                     cpuCycleThread.sleep((int)frameTime);
                 } catch (InterruptedException ex) {
